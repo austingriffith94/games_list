@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+.pytest_cache/
+
+# SQLite side files
+*.db-journal
+*.db-wal
+*.db-shm
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Generated output (rebuilt by build_html.py / build_pdf.py)
+games_list_dashboard.html
+games_list_report.pdf
+
+# Personal data and legacy files
+gamelist.db
+covers/
+old_excel/
+
+# Editor settings
+.vscode/

@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Game List</title>
+<style>
+:root{--bg:#f6f4f1;--card:#fff;--text:#222;--muted:#767676;--grid:#e6e2dc;--accent:#c55a11;--accent-t:#fff;--accent2:#8e5bd0;--soft:#fbe5d6;--err:#c0392b;--ok:#2e7d32;--warn:#b26a00}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#17181a;--card:#222426;--text:#ececec;--muted:#9a9a9a;--grid:#383a3d;--accent:#ee8a45;--accent-t:#1a1a1a;--accent2:#b18cf0;--soft:#3a2a1f;--err:#ff7b6b;--ok:#6fcf74;--warn:#f0b34a}}
+:root[data-theme=dark]{--bg:#17181a;--card:#222426;--text:#ececec;--muted:#9a9a9a;--grid:#383a3d;--accent:#ee8a45;--accent-t:#1a1a1a;--accent2:#b18cf0;--soft:#3a2a1f;--err:#ff7b6b;--ok:#6fcf74;--warn:#f0b34a}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{max-width:1280px;margin:0 auto;padding:14px 16px 4px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+h1{margin:0;font-size:20px;color:var(--accent)}
+nav{display:flex;gap:4px;flex-wrap:wrap;flex:1}
+nav a{padding:6px 12px;border-radius:8px;color:var(--text);text-decoration:none;border:1px solid transparent;cursor:pointer}
+nav a:hover{background:var(--card)}nav a.on{background:var(--accent);color:var(--accent-t)}
+nav .badge{display:inline-block;min-width:18px;padding:0 5px;margin-left:4px;border-radius:9px;background:var(--err);color:#fff;font-size:11px;text-align:center}
+main{max-width:1280px;margin:0 auto;padding:8px 16px 60px}
+.tab{display:none}.tab.on{display:block}
+.card{background:var(--card);border:1px solid var(--grid);border-radius:12px;padding:16px;margin-bottom:14px}
+.card h2{margin:0 0 10px;font-size:16px}.card h3{margin:14px 0 6px;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.cols{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:14px}
+@media(max-width:900px){.cols{grid-template-columns:1fr}}
+input,select,textarea,button{font:inherit;color:var(--text);background:var(--card);border:1px solid var(--grid);border-radius:8px;padding:7px 10px}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:-1px}
+input[type=checkbox]{width:auto;accent-color:var(--accent)}
+button{cursor:pointer}button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);color:var(--accent-t);border-color:var(--accent);font-weight:600}
+button.danger{color:var(--err);border-color:var(--err)}
+button.link{border:none;background:none;color:var(--accent);padding:2px 4px;text-decoration:underline}
+button.sm{padding:3px 8px;font-size:12px}
+button:disabled{opacity:.5;cursor:default}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.grid .wide{grid-column:span 2}@media(max-width:560px){.grid .wide{grid-column:auto}}
+label{display:block;font-size:12px;color:var(--muted)}
+label input,label select{display:block;width:100%;margin-top:3px;color:var(--text);font-size:14px}
+label.chk{display:flex;gap:6px;align-items:center;color:var(--text);font-size:14px}label.chk input{margin:0}
+.err{display:block;color:var(--err);font-size:12px;min-height:0}
+.formerr{color:var(--err);margin:8px 0;font-size:13px}
+.quick{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap}.quick button{padding:2px 8px;font-size:12px;border-radius:12px}
+.preview{display:flex;gap:12px;align-items:center;margin:12px 0;padding:10px;background:var(--bg);border-radius:10px;min-height:70px}
+.preview .cv{width:46px;aspect-ratio:2/3;border-radius:5px;background:var(--grid);object-fit:cover;flex:none}
+.preview b{font-size:15px}.muted{color:var(--muted)}
+.banner{padding:9px 12px;border-radius:8px;background:var(--soft);margin:8px 0}
+.banner label{display:inline-flex;gap:6px;align-items:center;color:var(--text);font-size:14px;margin-right:14px}
+.banner label input{display:inline;width:auto;margin:0}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{text-align:left;padding:6px;border-bottom:2px solid var(--grid);color:var(--muted);font-weight:600;white-space:nowrap}
+td{padding:6px;border-bottom:1px solid var(--grid);vertical-align:middle}
+tr:hover td{background:color-mix(in srgb,var(--soft) 45%,transparent)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.chips{display:flex;gap:6px;flex-wrap:wrap}.chip{padding:3px 10px;border-radius:14px;border:1px solid var(--grid);background:var(--card);font-size:12px;cursor:pointer}.chip:hover{border-color:var(--accent)}
+.split{display:grid;grid-template-columns:320px minmax(0,1fr);gap:14px;align-items:start}
+@media(max-width:900px){.split{grid-template-columns:1fr}}
+.gl{max-height:74vh;overflow:auto;border:1px solid var(--grid);border-radius:8px}
+.gl .it{padding:7px 10px;border-bottom:1px solid var(--grid);cursor:pointer;display:flex;gap:8px;align-items:center}
+.gl .it:hover{background:var(--soft)}.gl .it.on{background:var(--accent);color:var(--accent-t)}.gl .it.on .muted{color:inherit;opacity:.85}
+.gl .it .t{flex:1;min-width:0}.gl .it .t div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--grid);flex:none}.dot.has{background:var(--ok)}
+.coverbox{width:150px;aspect-ratio:2/3;border:2px dashed var(--grid);border-radius:10px;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);font-size:12px;overflow:hidden;cursor:pointer;flex:none;position:relative}
+.coverbox.over{border-color:var(--accent);background:var(--soft)}.coverbox img{width:100%;height:100%;object-fit:cover}
+.sec{display:flex;gap:18px;flex-wrap:wrap}
+.pill{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;background:var(--grid)}
+.pill.error{background:var(--err);color:#fff}.pill.warn{background:var(--warn);color:#fff}.pill.info{background:var(--accent2);color:#fff}
+.warnline{color:var(--warn);font-size:12px}
+#toasts{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;z-index:100;align-items:center}
+.toast{background:#222;color:#fff;padding:10px 14px;border-radius:10px;box-shadow:0 4px 14px #0005;display:flex;gap:12px;align-items:center;max-width:90vw}
+.toast.err{background:var(--err)}.toast button.link{color:#ffcf9f}
+dialog{border:1px solid var(--grid);border-radius:12px;background:var(--card);color:var(--text);padding:18px;width:min(560px,94vw)}
+dialog::backdrop{background:#0006}dialog h2{margin:0 0 10px;font-size:16px}
+dialog .btns{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.ord{display:grid;grid-template-columns:34px 46px minmax(0,1fr) auto;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--grid)}
+.ord img,.ord .ph{width:46px;aspect-ratio:2/3;object-fit:cover;border-radius:4px;background:var(--grid)}
+.ord .r{font-weight:700;color:var(--accent);text-align:center}.ord.cut{opacity:.6}
+.stat{display:flex;gap:10px;flex-wrap:wrap}.stat>div{background:var(--bg);padding:8px 12px;border-radius:8px}.stat b{display:block;font-size:18px;color:var(--accent)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Game List</h1>
+  <nav id="nav"></nav>
+  <button id="themebtn" class="sm" title="Toggle light / dark">◐</button>
+</header>
+<main>
+<!-- ======================= LOG TIME ======================= -->
+<section class="tab" id="tab-log">
+ <div class="cols">
+  <div class="card">
+   <h2>Log time</h2>
+   <form id="logform" autocomplete="off" novalidate>
+    <div class="grid">
+     <label data-f="date">Date
+      <input type="date" name="date">
+      <span class="quick"><button type="button" data-d="0">Today</button><button type="button" data-d="-1">Yesterday</button></span>
+      <span class="err"></span></label>
+     <label class="wide" data-f="game">Game
+      <input name="game" list="gamelist" placeholder="Start typing a title…" autofocus>
+      <span class="err"></span></label>
+     <label data-f="system">System<select name="system"></select><span class="err"></span></label>
+     <label data-f="hours">Hours
+      <input name="hours" type="number" step="0.25" min="0" inputmode="decimal" placeholder="e.g. 1.5">
+      <span class="quick" id="hourchips"></span><span class="err"></span></label>
+    </div>
+    <datalist id="gamelist"></datalist>
+    <div id="logpreview"></div>
+    <div id="logexisting" class="banner" hidden></div>
+    <div class="formerr" id="logerr"></div>
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <button class="primary" id="logsave">Save entry</button>
+      <button type="button" class="link" id="logaddgame">Game not in the list? Add it</button>
+    </div>
+   </form>
+   <h3>Recent games</h3><div class="chips" id="recentchips"></div>
+  </div>
+  <div class="card">
+   <h2 id="datehead">On this date</h2>
+   <div class="stat" id="datestat"></div>
+   <div id="dateentries" style="margin-top:10px"></div>
+  </div>
+ </div>
+ <div class="card">
+  <h2>Recent entries</h2>
+  <div style="display:flex;gap:8px;margin-bottom:8px"><input id="logfilter" placeholder="Filter by game…" list="gamelist" style="max-width:320px"></div>
+  <div style="overflow:auto"><table id="logtable"></table></div>
+  <div style="margin-top:8px"><button id="logmore" class="sm">Show more</button> <span class="muted" id="logcount"></span></div>
+ </div>
+</section>
+
+<!-- ======================= GAMES ======================= -->
+<section class="tab" id="tab-games">
+ <div class="split">
+  <div class="card" style="padding:12px">
+   <div style="display:flex;gap:6px;margin-bottom:8px"><input id="gsearch" placeholder="Search games…" style="flex:1;min-width:0"><button class="primary sm" id="gnew">+ New</button></div>
+   <div style="display:flex;gap:6px;margin-bottom:8px">
+     <select id="gfilter" style="flex:1"><option value="">All games</option><option value="nocover">No cover art</option><option value="unplayed">Not played yet</option><option value="played">Played</option></select>
+     <span class="muted" id="gcount" style="align-self:center"></span></div>
+   <div class="gl" id="glist"></div>
+  </div>
+  <div id="geditor"><div class="card muted">Select a game on the left to edit it, or add a new one.</div></div>
+ </div>
+</section>
+
+<!-- ======================= TOP ======================= -->
+<section class="tab" id="tab-top">
+ <div class="card">
+  <h2>Personal Top list</h2>
+  <p class="muted" style="margin-top:0">The first 10 appear in the dashboard and PDF. Everything below is kept as your bench.</p>
+  <div style="display:flex;gap:8px;margin-bottom:10px"><input id="topadd" list="gamelist" placeholder="Add a game…" style="flex:1;max-width:360px"><button id="topaddbtn">Add</button><button class="primary" id="topsave" disabled>Save order</button></div>
+  <div id="toplist"></div>
+ </div>
+</section>
+
+<!-- ======================= CHECKS ======================= -->
+<section class="tab" id="tab-checks">
+ <div class="card"><h2>Data checks</h2>
+  <p class="muted" style="margin-top:0">These replace the workbook's check columns (Data Filled, Year Check, Date Check, duplicates). Rule violations are blocked when you save; this lists anything already in the data.</p>
+  <div class="stat" id="checksum"></div><div id="checklist" style="margin-top:12px"></div></div>
+</section>
+
+<!-- ======================= HISTORY ======================= -->
+<section class="tab" id="tab-history">
+ <div class="card"><h2>Change history</h2>
+  <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap"><button id="backupbtn">Back up database now</button><a href="/api/export.zip"><button type="button">Download CSV export</button></a></div>
+  <div style="overflow:auto"><table id="histtable"></table></div></div>
+</section>
+
+<!-- ======================= REPORTS ======================= -->
+<section class="tab" id="tab-reports">
+ <div class="card"><h2>Reports</h2>
+  <div id="repstatus" class="stat"></div>
+  <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="primary" id="rebuildbtn">Rebuild dashboard + PDF</button>
+   <a href="/dashboard" target="_blank"><button type="button">Open dashboard</button></a><a href="/report.pdf" target="_blank"><button type="button">Open PDF</button></a></div>
+  <div id="replog" class="muted" style="margin-top:10px;white-space:pre-wrap"></div></div>
+</section>
+</main>
+<div id="toasts"></div>
+<dialog id="dlg"></dialog>
+
+<script>
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=(v,d=2)=>v==null?'–':(+v).toLocaleString(undefined,{maximumFractionDigits:d});
+let META=null;
+
+/* ---------- helpers ---------- */
+async function api(method,url,body){
+  const opt={method,headers:{'X-Requested-With':'gamelist'}};
+  if(body instanceof FormData)opt.body=body; else if(body!==undefined){opt.headers['Content-Type']='application/json';opt.body=JSON.stringify(body)}
+  const r=await fetch(url,opt);let j={};try{j=await r.json()}catch{}
+  if(!r.ok){const e=new Error(j.error||r.statusText);e.status=r.status;e.data=j;throw e}
+  j._batch=r.headers.get('X-Batch');return j}
+function toast(msg,{undo,err}={}){
+  const t=document.createElement('div');t.className='toast'+(err?' err':'');t.innerHTML=`<span>${esc(msg)}</span>`;
+  if(undo){const b=document.createElement('button');b.className='link';b.textContent='Undo';b.onclick=async()=>{try{await api('POST','/api/undo/'+undo);t.remove();toast('Undone');await afterChange()}catch(e){toast(e.message,{err:1})}};t.appendChild(b)}
+  $('#toasts').appendChild(t);setTimeout(()=>t.remove(),err?7000:undo?9000:3500)}
+function dialog(html,{ok='Save',cancel='Cancel',danger=false,onOk,onOpen,wide}={}){
+  return new Promise(res=>{const d=$('#dlg');d.innerHTML=`<form method="dialog">${html}<div class="formerr" id="dlgerr"></div><div class="btns">${cancel?`<button type="button" id="dcancel">${cancel}</button>`:''}<button class="${danger?'danger':'primary'}" id="dok">${ok}</button></div></form>`;
+    if(wide)d.style.width='min(760px,96vw)';else d.style.width='';
+    const close=v=>{d.close();res(v)};
+    $('#dcancel',d)?.addEventListener('click',()=>close(null));d.addEventListener('cancel',()=>res(null),{once:true});
+    $('form',d).onsubmit=async e=>{e.preventDefault();try{const v=onOk?await onOk(d):true;if(v!==false)close(v===undefined?true:v)}catch(x){applyErrors(d,x.data?.fields||{},x.message)}};
+    d.showModal();onOpen?.(d);$('input,select',d)?.focus()})}
+const confirmBox=(title,msg,ok='Delete',danger=true)=>dialog(`<h2>${esc(title)}</h2><p>${msg}</p>`,{ok,danger});
+function applyErrors(root,fields={},msg=''){
+  $$('.err',root).forEach(e=>e.textContent='');let extra=[];
+  for(const [k,v] of Object.entries(fields||{})){const el=$(`[data-f="${k}"] .err`,root);if(el)el.textContent=v;else extra.push(v)}
+  const fe=$('.formerr',root);if(fe)fe.textContent=[msg&&!Object.keys(fields||{}).length?msg:Object.keys(fields||{}).length?'Please fix the highlighted fields.':msg,...extra].filter(Boolean).join(' · ')}
+const selOpts=(arr,sel,blank)=>(blank!=null?`<option value="">${esc(blank)}</option>`:'')+arr.map(a=>{const v=typeof a==='object'?a.name:a;return `<option ${v===sel?'selected':''}>${esc(v)}</option>`}).join('');
+const todayISO=()=>META?.today||new Date().toISOString().slice(0,10);
+const addDays=(iso,n)=>{const d=new Date(iso+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)};
+const prettyDate=iso=>iso?new Date(iso+'T00:00:00').toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}):'–';
+const titleMatch=v=>META.titles.find(t=>t.title.toLowerCase()===String(v||'').trim().toLowerCase());
+async function refreshMeta(){META=await api('GET','/api/meta');$('#gamelist').innerHTML=META.titles.map(t=>`<option value="${esc(t.title)}">`).join('')}
+async function afterChange(){await refreshMeta();refreshBadge();const t=currentTab();if(TABS[t])TABS[t].show(true)}
+
+/* ---------- tabs / routing ---------- */
+const NAMES={log:'Log time',games:'Games',top:'Top list',checks:'Checks',history:'History',reports:'Reports'};
+const TABS={};
+$('#nav').innerHTML=Object.entries(NAMES).map(([k,n])=>`<a data-k="${k}" href="#${k}">${n}${k==='checks'?'<span class="badge" id="chkbadge" hidden></span>':''}</a>`).join('');
+const currentTab=()=>(location.hash.slice(1).split('/')[0]||'log');
+async function route(){const [t,arg]=location.hash.slice(1).split('/');const tab=NAMES[t]?t:'log';
+  $$('.tab').forEach(e=>e.classList.toggle('on',e.id==='tab-'+tab));$$('#nav a').forEach(a=>a.classList.toggle('on',a.dataset.k===tab));
+  await TABS[tab].show(false,arg)}
+addEventListener('hashchange',route);
+async function refreshBadge(){try{const c=await api('GET','/api/checks');const b=$('#chkbadge');const n=c.summary.error;b.hidden=!n;b.textContent=n}catch{}}
+
+/* ======================= LOG TIME ======================= */
+const LOG={offset:0,limit:30,rows:[],total:0,preview:null,selected:null};
+const logf=()=>$('#logform').elements;
+TABS.log={async show(){
+  if(!logf().date.value)logf().date.value=todayISO();
+  $('#hourchips').innerHTML=[0.5,1,1.5,2,3,4].map(h=>`<button type="button" data-h="${h}">${h}</button>`).join('');
+  await Promise.all([loadRecent(true),loadDate(),loadChips()]);}};
+async function loadChips(){const r=await api('GET','/api/log?limit=80');const seen=new Set(),out=[];
+  for(const x of r.rows){const k=x.game+'|'+x.system;if(!seen.has(k)){seen.add(k);out.push(x)}if(out.length>=8)break}
+  $('#recentchips').innerHTML=out.map(x=>`<span class="chip" data-g="${esc(x.game)}" data-s="${esc(x.system)}">${esc(x.game)} · ${esc(x.system)}</span>`).join('')||'<span class="muted">Nothing yet</span>'}
+async function loadDate(){const d=logf().date.value||todayISO();
+  const r=await api('GET',`/api/log?from=${d}&to=${d}&limit=100`);const sum=r.rows.reduce((a,x)=>a+x.hours,0);
+  $('#datehead').textContent=d===todayISO()?'Today':prettyDate(d);
+  $('#datestat').innerHTML=`<div><b>${fmt(sum)}</b>hours</div><div><b>${r.rows.length}</b>entries</div>`;
+  $('#dateentries').innerHTML=r.rows.length?`<table>${r.rows.map(x=>`<tr><td>${esc(x.game)}<div class="muted">${esc(x.system)}</div></td><td class="num">${fmt(x.hours)} h</td></tr>`).join('')}</table>`:'<span class="muted">Nothing logged for this date yet.</span>'}
+async function loadRecent(reset){if(reset){LOG.offset=0;LOG.rows=[]}
+  const f=$('#logfilter').value.trim(),m=f&&titleMatch(f);
+  const r=await api('GET',`/api/log?limit=${LOG.limit}&offset=${LOG.offset}`+(m?`&game=${encodeURIComponent(m.title)}`:''));
+  LOG.rows=LOG.rows.concat(r.rows);LOG.total=r.total;LOG.offset=LOG.rows.length;renderLog()}
+function renderLog(){
+  $('#logtable').innerHTML=`<thead><tr><th>Date</th><th>Game</th><th>System</th><th class="num">Hours</th><th></th></tr></thead><tbody>`+LOG.rows.map(x=>`<tr><td>${x.date}</td><td>${esc(x.game)}</td><td>${esc(x.system)}</td><td class="num">${fmt(x.hours)}${x.real?' <span class="pill" title="Flagged Real">R</span>':''}</td><td style="white-space:nowrap"><button class="sm" data-edit="${x.id}">Edit</button> <button class="sm danger" data-del="${x.id}">Delete</button></td></tr>`).join('')+'</tbody>';
+  $('#logcount').textContent=`${LOG.rows.length} of ${LOG.total}`;$('#logmore').hidden=LOG.rows.length>=LOG.total}
+async function logPreview(){
+  const f=logf(),t=titleMatch(f.game.value);LOG.selected=t?.title||null;
+  if(!t){$('#logpreview').innerHTML='';$('#logexisting').hidden=true;f.system.innerHTML='<option value="">Choose a game first</option>';LOG.preview=null;return}
+  const systems=META.releases[t.title]||[];const keep=f.system.value;
+  if(f.system.dataset.game!==t.title){let sys=keep;const p0=await api('GET',`/api/log/preview?game=${encodeURIComponent(t.title)}&system=&date=${f.date.value}`);
+    sys=p0.last_system&&systems.includes(p0.last_system)?p0.last_system:systems[0];f.system.innerHTML=selOpts(systems,sys);f.system.dataset.game=t.title}
+  const p=await api('GET',`/api/log/preview?game=${encodeURIComponent(t.title)}&system=${encodeURIComponent(f.system.value)}&date=${f.date.value}`);LOG.preview=p;
+  const hrs=parseFloat(f.hours.value);const ex=p.existing;
+  let after='';if(hrs>0){const base=p.game_total+(ex?(logMode()==='add'?hrs:hrs-ex.hours):hrs);after=` &rarr; <b>${fmt(base)} h</b> after this entry`}
+  $('#logpreview').innerHTML=`<div class="preview">${p.cover?`<img class="cv" src="${p.cover}">`:'<div class="cv"></div>'}<div><b>${esc(p.title)}</b><div class="muted">Total ${fmt(p.game_total)} h${after} · ${esc(f.system.value)}: ${fmt(p.release_total)} h · last played ${prettyDate(p.last_played)}</div></div></div>`;
+  const b=$('#logexisting');if(ex){b.hidden=false;b.innerHTML=`<b>Already logged ${fmt(ex.hours)} h</b> for this game, system and date. <br><label><input type="radio" name="mode" value="add" ${logMode()!=='overwrite'?'checked':''}> Add to it${hrs>0?` (&rarr; ${fmt(ex.hours+hrs)} h)`:''}</label><label><input type="radio" name="mode" value="overwrite" ${logMode()==='overwrite'?'checked':''}> Replace it${hrs>0?` (&rarr; ${fmt(hrs)} h)`:''}</label>`}else b.hidden=true}
+const logMode=()=>$('input[name=mode]:checked')?.value||'add';
+const LP=(()=>{let t;return ()=>{clearTimeout(t);t=setTimeout(()=>logPreview().catch(()=>{}),120)}})();
+$('#logform').addEventListener('input',e=>{if(e.target.name==='game'){logf().system.dataset.game=''}LP()});
+$('#logform').addEventListener('change',e=>{if(e.target.name==='date')loadDate();if(e.target.name==='mode')logPreview();LP()});
+$('#logform').addEventListener('click',e=>{const d=e.target.dataset;if(d.d!==undefined){logf().date.value=addDays(todayISO(),+d.d);loadDate();LP()}if(d.h){logf().hours.value=d.h;LP()}});
+$('#recentchips').addEventListener('click',e=>{const c=e.target.closest('.chip');if(!c)return;logf().game.value=c.dataset.g;logf().system.dataset.game='';logPreview().then(()=>{logf().system.value=c.dataset.s;logPreview();logf().hours.focus()})});
+$('#logaddgame').onclick=()=>{location.hash='#games/new';GAMES.prefill=logf().game.value.trim()};
+async function saveLog(extra={}){
+  const f=logf();applyErrors($('#logform'),{});const body={date:f.date.value,game:f.game.value,system:f.system.value,hours:f.hours.value,...extra};
+  if(LOG.preview?.existing&&!extra.mode)body.mode=logMode();
+  try{const r=await api('POST','/api/log',body);
+    toast(`${r.action==='add'?'Added to':r.action==='overwrite'?'Replaced':'Logged'} ${fmt(r.hours)} h · ${r.game} now ${fmt(r.game_total_after)} h`,{undo:r._batch});
+    f.hours.value='';f.game.value='';f.system.dataset.game='';f.system.innerHTML='<option value="">Choose a game first</option>';$('#logpreview').innerHTML='';$('#logexisting').hidden=true;LOG.preview=null;
+    f.game.focus();await Promise.all([loadRecent(true),loadDate(),loadChips()]);refreshBadge()}
+  catch(e){const d=e.data||{};
+    if(e.status===409&&d.needs_confirm==='large'){if(await confirmBox('More than 24 hours?',esc(d.error),'Save anyway',false))return saveLog({...extra,allow_large:true});return}
+    if(e.status===409&&d.needs_confirm==='exists'){await logPreview();$('#logexisting').scrollIntoView({block:'nearest'});applyErrors($('#logform'),{},'Choose whether to add to or replace the existing entry, then save again.');return}
+    applyErrors($('#logform'),d.fields||{},e.message)}}
+$('#logform').addEventListener('submit',e=>{e.preventDefault();saveLog()});
+$('#logmore').onclick=()=>loadRecent(false);$('#logfilter').addEventListener('change',()=>loadRecent(true));
+$('#logtable').addEventListener('click',async e=>{const ed=e.target.dataset.edit,del=e.target.dataset.del;
+  if(ed)editLog(LOG.rows.find(x=>x.id==ed));
+  if(del){const x=LOG.rows.find(x=>x.id==del);if(await confirmBox('Delete this entry?',`${esc(x.game)} (${esc(x.system)}), ${fmt(x.hours)} h on ${x.date}`)){const r=await api('DELETE','/api/log/'+del);toast('Entry deleted',{undo:r._batch});await Promise.all([loadRecent(true),loadDate(),loadChips()])}}});
+function editLog(x){
+  const sys=META.releases[x.game]||[x.system];
+  dialog(`<h2>Edit entry</h2><div class="grid"><label data-f="date">Date<input type="date" name="date" value="${x.date}"><span class="err"></span></label>
+   <label data-f="game">Game<input name="game" list="gamelist" value="${esc(x.game)}"><span class="err"></span></label>
+   <label data-f="system">System<select name="system">${selOpts(sys,x.system)}</select><span class="err"></span></label>
+   <label data-f="hours">Hours<input type="number" step="0.25" name="hours" value="${x.hours}"><span class="err"></span></label></div>
+   <label class="chk" style="margin-top:10px"><input type="checkbox" name="real" ${x.real?'checked':''}> Flagged <b>Real</b> (flag carried over from your workbook)</label>`,
+   {onOk:async d=>{const g=$('[name=game]',d),f=$('[name=system]',d);const body={date:$('[name=date]',d).value,game:g.value,system:f.value,hours:$('[name=hours]',d).value,real:$('[name=real]',d).checked};
+     try{const r=await api('PUT','/api/log/'+x.id,body);toast('Entry updated',{undo:r._batch})}catch(e){if(e.status===409&&e.data?.needs_confirm==='large'){if(!await confirmBox('More than 24 hours?',esc(e.message),'Save anyway',false))return false;const r=await api('PUT','/api/log/'+x.id,{...body,allow_large:true});toast('Entry updated',{undo:r._batch})}else throw e}
+     await Promise.all([loadRecent(true),loadDate(),loadChips()])}});
+  const d=$('#dlg');$('[name=game]',d).addEventListener('change',e=>{const t=titleMatch(e.target.value);$('[name=system]',d).innerHTML=selOpts(t?META.releases[t.title]:[],'')})}
+
+/* ======================= GAMES ======================= */
+const GAMES={list:[],sel:null,prefill:null,pendingCover:null,cur:null};
+TABS.games={async show(force,arg){
+  if(!GAMES.list.length||force)GAMES.list=await api('GET','/api/games');renderGameList();
+  if(arg==='new'){newGame(GAMES.prefill);GAMES.prefill=null}
+  else if(arg){await openGame(+arg)}
+  else if(force&&GAMES.sel)await openGame(GAMES.sel,true)}};
+function renderGameList(){
+  const q=$('#gsearch').value.toLowerCase(),f=$('#gfilter').value;
+  const rows=GAMES.list.filter(g=>(!q||g.title.toLowerCase().includes(q)||g.series.toLowerCase().includes(q))&&(!f||(f==='nocover'&&!g.has_cover)||(f==='unplayed'&&!g.hours)||(f==='played'&&g.hours)));
+  $('#gcount').textContent=rows.length+' games';
+  $('#glist').innerHTML=rows.map(g=>`<div class="it ${g.id===GAMES.sel?'on':''}" data-id="${g.id}"><span class="dot ${g.has_cover?'has':''}" title="${g.has_cover?'Has cover art':'No cover art'}"></span><div class="t"><div>${esc(g.title)}</div><div class="muted">${esc(g.genre)} · ${g.hours?fmt(g.hours,1)+' h':'not played'}</div></div></div>`).join('')}
+$('#gsearch').addEventListener('input',renderGameList);$('#gfilter').addEventListener('change',renderGameList);
+$('#glist').addEventListener('click',e=>{const it=e.target.closest('.it');if(it)location.hash='#games/'+it.dataset.id});
+$('#gnew').onclick=()=>{if(location.hash==='#games/new')route();else location.hash='#games/new'};
+
+const SCORE_FIELDS=[['my_score','My score (1–10)',1,10,1],['metacritic','Metacritic (0–100)',0,100,1],['pc_gamer','PC Gamer (0–100)',0,100,1],['gamespot','GameSpot (0–10)',0,10,.1],['ign','IGN (0–10)',0,10,.1],['destructoid','Destructoid (0–10)',0,10,.1],['game_informer','Game Informer (0–10)',0,10,.1]];
+const MODE_FIELDS=[['singleplayer','Singleplayer'],['local_co_op','Local co-op'],['online_co_op','Online co-op'],['local_multiplayer','Local multiplayer'],['online_multiplayer','Online multiplayer']];
+function relFields(r={},p=''){const t=todayISO();return `
+ <label data-f="${p}system">System<select name="system">${selOpts(META.systems,r.system,'Choose…')}<option value="__new">+ New system…</option></select><span class="err"></span></label>
+ <label data-f="${p}release">Release type<select name="release">${selOpts(META.release_type,r.release||'Retail')}</select><span class="err"></span></label>
+ <label data-f="${p}ownership">Ownership<select name="ownership">${selOpts(META.ownership,r.ownership,'Choose…')}</select><span class="err"></span></label>
+ <label data-f="${p}original_release_date">Original release<input type="date" name="original_release_date" value="${r.original_release_date||''}"><span class="err"></span></label>
+ <label data-f="${p}version_release_date">Version release<input type="date" name="version_release_date" value="${r.version_release_date||''}"><span class="err"></span></label>
+ <label data-f="${p}added_date">Added<input type="date" name="added_date" value="${r.added_date||t}"><span class="err"></span></label>`}
+function readRel(root){const o={};$$('[name]',root).forEach(e=>o[e.name]=e.value);return o}
+function wireRel(root){
+  const orig=$('[name=original_release_date]',root),ver=$('[name=version_release_date]',root);let touched=!!ver.value;
+  ver.addEventListener('input',()=>touched=true);orig.addEventListener('input',()=>{if(!touched)ver.value=orig.value});
+  $('[name=system]',root).addEventListener('change',async e=>{if(e.target.value==='__new'){e.target.value='';await addRefDialog('system');e.target.innerHTML=selOpts(META.systems,'','Choose…')+'<option value="__new">+ New system…</option>'}})}
+async function addRefDialog(kind,genre){
+  const labels={system:'system',genre:'genre',subgenre:'sub-genre',style:'graphic style',view:'camera view'};
+  const html=`<h2>New ${labels[kind]}</h2><label data-f="name">Name<input name="name"><span class="err"></span></label>`+
+    (kind==='system'?`<label data-f="type" style="margin-top:8px">Type<select name="type"><option>Console</option><option>PC</option><option>Handheld</option><option>Mobile</option></select><span class="err"></span></label>`:'')+
+    (kind==='subgenre'?`<label data-f="genre" style="margin-top:8px">Genre<select name="genre">${selOpts(META.genre,genre)}</select><span class="err"></span></label>`:'');
+  return dialog(html,{ok:'Add',onOk:async d=>{await api('POST','/api/ref/'+kind,{name:$('[name=name]',d).value,type:$('[name=type]',d)?.value,genre:$('[name=genre]',d)?.value});await refreshMeta();toast(`Added ${labels[kind]}`)}})}
+
+function gameFormHTML(g,isNew){
+  const sg=META.subgenres[g.genre]||[];
+  const num=(k,l,lo,hi,st)=>`<label data-f="${k}">${l}<input type="number" name="${k}" min="${lo}" max="${hi}" step="${st}" value="${g[k]??''}"><span class="err"></span></label>`;
+  return `<h3>Basics</h3><div class="grid">
+   <label class="wide" data-f="title">Title<input name="title" value="${esc(g.title||'')}"><span class="err"></span></label>
+   <label data-f="series">Series <span class="muted">(blank = title)</span><input name="series" list="serieslist" value="${esc(g.series||'')}"><span class="err"></span></label>
+   <label data-f="genre">Genre<select name="genre">${selOpts(META.genre,g.genre,'Choose…')}<option value="__new">+ New genre…</option></select><span class="err"></span></label>
+   <label data-f="sub_genre">Sub-genre<select name="sub_genre">${selOpts(sg,g.sub_genre,'Choose…')}<option value="__new">+ New sub-genre…</option></select><span class="err"></span></label>
+   <label data-f="graphic_style">Graphic style<select name="graphic_style">${selOpts(META.style,g.graphic_style,'Choose…')}</select><span class="err"></span></label>
+   <label data-f="camera_view">Camera view<select name="camera_view">${selOpts(META.view,g.camera_view,'Choose…')}</select><span class="err"></span></label></div>
+  <datalist id="serieslist">${META.series.map(s=>`<option value="${esc(s)}">`).join('')}</datalist>
+  <h3>Modes</h3><div data-f="modes"><div class="sec">${MODE_FIELDS.map(([k,l])=>`<label class="chk"><input type="checkbox" name="${k}" ${g[k]?'checked':''}> ${l}</label>`).join('')}</div><span class="err"></span></div>
+  <h3>Scores</h3><div class="grid">${SCORE_FIELDS.map(s=>num(...s)).join('')}
+   <label data-f="zero_punctuation">Zero Punctuation<select name="zero_punctuation">${selOpts(META.zp,g.zero_punctuation,'None')}</select><span class="err"></span></label></div>
+  <h3>Stats</h3><div class="grid">${num('playthroughs','Playthroughs',0,99,1)}${num('average_playthrough','Average playthrough (hrs)',0,1000,.5)}${num('goty_votes','GOTY votes',0,100000,1)}
+   <label class="chk" style="align-self:end"><input type="checkbox" name="wikipedia_goat" ${g.wikipedia_goat?'checked':''}> Wikipedia GOAT</label>
+   <label class="chk" style="align-self:end"><input type="checkbox" name="soundtrack_owned" ${g.soundtrack_owned?'checked':''}> Soundtrack owned</label></div>`}
+function readGame(root){const o={};$$('input[name],select[name]',root).forEach(e=>{if(e.closest('.relrow'))return;o[e.name]=e.type==='checkbox'?e.checked:e.value});return o}
+function wireGameForm(root){
+  const gsel=$('[name=genre]',root),ssel=$('[name=sub_genre]',root);
+  gsel.addEventListener('change',async()=>{if(gsel.value==='__new'){gsel.value='';await addRefDialog('genre');gsel.innerHTML=selOpts(META.genre,'','Choose…')+'<option value="__new">+ New genre…</option>';return}
+    ssel.innerHTML=selOpts(META.subgenres[gsel.value]||[],'','Choose…')+'<option value="__new">+ New sub-genre…</option>'});
+  ssel.addEventListener('change',async()=>{if(ssel.value==='__new'){ssel.value='';if(!gsel.value){applyErrors(root,{genre:'Choose a genre first'});return}await addRefDialog('subgenre',gsel.value);ssel.innerHTML=selOpts(META.subgenres[gsel.value]||[],'','Choose…')+'<option value="__new">+ New sub-genre…</option>'}})}
+
+function coverBoxHTML(url){return `<div><div class="coverbox" id="coverbox" tabindex="0" title="Click, drop an image here, or paste (Ctrl+V)">${url?`<img src="${url}">`:'Drop, click<br>or paste<br>cover art'}</div><input type="file" id="coverfile" accept="image/*" hidden>${url?'<button class="link sm" id="coverdel" type="button">Remove cover</button>':''}</div>`}
+function wireCover(onFile){
+  const box=$('#coverbox'),inp=$('#coverfile');if(!box)return;
+  box.onclick=()=>inp.click();inp.onchange=()=>inp.files[0]&&onFile(inp.files[0]);
+  box.ondragover=e=>{e.preventDefault();box.classList.add('over')};box.ondragleave=()=>box.classList.remove('over');
+  box.ondrop=e=>{e.preventDefault();box.classList.remove('over');const f=e.dataTransfer.files[0];if(f)onFile(f)}}
+document.addEventListener('paste',e=>{if(!$('#coverbox')||currentTab()!=='games')return;const f=[...(e.clipboardData?.files||[])].find(f=>f.type.startsWith('image/'));if(f){e.preventDefault();$('#coverbox').dispatchEvent(new CustomEvent('pasted',{detail:f}))}});
+
+async function openGame(id,quiet){
+  let d;try{d=await api('GET','/api/games/'+id)}catch(e){$('#geditor').innerHTML=`<div class="card">${esc(e.message)}</div>`;return}
+  GAMES.sel=id;GAMES.cur=d;renderGameList();const g=d.game;
+  $('#geditor').innerHTML=`<div class="card"><div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start">${coverBoxHTML(d.cover)}
+   <div style="flex:1;min-width:260px"><h2 style="margin-bottom:2px">${esc(g.title)}</h2>
+   <div class="stat" style="margin:8px 0"><div><b>${fmt(d.total_hours,1)}</b>hours</div><div><b>${d.releases.length}</b>release${d.releases.length===1?'':'s'}</div>${d.in_top?`<div><b>#${d.in_top}</b>in Top list</div>`:''}</div>
+   <div style="display:flex;gap:8px;flex-wrap:wrap"><button id="gtolog" class="sm">Log time for this game</button><button id="gdel" class="sm danger">Delete game…</button></div></div></div></div>
+  <div class="card"><form id="gform" novalidate>${gameFormHTML(g)}<div class="formerr"></div><div style="margin-top:12px"><button class="primary" id="gsave">Save changes</button></div></form></div>
+  <div class="card"><h2>Releases</h2><div style="overflow:auto"><table><thead><tr><th>System</th><th>Type</th><th>Ownership</th><th>Original</th><th>Version</th><th>Added</th><th class="num">Hours</th><th></th></tr></thead><tbody>${d.releases.map(r=>`<tr><td>${esc(r.system)}</td><td>${esc(r.release)}</td><td>${esc(r.ownership)}</td><td>${r.original_release_date}</td><td>${r.version_release_date}</td><td>${r.added_date}</td><td class="num">${fmt(r.hours,1)}</td><td style="white-space:nowrap"><button class="sm" data-redit="${r.id}">Edit</button> <button class="sm danger" data-rdel="${r.id}">Delete</button></td></tr>${r.warnings.length?`<tr><td colspan="8" class="warnline">⚠ ${r.warnings.map(esc).join(' · ')}</td></tr>`:''}`).join('')}</tbody></table></div>
+  <div style="margin-top:10px"><button id="raddbtn">+ Add release</button></div></div>
+  <div class="card"><h2>Recent time</h2>${d.log.length?`<table>${d.log.map(l=>`<tr><td>${l.date}</td><td>${esc(l.system)}</td><td class="num">${fmt(l.hours)} h</td></tr>`).join('')}</table>`:'<span class="muted">No time logged yet.</span>'}</div>`;
+  const form=$('#gform');wireGameForm(form);
+  form.onsubmit=async e=>{e.preventDefault();applyErrors(form,{});try{const r=await api('PUT','/api/games/'+id,readGame(form));toast('Saved',{undo:r._batch});await afterChange();await openGame(id,true)}catch(x){applyErrors(form,x.data?.fields,x.message);$('[data-f] .err:not(:empty)',form)?.scrollIntoView({block:'center'})}};
+  const up=async f=>{const fd=new FormData();fd.append('file',f);try{await api('POST',`/api/games/${id}/cover`,fd);toast('Cover saved');await afterChange();await openGame(id,true)}catch(x){toast(x.message,{err:1})}};
+  wireCover(up);$('#coverbox')?.addEventListener('pasted',e=>up(e.detail));
+  $('#coverdel')?.addEventListener('click',async()=>{await api('DELETE',`/api/games/${id}/cover`);toast('Cover removed');await afterChange();await openGame(id,true)});
+  $('#gtolog').onclick=()=>{location.hash='#log';setTimeout(()=>{logf().game.value=g.title;logf().system.dataset.game='';logPreview();logf().hours.focus()},50)};
+  $('#gdel').onclick=()=>deleteGame(d);
+  $('#raddbtn').onclick=()=>releaseDialog(id,null);
+  $('#geditor').onclick=async e=>{const re=e.target.dataset.redit,rd=e.target.dataset.rdel;
+    if(re)releaseDialog(id,d.releases.find(r=>r.id==re));
+    if(rd){const r=d.releases.find(r=>r.id==rd);delRelease(r)}}}
+async function delRelease(r,force){
+  try{if(!force&&!await confirmBox('Delete release?',`${esc(r.title)} on <b>${esc(r.system)}</b>`))return;const x=await api('DELETE',`/api/releases/${r.id}`+(force?'?force=1':''));toast('Release deleted',{undo:x._batch});await afterChange();await openGame(GAMES.sel,true)}
+  catch(e){if(e.data?.needs_force){if(await confirmBox('Also delete the time log?',`${esc(e.message)}<br>Deleting the release removes these entries too. You can undo this right after.`,'Delete release and time'))return delRelease(r,true)}else toast(e.message,{err:1})}}
+async function deleteGame(d,force){
+  try{if(!force&&!await confirmBox('Delete this game?',`<b>${esc(d.game.title)}</b>`))return;const x=await api('DELETE',`/api/games/${d.game.id}`+(force?'?force=1':''));toast('Game deleted',{undo:x._batch});GAMES.sel=null;location.hash='#games';await afterChange();$('#geditor').innerHTML='<div class="card muted">Select a game on the left to edit it, or add a new one.</div>'}
+  catch(e){if(e.data?.needs_force){if(await confirmBox('Delete everything for this game?',`${esc(e.message)}<br>Deleting removes <b>${e.data.releases}</b> release(s) and <b>${e.data.log}</b> time entries (${fmt(e.data.hours,1)} h). You can undo this right after.`,'Delete all'))return deleteGame(d,true)}else toast(e.message,{err:1})}}
+function releaseDialog(gid,r){
+  return dialog(`<h2>${r?'Edit':'Add'} release</h2><div class="grid relrow">${relFields(r||{})}</div>`,{ok:'Save',wide:true,onOpen:d=>wireRel($('.relrow',d)),
+    onOk:async d=>{const body=readRel(d);const x=r?await api('PUT','/api/releases/'+r.id,body):await api('POST',`/api/games/${gid}/releases`,body);
+      toast('Release saved'+(x.warnings?.length?' · '+x.warnings[0]:''),{undo:x._batch});await afterChange();await openGame(gid,true)}}).then(()=>0);
+}
+
+function newGame(prefill){
+  GAMES.sel=null;GAMES.cur=null;GAMES.pendingCover=null;renderGameList();
+  const g={title:prefill||'',singleplayer:true};
+  $('#geditor').innerHTML=`<div class="card"><h2>New game</h2><form id="gform" novalidate>${gameFormHTML(g)}
+   <h3>Cover art <span class="muted" style="text-transform:none">(optional)</span></h3><div id="newcover">${coverBoxHTML(null)}</div>
+   <h3>Releases</h3><div id="newrels" data-f="releases"><span class="err"></span></div>
+   <button type="button" id="addrel" class="sm" style="margin-top:6px">+ Add another system</button>
+   <div class="formerr" style="margin-top:10px"></div><div style="margin-top:12px"><button class="primary">Add game</button></div></form></div>`;
+  const form=$('#gform');wireGameForm(form);let n=0;
+  const addRel=()=>{const i=n++;const div=document.createElement('div');div.className='grid relrow';div.style.cssText='margin:8px 0;padding:10px;background:var(--bg);border-radius:8px;position:relative';div.dataset.i=i;
+    div.innerHTML=relFields({},`releases.${i}.`)+(i?'<button type="button" class="sm danger" style="align-self:end" data-rm>Remove</button>':'');$('#newrels').appendChild(div);wireRel(div);div.querySelector('[data-rm]')?.addEventListener('click',()=>div.remove())};
+  addRel();$('#addrel').onclick=addRel;
+  wireCover(f=>{GAMES.pendingCover=f;$('#coverbox').innerHTML=`<img src="${URL.createObjectURL(f)}">`});$('#coverbox')?.addEventListener('pasted',e=>{GAMES.pendingCover=e.detail;$('#coverbox').innerHTML=`<img src="${URL.createObjectURL(e.detail)}">`});
+  form.onsubmit=async e=>{e.preventDefault();applyErrors(form,{});
+    const releases=$$('.relrow',form).map(r=>readRel(r));
+    try{const r=await api('POST','/api/games',{game:readGame(form),releases});
+      if(GAMES.pendingCover){const fd=new FormData();fd.append('file',GAMES.pendingCover);try{await api('POST',`/api/games/${r.id}/cover`,fd)}catch(x){toast('Game added, but the cover failed: '+x.message,{err:1})}}
+      toast(`Added ${r.title}`,{undo:r._batch});await afterChange();location.hash='#games/'+r.id}
+    catch(x){applyErrors(form,x.data?.fields,x.message);$('.err:not(:empty)',form)?.scrollIntoView({block:'center'})}};
+  $('[name=title]',form).focus()}
+
+/* ======================= TOP LIST ======================= */
+const TOP={list:[],dirty:false};
+TABS.top={async show(){TOP.list=(await api('GET','/api/top')).map(x=>x.title);TOP.dirty=false;renderTop()}};
+function renderTop(){const cov=META.covers;
+  $('#toplist').innerHTML=TOP.list.map((t,i)=>`<div class="ord ${i>=10?'cut':''}"><div class="r">${i+1}</div>${cov[t]?`<img src="${cov[t]}">`:'<div class="ph"></div>'}<div>${esc(t)}${i===9?'<div class="muted">— end of Top 10 —</div>':''}</div><div style="white-space:nowrap"><button class="sm" data-up="${i}" ${i?'':'disabled'}>↑</button> <button class="sm" data-dn="${i}" ${i<TOP.list.length-1?'':'disabled'}>↓</button> <button class="sm danger" data-rm="${i}">✕</button></div></div>`).join('');
+  $('#topsave').disabled=!TOP.dirty}
+$('#toplist').addEventListener('click',e=>{const d=e.target.dataset;const mv=(i,j)=>{[TOP.list[i],TOP.list[j]]=[TOP.list[j],TOP.list[i]]};
+  if(d.up!==undefined)mv(+d.up,+d.up-1);else if(d.dn!==undefined)mv(+d.dn,+d.dn+1);else if(d.rm!==undefined)TOP.list.splice(+d.rm,1);else return;TOP.dirty=true;renderTop()});
+$('#topaddbtn').onclick=()=>{const t=titleMatch($('#topadd').value);if(!t)return toast('Pick a game from the list',{err:1});if(TOP.list.includes(t.title))return toast('Already in the list',{err:1});TOP.list.push(t.title);$('#topadd').value='';TOP.dirty=true;renderTop()};
+$('#topsave').onclick=async()=>{try{const r=await api('PUT','/api/top',{titles:TOP.list});toast('Top list saved',{undo:r._batch});TOP.dirty=false;renderTop()}catch(e){toast(e.message,{err:1})}};
+
+/* ======================= CHECKS ======================= */
+TABS.checks={async show(){const c=await api('GET','/api/checks');
+  $('#checksum').innerHTML=['error','warn','info'].map(s=>`<div><b>${c.summary[s]}</b>${{error:'errors',warn:'warnings',info:'notes'}[s]}</div>`).join('');
+  $('#checklist').innerHTML=c.items.length?`<table><thead><tr><th></th><th>Item</th><th>Problem</th><th></th></tr></thead><tbody>${c.items.map(i=>`<tr><td><span class="pill ${i.severity}">${i.severity}</span></td><td>${esc(i.title)}</td><td>${esc(i.detail)}</td><td>${i.game_id?`<a href="#games/${i.game_id}"><button class="sm">Open</button></a>`:''}</td></tr>`).join('')}</tbody></table>`:'<span class="muted">Everything looks consistent. 🎉</span>';
+  const b=$('#chkbadge');b.hidden=!c.summary.error;b.textContent=c.summary.error}};
+
+/* ======================= HISTORY ======================= */
+TABS.history={async show(){const h=await api('GET','/api/audit?limit=60');
+  $('#histtable').innerHTML=`<thead><tr><th>When</th><th>Change</th><th class="num">Rows</th><th></th></tr></thead><tbody>`+h.map(x=>`<tr><td>${esc(x.ts)}</td><td>${esc(x.summary)}${x.n>1?` <span class="muted">+ ${x.n-1} more</span>`:''}</td><td class="num">${x.n}</td><td>${x.undone?'<span class="muted">undone</span>':`<button class="sm" data-undo="${x.batch}">Undo</button>`}</td></tr>`).join('')+'</tbody>'}};
+$('#histtable').addEventListener('click',async e=>{const b=e.target.dataset.undo;if(!b)return;try{await api('POST','/api/undo/'+b);toast('Undone');await afterChange()}catch(x){toast(x.message,{err:1})}});
+$('#backupbtn').onclick=async()=>{const r=await api('POST','/api/backup');toast('Backup saved: '+r.path.split(/[\\/]/).pop())};
+
+/* ======================= REPORTS ======================= */
+TABS.reports={async show(){const r=await api('GET','/api/reports');
+  const st=(n,x)=>`<div><b>${x.exists?esc(x.built.replace('T',' ')):'not built'}</b>${n}${x.kb?` · ${x.kb} KB`:''}</div>`;
+  const stale=r.last_change&&r.dashboard.built&&r.last_change.replace(' ','T')>r.dashboard.built;
+  $('#repstatus').innerHTML=st('Dashboard',r.dashboard)+st('PDF',r.pdf)+(stale?'<div><b style="color:var(--warn)">Out of date</b>changes since last build</div>':'')}};
+$('#rebuildbtn').onclick=async()=>{const b=$('#rebuildbtn');b.disabled=true;b.textContent='Building…';$('#replog').textContent='';
+  try{const r=await api('POST','/api/rebuild');toast(`Reports rebuilt (${r.dashboard.seconds}s + ${r.pdf.seconds}s)`)}catch(e){$('#replog').textContent=JSON.stringify(e.data,null,1);toast('Rebuild failed',{err:1})}
+  b.disabled=false;b.textContent='Rebuild dashboard + PDF';TABS.reports.show()};
+
+/* ---------- theme + start ---------- */
+$('#themebtn').onclick=()=>{const d=document.documentElement;const cur=d.dataset.theme||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');d.dataset.theme=cur==='dark'?'light':'dark';try{localStorage.setItem('theme',d.dataset.theme)}catch{}};
+try{const t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t}catch{}
+(async()=>{await refreshMeta();refreshBadge();await route()})();
+</script>
+</body>
+</html>

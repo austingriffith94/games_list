@@ -1,0 +1,6 @@
+flask>=3.0
+pandas>=2.0
+numpy
+matplotlib>=3.8
+pillow
+openpyxl   # only for migrate.py (one-time import from the workbook)

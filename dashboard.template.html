@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Game List Dashboard</title>
+<style>
+:root{--bg:#f6f4f1;--card:#fff;--text:#222;--muted:#757575;--grid:#e6e2dc;--accent:#c55a11;--accent2:#8e5bd0;--line:#222;--soft:#fbe5d6;--hl:#fff3e8}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#17181a;--card:#222426;--text:#ececec;--muted:#9a9a9a;--grid:#383a3d;--accent:#ee8a45;--accent2:#b18cf0;--line:#ddd;--soft:#3a2a1f;--hl:#2e2823}}
+:root[data-theme=dark]{--bg:#17181a;--card:#222426;--text:#ececec;--muted:#9a9a9a;--grid:#383a3d;--accent:#ee8a45;--accent2:#b18cf0;--line:#ddd;--soft:#3a2a1f;--hl:#2e2823}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{padding:20px 16px 8px;max-width:1200px;margin:0 auto;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+h1{margin:0;font-size:22px;color:var(--accent)}
+header .sub{color:var(--muted);font-size:12px;flex:1}
+button,select,input{font:inherit;color:var(--text);background:var(--card);border:1px solid var(--grid);border-radius:6px;padding:5px 9px}
+button{cursor:pointer}
+nav{max-width:1200px;margin:0 auto;padding:4px 16px;display:flex;gap:6px;flex-wrap:wrap;position:sticky;top:0;background:var(--bg);z-index:5}
+nav button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+main{max-width:1200px;margin:0 auto;padding:8px 16px 40px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:8px 0 14px}
+.kpi{background:var(--card);border:1px solid var(--grid);border-radius:10px;padding:10px 12px}
+.kpi b{display:block;font-size:22px;color:var(--accent)}.kpi span{font-size:12px;color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--grid);border-radius:10px;padding:14px;margin-bottom:14px}
+.card h2{margin:0 0 4px;font-size:15px}.card p.note{margin:0 0 8px;color:var(--muted);font-size:12px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px}
+.tab{display:none}.tab.on{display:block}
+svg{width:100%;height:auto;display:block;overflow:visible}
+svg text{fill:var(--muted);font-size:11px}svg .lbl{fill:var(--text)}
+.gridline{stroke:var(--grid);stroke-width:1}
+table.mx{border-collapse:collapse;font-size:12px;width:100%}
+table.mx th{font-weight:600;padding:3px 5px;text-align:center;background:var(--card);position:sticky;top:0}
+table.mx td{text-align:center;padding:3px 5px;border:1px solid var(--bg);min-width:34px}
+table.mx td.sys,table.mx th.sys{text-align:left;font-weight:600;white-space:nowrap}
+table.mx td.c{cursor:pointer}table.mx td.c:hover{outline:2px solid var(--accent)}
+table.mx td.tot{font-weight:700;background:var(--grid)}
+.top10{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.t10{background:var(--card);border:1px solid var(--grid);border-radius:10px;overflow:hidden}
+.t10 .cv{aspect-ratio:3/4;background:linear-gradient(135deg,var(--soft),var(--grid));display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:34px;font-weight:700}
+.t10 .cv img{width:100%;height:100%;object-fit:cover}
+.t10 .in{padding:8px}.t10 .in b{display:block;font-size:13px}.t10 .in span{font-size:11px;color:var(--muted)}
+table.gt{border-collapse:collapse;width:100%;font-size:12.5px}
+table.gt th{cursor:pointer;text-align:left;padding:6px;border-bottom:2px solid var(--grid);position:sticky;top:34px;background:var(--card);white-space:nowrap}
+table.gt td{padding:5px 6px;border-bottom:1px solid var(--grid)}
+table.gt tr:hover td{background:var(--hl)}
+.tablewrap{max-height:70vh;overflow:auto}
+#tip{position:fixed;pointer-events:none;background:#000d;color:#fff;padding:6px 9px;border-radius:6px;font-size:12px;z-index:50;display:none;max-width:260px}
+.legend{display:flex;gap:12px;font-size:12px;color:var(--muted);margin-bottom:4px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+#panel{position:fixed;right:0;top:0;bottom:0;width:min(380px,100%);background:var(--card);border-left:1px solid var(--grid);box-shadow:-4px 0 16px #0003;transform:translateX(100%);transition:transform .2s;z-index:20;padding:14px;overflow:auto}
+#panel.open{transform:none}#panel h3{margin:0 0 8px;font-size:14px}#panel li{margin:3px 0}
+@media print{nav,#panel,.row button{display:none}.tab{display:block!important}body{background:#fff}}
+</style>
+</head>
+<body>
+<header><h1>Game List</h1><div class="sub" id="sub"></div><button id="theme" title="Toggle light/dark">◐ Theme</button></header>
+<nav id="nav"></nav>
+<main>
+ <section class="tab" id="t-overview">
+  <div class="kpis" id="kpis"></div>
+  <div class="card"><h2>Personal Top 10</h2><p class="note">Cover art shows when a <code>covers/</code> folder sits next to this file (file name = title without colons).</p><div class="top10" id="top10"></div></div>
+  <div class="card"><h2>Systems by category</h2>
+   <div class="row"><label>Columns <select id="mxdim"><option value="genre">Genre</option><option value="view">Camera view</option><option value="style">Graphic style</option><option value="own">Ownership</option><option value="rel">Release type</option></select></label><span class="note" style="margin:0">Click a cell to list the games.</span></div>
+   <div style="overflow:auto"><table class="mx" id="mx"></table></div></div>
+  <div class="card"><h2>Score averages</h2><p class="note">All sources normalized to 0–100.</p><div id="avgs"></div></div>
+ </section>
+
+ <section class="tab" id="t-scores">
+  <div class="grid2">
+   <div class="card"><h2>Score distribution</h2><div class="row"><select id="distsrc"></select></div><div id="dist"></div></div>
+   <div class="card"><h2>Zero Punctuation opinions</h2><div id="zp"></div></div>
+  </div>
+  <div class="card"><h2>Average score by category</h2><div class="row"><select id="catdim"><option value="genre">Genre</option><option value="system">System</option><option value="view">Camera view</option><option value="style">Graphic style</option></select><label>Critics <select id="catsrc"></select></label></div>
+   <div class="legend"><span><i style="background:var(--accent)"></i>My score</span><span><i style="background:var(--accent2);border-radius:50%"></i>Critic average</span></div><div id="cat"></div></div>
+ </section>
+
+ <section class="tab" id="t-years">
+  <div class="card"><h2>Games per year</h2><div class="row"><label>Group by <select id="yrbasis"><option value="fp">First played year</option><option value="lp">Last played year</option><option value="rel">Release year</option></select></label></div>
+   <div class="legend"><span><i style="background:var(--accent)"></i>Games</span><span><i style="background:var(--line)"></i>My score</span><span><i style="background:var(--accent2)"></i>Critic average</span></div><div id="yr"></div></div>
+  <div class="card"><h2>Games added per year</h2><div class="legend" id="addleg"></div><div id="add"></div></div>
+ </section>
+
+ <section class="tab" id="t-time">
+  <div class="card"><h2>Hours per day</h2><div class="row"><label>Window <select id="win"><option value="30">Last 30 days</option><option value="90">Last 90 days</option><option value="365" selected>Last 365 days</option><option value="0">All time</option></select></label></div>
+   <div class="legend"><span><i style="background:var(--accent)"></i>Hours</span><span><i style="background:var(--line)"></i>14-day average</span></div><div id="daily"></div></div>
+  <div class="grid2">
+   <div class="card"><h2>Cumulative hours</h2><div id="cum"></div></div>
+   <div class="card"><h2>Average hours by weekday</h2><div id="wd"></div></div>
+  </div>
+  <div class="card"><h2>Calendar heat map</h2><div class="row"><label>Year <select id="calyr"></select></label></div><div id="cal"></div></div>
+ </section>
+
+ <section class="tab" id="t-hours">
+  <div class="grid2">
+   <div class="card"><h2>Top series by hours</h2><div class="row"><label>Show <select id="nser"><option>10</option><option>20</option><option>30</option></select></label></div><div id="ser"></div></div>
+   <div class="card"><h2>Hours by Zero Punctuation opinion</h2><div id="zph"></div></div>
+  </div>
+  <div class="card"><h2>Score vs hours played</h2><div class="row"><label>Score <select id="scx"></select></label><label>Y axis <select id="scy"><option value="log">Log</option><option value="lin">Linear</option></select></label></div><div id="sc"></div></div>
+ </section>
+
+ <section class="tab" id="t-games">
+  <div class="card"><div class="row"><input id="q" placeholder="Search title or series…" style="flex:1;min-width:180px"><select id="fg"></select><select id="fs"></select><select id="fp"><option value="">All</option><option value="1">Played</option><option value="0">Backlog</option></select><span id="cnt" class="note" style="margin:0"></span></div>
+  <div class="tablewrap"><table class="gt" id="gt"></table></div></div>
+ </section>
+</main>
+<aside id="panel"><button onclick="document.getElementById('panel').classList.remove('open')" style="float:right">✕</button><div id="pbody"></div></aside>
+<div id="tip"></div>
+<script>
+const DATA = /*DATA*/;
+const {G,R,L,SYSTEMS,GENRES,VIEWS,STYLES,OWN,RELT,TOP,SUMMARY,SCORES,ASOF,END} = DATA;
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const NS='http://www.w3.org/2000/svg';
+const fmt=(v,d=0)=>v==null||isNaN(v)?'–':(+v).toLocaleString(undefined,{maximumFractionDigits:d});
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const mean=a=>{a=a.filter(x=>x!=null&&!isNaN(x));return a.length?a.reduce((x,y)=>x+y,0)/a.length:null};
+const gByTitle=new Map(G.map(g=>[g.t,g]));
+
+/* ---------- tiny SVG chart kit ---------- */
+function mk(tag,attrs={},parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e}
+function txt(parent,x,y,s,attrs={}){const t=mk('text',{x,y,...attrs},parent);t.textContent=s;return t}
+function canvas(sel,w,h,m={t:10,r:14,b:30,l:44}){const c=$(sel);c.innerHTML='';const s=mk('svg',{viewBox:`0 0 ${w} ${h}`},c);const g=mk('g',{transform:`translate(${m.l},${m.t})`},s);return {s,g,W:w-m.l-m.r,H:h-m.t-m.b,m}}
+function lin(d0,d1,r0,r1){return v=>d1===d0?r0:r0+(v-d0)*(r1-r0)/(d1-d0)}
+function niceTicks(a,b,n=5){if(a===b){b=a+1}const step0=(b-a)/n,mag=Math.pow(10,Math.floor(Math.log10(step0))),f=step0/mag,step=(f<1.5?1:f<3?2:f<7?5:10)*mag;const out=[];for(let v=Math.ceil(a/step)*step;v<=b+1e-9;v+=step)out.push(+v.toPrecision(12));return out}
+function yAxis(c,y,ticks,f=v=>fmt(v)){ticks.forEach(t=>{mk('line',{class:'gridline',x1:0,x2:c.W,y1:y(t),y2:y(t)},c.g);txt(c.g,-6,y(t)+4,f(t),{'text-anchor':'end'})})}
+const tipEl=$('#tip');
+function tip(el,html){el.addEventListener('mousemove',e=>{tipEl.innerHTML=html;tipEl.style.display='block';tipEl.style.left=Math.min(e.clientX+12,innerWidth-270)+'px';tipEl.style.top=(e.clientY+14)+'px'});el.addEventListener('mouseleave',()=>tipEl.style.display='none')}
+const css=v=>`var(--${v})`;
+
+/* vertical bars with optional line series on right axis. items:[{x,label,v,tip}] */
+function vbars(sel,items,{w=1000,h=300,color=css('accent'),lines=[],lineRange=[40,100],xEvery=1,yFmt}={}){
+  const c=canvas(sel,w,h,{t:10,r:lines.length?36:14,b:36,l:44});
+  const mx=Math.max(1,...items.map(i=>i.v)),ticks=niceTicks(0,mx,5),top=ticks[ticks.length-1]||mx,y=lin(0,top,c.H,0);
+  yAxis(c,y,ticks,yFmt);
+  const bw=c.W/items.length;
+  items.forEach((it,i)=>{const x=i*bw,hh=c.H-y(it.v);const r=mk('rect',{x:x+bw*.12,y:y(it.v),width:Math.max(.5,bw*.76),height:Math.max(0,hh),fill:it.color||color,rx:Math.min(2,bw/6)},c.g);if(it.tip)tip(r,it.tip);if(i%xEvery===0)txt(c.g,x+bw/2,c.H+14,it.label,{'text-anchor':'middle'})});
+  if(lines.length){const y2=lin(lineRange[0],lineRange[1],c.H,0);niceTicks(lineRange[0],lineRange[1],4).forEach(t=>txt(c.g,c.W+6,y2(t)+4,t));
+    lines.forEach(L=>{const pts=L.values.map((v,i)=>v==null?null:[i*bw+bw/2,y2(v)]);let d='';pts.forEach(p=>{if(p)d+=(d&&!d.endsWith('M')?'L':'M')+p[0]+','+p[1]});
+      // break the line across gaps
+      d='';let pen=false;pts.forEach(p=>{if(!p){pen=false;return}d+=(pen?'L':'M')+p[0].toFixed(1)+','+p[1].toFixed(1);pen=true});
+      mk('path',{d,fill:'none',stroke:L.color,'stroke-width':L.dot?1.4:2},c.g);
+      if(L.dot)pts.forEach((p,i)=>{if(p){const k=mk('circle',{cx:p[0],cy:p[1],r:3,fill:L.color},c.g);tip(k,`${items[i].label}: ${L.name} ${fmt(L.values[i],1)}`)}})})}
+  return c}
+
+/* horizontal bars + optional dot per row. rows:[{label,v,dot,tip}] */
+function hbars(sel,rows,{w=1000,rowH=24,xmax=null,xmin=0,color=css('accent'),dotColor=css('accent2'),labelW=190}={}){
+  const h=rows.length*rowH+34,c=canvas(sel,w,h,{t:4,r:20,b:26,l:labelW});
+  const m=xmax||Math.max(1,...rows.map(r=>Math.max(r.v||0,r.dot||0))),x=lin(xmin,m,0,c.W);
+  niceTicks(xmin,m,6).forEach(t=>{mk('line',{class:'gridline',x1:x(t),x2:x(t),y1:0,y2:rows.length*rowH},c.g);txt(c.g,x(t),rows.length*rowH+16,fmt(t),{'text-anchor':'middle'})});
+  rows.forEach((r,i)=>{const y=i*rowH;txt(c.g,-8,y+rowH/2+4,r.label,{'text-anchor':'end',class:'lbl'});
+    if(r.v!=null){const b=mk('rect',{x:0,y:y+4,width:Math.max(0,x(r.v)),height:rowH-8,fill:color,rx:2},c.g);if(r.tip)tip(b,r.tip)}
+    if(r.dot!=null){const d=mk('circle',{cx:x(r.dot),cy:y+rowH/2,r:4.5,fill:dotColor},c.g);tip(d,r.tip||fmt(r.dot,1))}});
+  return c}
+
+/* ---------- derived helpers ---------- */
+const CRIT=['mc','gs','des','gi','pg','ign'];
+G.forEach(g=>{g.crit=mean(CRIT.map(k=>g[k]));g.played=g.fp!=null});
+const yearOf=d=>d?+d.slice(0,4):null;
+function valueFor(g,dim){return dim==='genre'?g.genre:dim==='view'?g.view:dim==='style'?g.style:null}
+
+/* ---------- tabs ---------- */
+const TABS=[['overview','Overview'],['scores','Scores'],['years','Years'],['time','Time played'],['hours','Hours'],['games','All games']];
+const built={};
+function show(id){$('#panel').classList.remove('open');TABS.forEach(([k])=>$('#t-'+k).classList.toggle('on',k===id));$$('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.k===id));location.hash=id;if(!built[id]){built[id]=1;BUILD[id]()}}
+TABS.forEach(([k,n])=>{const b=document.createElement('button');b.textContent=n;b.dataset.k=k;b.onclick=()=>show(k);$('#nav').appendChild(b)});
+
+const BUILD={
+overview(){
+  const K=[['Games',SUMMARY.games],['Games played',SUMMARY.games_played],['Unique games',SUMMARY.unique_games],['Unique played',SUMMARY.unique_played],['Backlog',SUMMARY.backlog],['Total time',SUMMARY.total_time]];
+  $('#kpis').innerHTML=K.map(([k,v])=>`<div class="kpi"><b>${v}</b><span>${k}</span></div>`).join('');
+  $('#top10').innerHTML=TOP.map((t,i)=>{const g=gByTitle.get(t)||{};
+    return `<div class="t10"><div class="cv">${i+1}</div><div class="in"><b>${esc(t)}</b><span>${esc(g.genre||'')} · ${g.rel||''}<br>${fmt(g.hrs)} h · score ${g.ms??'–'}/10</span></div></div>`}).join('');
+  // try covers (jpg then png); only shows if the file exists
+  $$('#top10 .t10').forEach((card,i)=>{const t=TOP[i].replace(/:/g,''),cv=card.querySelector('.cv');const im=new Image();im.onload=()=>{cv.innerHTML='';cv.appendChild(im)};im.onerror=()=>{const p=new Image();p.onload=()=>{cv.innerHTML='';cv.appendChild(p)};p.src='covers/'+encodeURIComponent(t)+'.png'};im.src='covers/'+encodeURIComponent(t)+'.jpg'});
+  const rows=Object.entries(SCORES).map(([k,v])=>({label:k,v:v,tip:`${k}: ${v}`}));
+  hbars('#avgs',rows,{w:700,xmax:100,rowH:26,labelW:110});
+  const sel=$('#mxdim');sel.onchange=drawMatrix;drawMatrix()},
+scores(){
+  const srcs=[['My Score','ms',1],['Metacritic','mc',10],['PC Gamer','pg',10],['GameSpot','gs',1],['IGN','ign',1],['Game Informer','gi',1],['Destructoid','des',1]];
+  $('#distsrc').innerHTML=srcs.map(s=>`<option value="${s[1]}">${s[0]}</option>`).join('');
+  const drawDist=()=>{const k=$('#distsrc').value,vals=G.map(g=>g[k]).filter(v=>v!=null).map(v=>v*10/(srcs.find(s=>s[1]===k)[2]));
+    const bins=Array.from({length:10},(_,i)=>({lo:i*10,n:0}));vals.forEach(v=>bins[Math.min(9,Math.floor(v/10))].n++);
+    vbars('#dist',bins.map(b=>({label:`${b.lo}s`,v:b.n,tip:`${b.lo}–${b.lo+9}: <b>${b.n}</b> games`})),{w:560,h:260});};
+  $('#distsrc').onchange=drawDist;drawDist();
+  const order=['Best','Good','Neutral','Bland','Bad','Worst'],cnt=order.map(o=>({label:o,v:G.filter(g=>g.zp===o).length}));cnt.forEach(c=>c.tip=`${c.label}: ${c.v} games`);
+  vbars('#zp',cnt,{w:560,h:260,color:css('accent2')});
+  $('#catsrc').innerHTML='<option value="crit">Average of critics</option>'+srcs.slice(1).map(s=>`<option value="${s[1]}">${s[0]}</option>`).join('');
+  const drawCat=()=>{const dim=$('#catdim').value,cs=$('#catsrc').value;
+    let keys=dim==='genre'?GENRES:dim==='view'?VIEWS:dim==='style'?STYLES:SYSTEMS;
+    const rowsOf=k=>dim==='system'?R.filter(r=>r.sys===k).map(r=>gByTitle.get(r.t)):G.filter(g=>valueFor(g,dim)===k);
+    const sc=k=>srcs.find(s=>s[1]===k)?.[2]??1;
+    let rows=keys.map(k=>{const gs=rowsOf(k);const me=mean(gs.map(g=>g.ms==null?null:g.ms*10));
+      const cr=cs==='crit'?mean(gs.map(g=>g.crit)):mean(gs.map(g=>g[cs]==null?null:g[cs]*10/sc(cs)));
+      return {label:`${k} (${gs.length})`,v:me,dot:cr,tip:`<b>${esc(k)}</b><br>${gs.length} games<br>My score ${fmt(me,1)} · Critics ${fmt(cr,1)}`}}).filter(r=>r.v!=null||r.dot!=null).sort((a,b)=>(b.v??0)-(a.v??0));
+    hbars('#cat',rows,{w:1000,xmin:40,xmax:100,labelW:200})};
+  $('#catdim').onchange=drawCat;$('#catsrc').onchange=drawCat;drawCat()},
+years(){
+  const draw=()=>{const b=$('#yrbasis').value;const by=new Map();
+    G.forEach(g=>{const y=b==='rel'?g.rel:yearOf(b==='fp'?g.fp:g.lp);if(!y||(b!=='rel'&&!g.played))return;if(!by.has(y))by.set(y,[]);by.get(y).push(g)});
+    const ys=[...by.keys()].sort((a,c)=>a-c),full=[];for(let y=ys[0];y<=ys[ys.length-1];y++)full.push(y);
+    vbars('#yr',full.map(y=>{const n=(by.get(y)||[]).length;return{label:y,v:n,tip:`<b>${y}</b>: ${n} games`}}),{xEvery:2,h:340,
+      lines:[{name:'My score',color:css('line'),dot:1,values:full.map(y=>mean((by.get(y)||[]).map(g=>g.ms==null?null:g.ms*10)))},{name:'Critics',color:css('accent2'),values:full.map(y=>mean((by.get(y)||[]).map(g=>g.crit)))}]})};
+  $('#yrbasis').onchange=draw;draw();
+  const ays=[...new Set(R.map(r=>r.ay).filter(Boolean))].sort(),cols={Paid:css('accent'),Free:css('accent2'),'Friend/Family':'#8c8c8c'};
+  $('#addleg').innerHTML=OWN.map(o=>`<span><i style="background:${cols[o]||'#999'}"></i>${o}</span>`).join('');
+  const full=[];for(let y=ays[0];y<=ays[ays.length-1];y++)full.push(y);
+  const c=canvas('#add',1000,300,{t:10,r:14,b:36,l:44});const tot=full.map(y=>R.filter(r=>r.ay===y).length),top=niceTicks(0,Math.max(...tot),5),mx=top[top.length-1],y=lin(0,mx,c.H,0);yAxis(c,y,top);
+  const bw=c.W/full.length;full.forEach((yr,i)=>{let acc=0;OWN.forEach(o=>{const n=R.filter(r=>r.ay===yr&&r.own===o).length;if(!n)return;const r=mk('rect',{x:i*bw+bw*.12,y:y(acc+n),width:bw*.76,height:y(acc)-y(acc+n),fill:cols[o]||'#999'},c.g);tip(r,`<b>${yr}</b> ${o}: ${n}`);acc+=n});if(i%2===0)txt(c.g,i*bw+bw/2,c.H+14,yr,{'text-anchor':'middle'})})},
+time(){
+  const byDay=new Map();L.forEach(r=>{byDay.set(r[0],(byDay.get(r[0])||0)+r[3])});
+  const lastLog=L.reduce((m,r)=>r[0]>m?r[0]:m,'0'),last=new Date((END>lastLog?END:lastLog)+'T00:00:00Z');
+  const iso=d=>d.toISOString().slice(0,10),addD=(d,n)=>new Date(d.getTime()+n*864e5);
+  const series=n=>{const first=n?addD(last,-(n-1)):new Date(L.reduce((m,r)=>r[0]<m?r[0]:m,'9')+'T00:00:00Z');const out=[];for(let d=first;d<=last;d=addD(d,1))out.push([iso(d),byDay.get(iso(d))||0,d.getUTCDay()]);return out};
+  const draw=()=>{const n=+$('#win').value,s=series(n);
+    const ma=s.map((_,i)=>mean(s.slice(Math.max(0,i-13),i+1).map(x=>x[1])));
+    const every=Math.ceil(s.length/12);
+    const c=vbars('#daily',s.map((d,i)=>({label:d[0].slice(n&&n<=90?5:0,n&&n<=90?10:7),v:d[1],tip:`<b>${d[0]}</b><br>${fmt(d[1],2)} h`})),{h:300,xEvery:every});
+    const bw=c.W/s.length,mx=niceTicks(0,Math.max(1,...s.map(x=>x[1])),5),y=lin(0,mx[mx.length-1],c.H,0);
+    mk('path',{d:ma.map((v,i)=>(i?'L':'M')+(i*bw+bw/2).toFixed(1)+','+y(v).toFixed(1)).join(''),fill:'none',stroke:css('line'),'stroke-width':1.6},c.g);
+    let cum=0;const cs=s.map(d=>(cum+=d[1]));vbarsLine('#cum',cs,s.map(d=>d[0]));
+    const wd=[0,0,0,0,0,0,0],wn=[0,0,0,0,0,0,0];s.forEach(d=>{wd[d[2]]+=d[1];wn[d[2]]++});
+    const names=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];vbars('#wd',[1,2,3,4,5,6,0].map(k=>({label:names[k],v:wd[k]/(wn[k]||1),tip:`${names[k]}: ${fmt(wd[k]/(wn[k]||1),2)} h avg (${fmt(wd[k],1)} h total)`})),{w:560,h:260,color:css('accent2'),yFmt:v=>fmt(v,1)})};
+  function vbarsLine(sel,vals,labels){const c=canvas(sel,560,260,{t:10,r:14,b:30,l:50}),ticks=niceTicks(0,Math.max(...vals),5),y=lin(0,ticks[ticks.length-1],c.H,0),x=lin(0,vals.length-1,0,c.W);yAxis(c,y,ticks);
+    const p=mk('path',{d:vals.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+','+y(v).toFixed(1)).join(''),fill:'none',stroke:css('accent'),'stroke-width':2},c.g);
+    [0,Math.floor(vals.length/2),vals.length-1].forEach(i=>txt(c.g,x(i),c.H+16,labels[i],{'text-anchor':i?i===vals.length-1?'end':'middle':'start'}));
+    const hit=mk('rect',{width:c.W,height:c.H,fill:'transparent'},c.g);hit.addEventListener('mousemove',e=>{const r=hit.getBoundingClientRect(),i=Math.max(0,Math.min(vals.length-1,Math.round((e.clientX-r.left)/r.width*(vals.length-1))));tipEl.innerHTML=`<b>${labels[i]}</b><br>${fmt(vals[i],1)} h cumulative`;tipEl.style.display='block';tipEl.style.left=e.clientX+12+'px';tipEl.style.top=e.clientY+14+'px'});hit.addEventListener('mouseleave',()=>tipEl.style.display='none')}
+  $('#win').onchange=draw;draw();
+  const yrs=[...new Set(L.map(r=>+r[0].slice(0,4)))].sort((a,b)=>b-a);$('#calyr').innerHTML=yrs.map(y=>`<option>${y}</option>`).join('');
+  const cal=()=>{const yr=+$('#calyr').value,start=new Date(Date.UTC(yr,0,1)),end=new Date(Date.UTC(yr,11,31));const off=(start.getUTCDay()+6)%7,weeks=Math.ceil((off+365+(yr%4===0?1:0))/7);
+    const cell=17,c=canvas('#cal',weeks*cell+50,7*cell+30,{t:18,r:6,b:6,l:34});const mxv=Math.max(2,...[...byDay].filter(([d])=>d.startsWith(yr)).map(x=>x[1]));
+    ['Mon','','Wed','','Fri','','Sun'].forEach((n,i)=>txt(c.g,-6,i*cell+12,n,{'text-anchor':'end'}));
+    for(let d=start,i=0;d<=end;d=addD(d,1),i++){const k=Math.floor((off+i)/7),r=(off+i)%7,h=byDay.get(iso(d))||0;
+      const col=h===0?'var(--grid)':`color-mix(in srgb, var(--accent) ${Math.round(25+75*Math.min(1,h/mxv))}%, var(--card))`;
+      const rc=mk('rect',{x:k*cell,y:r*cell,width:cell-2,height:cell-2,rx:3,fill:col},c.g);tip(rc,`<b>${iso(d)}</b><br>${h?fmt(h,2)+' h':'no play'}`);
+      if(d.getUTCDate()===1)txt(c.g,k*cell,-6,d.toLocaleString('en',{month:'short',timeZone:'UTC'}))}};
+  $('#calyr').onchange=cal;cal()},
+hours(){
+  const draw=()=>{const n=+$('#nser').value,m=new Map();G.forEach(g=>{if(g.hrs>0)m.set(g.s,(m.get(g.s)||0)+g.hrs)});
+    const rows=[...m].sort((a,b)=>b[1]-a[1]).slice(0,n).map(([s,h])=>({label:s,v:h,tip:`<b>${esc(s)}</b><br>${fmt(h)} h · ${G.filter(g=>g.s===s&&g.hrs>0).length} games played`}));
+    hbars('#ser',rows,{w:560,rowH:22,labelW:170})};$('#nser').onchange=draw;draw();
+  const order=['Best','Good','Neutral','Bland','Bad','Worst'];vbars('#zph',order.map(o=>({label:o,v:G.filter(g=>g.zp===o).reduce((a,g)=>a+g.hrs,0),tip:`${o}: ${fmt(G.filter(g=>g.zp===o).reduce((a,g)=>a+g.hrs,0))} h`})),{w:560,h:260,color:css('accent2')});
+  const srcs=[['My Score','ms',1],['Metacritic','mc',10],['IGN','ign',1],['GameSpot','gs',1],['Game Informer','gi',1]];$('#scx').innerHTML=srcs.map(s=>`<option value="${s[1]}">${s[0]}</option>`).join('');
+  const sc=()=>{const k=$('#scx').value,f=srcs.find(s=>s[1]===k)[2],log=$('#scy').value==='log';
+    const pts=G.filter(g=>g[k]!=null&&g.hrs>0).map(g=>({g,x:g[k]*10/f,y:g.hrs}));
+    const c=canvas('#sc',1000,420,{t:10,r:14,b:38,l:50}),xs=lin(0,100,0,c.W);
+    const ymax=Math.max(...pts.map(p=>p.y)),ymin=Math.min(...pts.map(p=>p.y));
+    const ys=log?lin(Math.log10(Math.min(.5,ymin)),Math.log10(ymax*1.2),c.H,0):lin(0,ymax*1.05,c.H,0);const Y=v=>ys(log?Math.log10(v):v);
+    (log?[.5,1,10,100,1000].filter(t=>t<=ymax*1.2):niceTicks(0,ymax,6)).forEach(t=>{mk('line',{class:'gridline',x1:0,x2:c.W,y1:Y(t),y2:Y(t)},c.g);txt(c.g,-6,Y(t)+4,fmt(t,t<1?1:0),{'text-anchor':'end'})});
+    niceTicks(0,100,10).forEach(t=>txt(c.g,xs(t),c.H+16,t,{'text-anchor':'middle'}));txt(c.g,c.W/2,c.H+34,'Score (0–100)',{'text-anchor':'middle'});
+    pts.forEach((p,i)=>{const k2=mk('circle',{cx:xs(p.x)+(((i*7919)%100)/100-.5)*8,cy:Y(p.y),r:3.4,fill:css('line'),'fill-opacity':.55},c.g);tip(k2,`<b>${esc(p.g.t)}</b><br>score ${fmt(p.x)} · ${fmt(p.y,1)} h`)});
+    // fit: log-linear (log) or least-squares (linear)
+    const X=pts.map(p=>p.x),Yv=pts.map(p=>log?Math.log(p.y):p.y),mx=mean(X),my=mean(Yv);let sxy=0,sxx=0,syy=0;X.forEach((x,i)=>{sxy+=(x-mx)*(Yv[i]-my);sxx+=(x-mx)**2;syy+=(Yv[i]-my)**2});
+    const b=sxy/sxx,a=my-b*mx,r2=sxy*sxy/(sxx*syy);const f1=x=>log?Math.exp(a+b*x):a+b*x;
+    const xsPts=Array.from({length:51},(_,i)=>10+i*1.8);mk('path',{d:xsPts.map((x,i)=>(i?'L':'M')+xs(x).toFixed(1)+','+Y(Math.max(.01,f1(x))).toFixed(1)).join(''),fill:'none',stroke:css('accent'),'stroke-width':2.5},c.g);
+    txt(c.g,8,14,`${log?'Exponential':'Linear'} fit · R² = ${r2.toFixed(2)} · n = ${pts.length}`,{class:'lbl'})};
+  $('#scx').onchange=sc;$('#scy').onchange=sc;sc()},
+games(){
+  const fg=$('#fg'),fs=$('#fs');fg.innerHTML='<option value="">All genres</option>'+GENRES.map(g=>`<option>${g}</option>`).join('');fs.innerHTML='<option value="">All systems</option>'+SYSTEMS.map(g=>`<option>${g}</option>`).join('');
+  const cols=[['t','Title'],['s','Series'],['genre','Genre'],['view','View'],['rel','Released'],['ms','My'],['mc','Meta'],['hrs','Hours'],['fp','First played'],['lp','Last played'],['sys','Systems']];
+  let sk='t',sd=1;
+  const draw=()=>{const q=$('#q').value.toLowerCase(),gg=fg.value,ss=fs.value,pp=$('#fp').value;
+    let rows=G.filter(g=>(!q||g.t.toLowerCase().includes(q)||(g.s||'').toLowerCase().includes(q))&&(!gg||g.genre===gg)&&(!ss||g.sys.includes(ss))&&(pp===''||(pp==='1')===g.played));
+    rows.sort((a,b)=>{const x=sk==='sys'?a.sys.join():a[sk],y=sk==='sys'?b.sys.join():b[sk];return (x==null)-(y==null)||(x>y?1:x<y?-1:0)*sd});
+    $('#cnt').textContent=rows.length+' games';
+    $('#gt').innerHTML='<thead><tr>'+cols.map(([k,n])=>`<th data-k="${k}">${n}${k===sk?(sd>0?' ▲':' ▼'):''}</th>`).join('')+'</tr></thead><tbody>'+rows.map(g=>`<tr><td>${esc(g.t)}</td><td>${esc(g.s||'')}</td><td>${g.genre||''}</td><td>${g.view||''}</td><td>${g.rel||''}</td><td>${g.ms??''}</td><td>${g.mc??''}</td><td>${g.hrs?fmt(g.hrs,1):''}</td><td>${g.fp||''}</td><td>${g.lp||''}</td><td>${g.sys.join(', ')}</td></tr>`).join('')+'</tbody>';
+    $$('#gt th').forEach(th=>th.onclick=()=>{const k=th.dataset.k;sd=k===sk?-sd:1;sk=k;draw()})};
+  ['#q','#fg','#fs','#fp'].forEach(s=>$(s).addEventListener('input',draw));draw()}
+};
+
+function drawMatrix(){
+  const dim=$('#mxdim').value;const cols=dim==='genre'?GENRES:dim==='view'?VIEWS:dim==='style'?STYLES:dim==='own'?OWN:RELT;
+  const key=r=>dim==='genre'?r.genre:dim==='view'?r.view:dim==='style'?r.style:dim==='own'?r.own:r.rt;
+  const cnt={},tot={};SYSTEMS.forEach(s=>{cnt[s]={};tot[s]=0});const ct={};cols.forEach(c=>ct[c]=0);let all=0,mx=1;
+  R.forEach(r=>{const c=key(r);if(!cnt[r.sys]||c==null)return;cnt[r.sys][c]=(cnt[r.sys][c]||0)+1;tot[r.sys]++;ct[c]++;all++;mx=Math.max(mx,cnt[r.sys][c])});
+  const col=v=>{if(!v)return 'transparent';const t=Math.min(1,v/(mx*.6));return `color-mix(in srgb, #e8584f ${Math.round(18+70*t)}%, var(--card))`};
+  $('#mx').innerHTML='<thead><tr><th class="sys">System</th>'+cols.map(c=>`<th>${c}</th>`).join('')+'<th>Total</th></tr></thead><tbody>'+
+   SYSTEMS.map(s=>`<tr><td class="sys">${s}</td>`+cols.map(c=>{const v=cnt[s][c]||0;return `<td class="c" data-s="${s}" data-c="${c}" style="background:${col(v)}">${v||''}</td>`}).join('')+`<td class="tot">${tot[s]}</td></tr>`).join('')+
+   '<tr><td class="sys tot">Total</td>'+cols.map(c=>`<td class="tot">${ct[c]}</td>`).join('')+`<td class="tot" style="color:var(--accent)">${all}</td></tr></tbody>`;
+  $$('#mx td.c').forEach(td=>td.onclick=()=>{const s=td.dataset.s,c=td.dataset.c;const rows=R.filter(r=>r.sys===s&&key(r)===c).sort((a,b)=>a.t.localeCompare(b.t));
+    $('#pbody').innerHTML=`<h3>${s} · ${c} (${rows.length})</h3><ul>`+rows.map(r=>`<li>${esc(r.t)}${r.hrs?` <span style="color:var(--muted)">· ${fmt(r.hrs,1)} h</span>`:''}</li>`).join('')+'</ul>';$('#panel').classList.add('open')})}
+
+$('#sub').textContent=`${SUMMARY.unique_games} games · data through ${ASOF}`;
+addEventListener('keydown',e=>{if(e.key==='Escape')$('#panel').classList.remove('open')});
+$('#theme').onclick=()=>{const d=document.documentElement,cur=d.dataset.theme||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');d.dataset.theme=cur==='dark'?'light':'dark'};
+show((location.hash||'#overview').slice(1).replace(/[^a-z]/g,'')in built||TABS.some(t=>t[0]===location.hash.slice(1))?location.hash.slice(1):'overview');
+</script>
+</body>
+</html>
