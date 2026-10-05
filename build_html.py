@@ -30,6 +30,6 @@ payload = dict(G=G, R=R, L=L, SYSTEMS=D.SYSTEMS, GENRES=list(t['ref_genre']['nam
                STYLES=list(t['ref_style']['name']), OWN=list(t['ref_ownership']['name']), RELT=list(t['ref_release_type']['name']),
                TOP=top, SUMMARY=dict(S, total_time=f"{int(S['total_hours']//24)}d {S['total_hours']%24:.1f}h"),
                SCORES=S['scores'], ASOF=log['date'].max().strftime('%b %d, %Y'), END=datetime.date.today().isoformat())
-html = open('dashboard.template.html').read().replace('/*DATA*/', json.dumps(payload, separators=(',', ':'), allow_nan=False).replace('</', '<\\/'))
-open(OUT, 'w').write(html)
+html = open('dashboard.template.html', encoding='utf-8').read().replace('/*DATA*/', json.dumps(payload, separators=(',', ':'), allow_nan=False).replace('</', '<\\/'))
+open(OUT, 'w', encoding='utf-8').write(html)
 print('wrote', OUT, f'{len(html)/1024:.0f} KB')

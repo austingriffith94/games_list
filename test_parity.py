@@ -5,12 +5,15 @@ t = D.load()
 g, r, log, scale = D.build(t)
 s = D.summary(g, r, log, scale)
 
-# Summary sheet (cached values in the workbook)
+# Summary sheet (cached values in the workbook, except GameSpot/IGN: those two
+# were pulled off their 0-10 scale in the workbook itself - WRC 8's IGN=84 and
+# Overwatch 2's GameSpot=80 - fixed to 8.4/8 in gamelist.db, so the averages
+# below are recomputed from corrected data, not copied from the stale cache)
 assert s['games'] == 783 and s['games_played'] == 445 and s['unique_games'] == 656
 assert s['unique_played'] == 405 and s['backlog'] == 251
 assert abs(s['total_hours'] - 9747.5) < 1e-9
-for k, v in {'My Score': 67, 'Metacritic': 80, 'GameSpot': 80, 'Destructoid': 81, 'Game Informer': 83,
-             'PC Gamer': 81, 'IGN': 84}.items():
+for k, v in {'My Score': 67, 'Metacritic': 80, 'GameSpot': 79, 'Destructoid': 81, 'Game Informer': 83,
+             'PC Gamer': 81, 'IGN': 83}.items():
     assert round(s['scores'][k]) == v, (k, s['scores'][k])
 
 # Genre x System matrix totals printed on PDF page 2

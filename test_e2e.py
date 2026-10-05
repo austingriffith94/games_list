@@ -1,5 +1,5 @@
 """End-to-end UI test: runs the real server on a scratch copy of the data and drives it with a headless browser."""
-import os, sys, shutil, subprocess, tempfile, time, json, urllib.request, urllib.error
+import os, sys, shutil, sqlite3, subprocess, tempfile, time, json, urllib.request, urllib.error
 from urllib.parse import quote
 from playwright.sync_api import sync_playwright
 SC = os.path.join(tempfile.gettempdir(), 'games_list_e2e') + os.sep   # screenshots go here, not the repo
@@ -7,9 +7,18 @@ os.makedirs(SC, exist_ok=True)
 S = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'covers') + os.sep   # real cover art as upload fixtures
 tmp = tempfile.mkdtemp(); db = os.path.join(tmp, 't.db'); cov = os.path.join(tmp, 'covers'); out = os.path.join(tmp, 'out')
 os.makedirs(cov); os.makedirs(out); shutil.copy('gamelist.db', db)
+_seed = sqlite3.connect(db)   # re-seed the two out-of-range scores the Checks flow below fixes through the UI,
+try:                           # since the real production data got fixed for real; `with` only commits, doesn't close
+    _seed.execute("UPDATE games SET ign=84 WHERE title='WRC 8'")
+    _seed.execute("UPDATE games SET gamespot=80 WHERE title='Overwatch 2'")
+    _seed.commit()
+finally:
+    _seed.close()
 env = dict(os.environ, GAMELIST_DB=db, GAMELIST_COVERS=cov, GAMELIST_OUT=out, GAMELIST_BACKUPS=os.path.join(tmp, 'bk'))
 PORT = 8799; URL = f'http://127.0.0.1:{PORT}'
-srv = subprocess.Popen([sys.executable, 'app.py', '--db', db, '--covers', cov, '--port', str(PORT), '--no-browser'], env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+srvlog = open(os.path.join(tmp, 'server.log'), 'w')   # a pipe here deadlocks the whole server once Werkzeug's
+# per-request logging fills Windows' small (4KB) anonymous-pipe buffer and nobody drains it; a file never blocks
+srv = subprocess.Popen([sys.executable, 'app.py', '--db', db, '--covers', cov, '--port', str(PORT), '--no-browser'], env=env, stdout=srvlog, stderr=subprocess.STDOUT)
 for _ in range(50):
     try: urllib.request.urlopen(URL + '/api/meta'); break
     except Exception: time.sleep(.2)
@@ -117,7 +126,10 @@ try:
   print(f'ALL {n} UI CHECKS PASSED')
 finally:
     srv.terminate()
-    try: print('\n'.join(l for l in srv.communicate(timeout=5)[0].splitlines() if 'Traceback' in l or 'Error' in l)[:1500])
+    try: srv.wait(timeout=5)
+    except Exception: pass
+    srvlog.close()
+    try: print('\n'.join(l for l in open(srvlog.name).read().splitlines() if 'Traceback' in l or 'Error' in l)[:1500])
     except Exception: pass
     shutil.copytree(out, SC + 'rebuilt', dirs_exist_ok=True) if os.path.exists(out) else None
     shutil.rmtree(tmp, ignore_errors=True)

@@ -6,6 +6,13 @@ tmp = tempfile.mkdtemp()
 A.DB = os.path.join(tmp, 't.db'); A.COVERS = os.path.join(tmp, 'covers'); A.BACKUPS = os.path.join(tmp, 'bk')
 A.REPORT_HTML = os.path.join(tmp, 'd.html'); A.REPORT_PDF = os.path.join(tmp, 'r.pdf'); os.makedirs(A.COVERS)
 shutil.copy('gamelist.db', A.DB)
+_seed = sqlite3.connect(A.DB)   # re-seed the two out-of-range scores the checks test below expects to find,
+try:                             # since the real production data got fixed for real; must close explicitly (see counts() above)
+    _seed.execute("UPDATE games SET ign=84 WHERE title='WRC 8'")
+    _seed.execute("UPDATE games SET gamespot=80 WHERE title='Overwatch 2'")
+    _seed.commit()
+finally:
+    _seed.close()
 c = A.app.test_client(); H = {'X-Requested-With': 'gamelist'}
 def get(u): return c.get(u, headers=H)
 def post(u, j=None, **kw): return c.post(u, json=j, headers=H, **kw)
