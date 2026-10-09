@@ -26,3 +26,6 @@ old_excel/
 
 # Editor settings
 .vscode/
+
+# Per-machine settings (copy config.example.json)
+config.json

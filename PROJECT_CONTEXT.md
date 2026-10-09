@@ -30,6 +30,15 @@ SQLite database + Python + generated reports + a local entry app.
   - Date Check (non-Demo): first played >= version release; version <= added; added <= first played.
   - Log rows must match a release; no duplicate date/game/system.
 - Score ranges: my_score 1-10; metacritic and pc_gamer 0-100; gamespot, ign, destructoid, game_informer 0-10.
+- Field provenance:
+  - `metacritic`, `pc_gamer`, `gamespot`, `ign`, `destructoid`, `game_informer` — pulled from each
+    outlet's own site and from Metacritic's aggregation, not self-scored.
+  - `zero_punctuation` (`ref_zp`: Best/Good/Neutral/Bland/Bad/Worst) — Yahtzee's *vibe*, drawn from
+    the review itself and his end-of-year list placement, not a numeric score translated into a
+    bucket. 209 of 656 games have one; the other 447 were never covered by Zero Punctuation.
+  - `average_playthrough` — reference "how long to beat" for the game, not a mean of my own logged
+    sessions (561 of 656 games have one; it's populated even where `playthroughs = 0` — see
+    `Normalized Playthroughs` in `REPORT_LOGIC.md` §3.1, which depends on this distinction).
 - Cover images: filename = game title with `<>:"/\|?*` removed, `.jpg` or `.png`, 2:3 portrait. The covers live in `D:\Pictures\Game List Covers` on my PC.
 - Safety: Undo on every save, History tab, daily backup (30 kept), CSV/zip export.
 

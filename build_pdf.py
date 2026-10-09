@@ -24,7 +24,7 @@ S = D.summary(g, r, log, scale)
 genres = list(t['ref_genre']['name']); views = list(t['ref_view']['name'])
 CRIT = ['metacritic_100', 'gamespot_100', 'destructoid_100', 'game_informer_100', 'pc_gamer_100', 'ign_100']
 g['critic_100'] = g[CRIT].mean(axis=1)
-r = r.merge(g[['title', 'my_score_100', 'critic_100']], on='title', how='left')
+r = r.merge(g[['title', 'my_score_100', 'critic_100', 'metacritic_100', 'game_informer_100', 'ign_100']], on='title', how='left')
 today = log['date'].max()
 
 
@@ -40,6 +40,7 @@ _cache = {}
 def load_cover(path, w, h):
     """Centre-crop to w:h (never stretch) and downscale to w x h pixels - keeps the PDF small."""
     key = (path, w, h)
+    if key not in _cache and len(_cache) > 2000: _cache.clear()
     if key not in _cache:
         im = Image.open(path).convert('RGB'); want, have = w / h, im.width / im.height
         if have > want: nw = int(im.height * want); x = (im.width - nw) // 2; im = im.crop((x, 0, x + nw, im.height))
@@ -133,17 +134,23 @@ with PdfPages(OUT) as pdf:
 
     # ---------------- Page 4: score distributions
     fig = plt.figure(figsize=(11, 8.5)); n += 1
-    header(fig, 'Score distributions', 'Games per score bucket · critic sources shown on a 0–100 scale')
-    srcs = [('My Score', 'my_score', 1, 1), ('Metacritic', 'metacritic', 10, 5), ('PC Gamer', 'pc_gamer', 10, 5),
-            ('GameSpot', 'gamespot', 1, 0.5), ('IGN', 'ign', 1, 0.5), ('Game Informer', 'game_informer', 1, 0.5),
-            ('Destructoid', 'destructoid', 1, 0.5)]
-    for i, (name, col, sc_, step) in enumerate(srcs):
+    header(fig, 'Score distributions', '% of games per score, 1–10 scale shared across outlets for direct comparison')
+    srcs = [('My Score', 'my_score_100'), ('Metacritic', 'metacritic_100'), ('PC Gamer', 'pc_gamer_100'),
+            ('GameSpot', 'gamespot_100'), ('IGN', 'ign_100'), ('Game Informer', 'game_informer_100'),
+            ('Destructoid', 'destructoid_100')]
+    dists = []
+    for name, col in srcs:
+        v10 = (g[col] / 10).dropna()
+        cnt = v10.round().clip(1, 10).astype(int).value_counts().reindex(range(1, 11), fill_value=0)
+        dists.append((name, v10, cnt))
+    ymax = max((cnt / len(v10) * 100).max() for _, v10, cnt in dists if len(v10))
+    for i, (name, v10, cnt) in enumerate(dists):
         ax = fig.add_subplot(3, 3, i + 1)
-        v = (g[col] * 10 / sc_).dropna()
-        if name == 'My Score': bins = np.arange(5, 105, 10); lab = 'My Score'
-        else: bins = np.arange(0, 105, 10)
-        ax.hist(v, bins=np.arange(0, 110, 10), color=ORANGE, edgecolor='white', rwidth=.9)
-        ax.set_title(f'{name}  (n={len(v)}, avg {v.mean():.0f})', loc='left'); ax.set_xlim(0, 100)
+        pct = cnt / len(v10) * 100
+        ax.bar(cnt.index, pct.values, color=ORANGE, edgecolor='white', width=.8)
+        ax.set_ylim(0, ymax * 1.08); ax.set_xlim(0.5, 10.5); ax.set_xticks(range(1, 11))
+        if i % 3 == 0: ax.set_ylabel('% of games')
+        ax.set_title(f'{name}  (n={len(v10)}, avg {v10.mean():.1f})', loc='left')
     ax = fig.add_subplot(3, 3, 8)
     zp = g['zero_punctuation'].value_counts().reindex(['Best', 'Good', 'Neutral', 'Bland', 'Bad', 'Worst']).fillna(0)
     ax.bar(zp.index, zp.values, color=[PURPLE] * 6, edgecolor='white'); ax.set_title('Zero Punctuation opinions', loc='left')
@@ -152,39 +159,90 @@ with PdfPages(OUT) as pdf:
 
     # ---------------- Page 5: scores by genre / system / view
     fig = plt.figure(figsize=(11, 8.5)); n += 1
-    header(fig, 'Scores by category', 'My score vs. average of critic outlets (0–100), ordered by my score')
+    header(fig, 'Scores by category', 'My score vs. Metacritic / Game Informer / IGN (0–100); pale bar = games played, ordered by my score')
+    OUTLETS = [('Metacritic', 'metacritic_100', PURPLE), ('Game Informer', 'game_informer_100', '#4F9DE8'), ('IGN', 'ign_100', '#5BBF6A')]
     for i, (title, col, order) in enumerate([('Genre', 'genre', genres), ('System', 'system', D.SYSTEMS), ('Camera view', 'camera_view', views)]):
         ax = fig.add_subplot(1, 3, i + 1)
         src = r if col == 'system' else g
-        grp = src.groupby(col).agg(me=('my_score_100' if col == 'system' else 'my_score_100', 'mean'),
-                                   cr=('critic_100', 'mean'), n=('title', 'count')).reindex(order).dropna(subset=['me', 'cr'], how='all')
-        grp = grp.sort_values('me')
+        agg = dict(me=('my_score_100', 'mean'), n=('title', 'count'), **{o: (c, 'mean') for o, c, _ in OUTLETS})
+        grp = src.groupby(col).agg(**agg).reindex(order)
+        grp = grp.dropna(subset=['me'] + [o for o, _, _ in OUTLETS], how='all').sort_values('me')
         y = np.arange(len(grp))
-        ax.barh(y, grp['me'], color=ORANGE, height=.6, label='My score'); ax.scatter(grp['cr'], y, color=PURPLE, zorder=3, s=14, label='Critics')
+        axn = ax.twiny()
+        axn.barh(y, grp['n'], color='#ECECEC', height=.8, zorder=1); axn.set_xlim(0, max(1, grp['n'].max()) * 1.15)
+        axn.tick_params(axis='x', labelsize=6, colors=GREY); axn.set_xlabel('Games played', fontsize=6.5, color=GREY)
+        ax.patch.set_visible(False); ax.set_zorder(axn.get_zorder() + 1)
+        ax.barh(y, grp['me'], color=ORANGE, height=.3, zorder=3, label='My score')
+        for oname, _, color in OUTLETS: ax.scatter(grp[oname], y, color=color, zorder=4, s=13, label=oname)
         ax.set_yticks(y); ax.set_yticklabels([f'{k} ({int(v)})' for k, v in zip(grp.index, grp['n'])], fontsize=7)
         ax.set_xlim(40, 100); ax.set_title(title, loc='left')
-        if i == 0: ax.legend(frameon=False, fontsize=7, loc='lower right')
+        if i == 0: ax.legend(frameon=False, fontsize=6, loc='lower right', ncol=2)
     fig.tight_layout(rect=[0.02, 0.05, 0.98, 0.91]); footer(fig, n); pdf.savefig(fig); plt.close(fig)
 
-    # ---------------- Page 6: years
+    # ---------------- Page 5b: my score vs. each critic, with regression
     fig = plt.figure(figsize=(11, 8.5)); n += 1
-    header(fig, 'Games by year', 'First-played year, release year, and games added by ownership')
-    for i, (title, col) in enumerate([('First played', 'first_year'), ('Released', 'release_year')]):
-        ax = fig.add_subplot(3, 1, i + 1)
-        d = g.dropna(subset=[col] if col == 'release_year' else [col]); d = d[d['played']] if col == 'first_year' else d
+    header(fig, 'My score vs. each critic', 'Linear fit and R² per outlet')
+    CRIT_SRC = [('Game Informer', 'game_informer_100'), ('GameSpot', 'gamespot_100'), ('IGN', 'ign_100'),
+                ('Metacritic', 'metacritic_100'), ('PC Gamer', 'pc_gamer_100'), ('Destructoid', 'destructoid_100')]
+    for i, (name, col) in enumerate(CRIT_SRC):
+        ax = fig.add_subplot(2, 3, i + 1)
+        d = g[['my_score_100', col]].dropna()
+        a, b, r2, xs, ys = D.regression(d['my_score_100'], d[col])
+        ax.scatter(xs + np.random.default_rng(i).uniform(-1.2, 1.2, len(xs)), ys, s=10, color=DARK, alpha=.5)
+        xx = np.linspace(10, 100, 50); ax.plot(xx, a + b * xx, color=ORANGE, lw=2)
+        ax.set_xlim(0, 100); ax.set_ylim(0, 100)
+        ax.set_title(f'{name}  ·  R² = {r2:.2f}  (n={len(d)})', loc='left')
+        if i % 3 == 0: ax.set_ylabel('Critic score')
+        if i >= 3: ax.set_xlabel('My score')
+    fig.tight_layout(rect=[0.02, 0.05, 0.98, 0.91]); footer(fig, n); pdf.savefig(fig); plt.close(fig)
+
+    # ---------------- Page 5c: average year per score
+    fig = plt.figure(figsize=(11, 8.5)); n += 1
+    header(fig, 'Average year per score', 'Mean release / added / first played / last played year, by my score (plus Top 20)')
+    top20 = set(t['top_rank'].loc[t['top_rank']['rank'] <= 20, 'title'])
+    cats = [str(i) for i in range(1, 11)] + ['Top 20']
+    ax = fig.add_axes([0.08, 0.14, 0.86, 0.68])
+    for name, col, color in [('Release year', 'release_year', ORANGE), ('Added year', 'added_year', PURPLE),
+                              ('First played', 'first_year', DARK), ('Last played', 'last_year', '#4F9DE8')]:
+        ys = [g.loc[g['my_score'] == i, col].mean() for i in range(1, 11)]
+        ys.append(g.loc[g['title'].isin(top20), col].mean())
+        ax.plot(np.arange(len(cats)), ys, marker='o', ms=4, lw=1.6, color=color, label=name)
+    ax.set_xticks(np.arange(len(cats))); ax.set_xticklabels(cats); ax.set_xlabel('My score')
+    ax.set_ylabel('Year'); ax.legend(frameon=False, fontsize=8, ncol=2, loc='upper left')
+    footer(fig, n); pdf.savefig(fig); plt.close(fig)
+
+    # ---------------- Page 6: games by year, four bases
+    fig = plt.figure(figsize=(11, 8.5)); n += 1
+    header(fig, 'Games by year', 'Count of games per year (bars) and average score (lines), four year bases')
+    bases = [('First played', 'first_year', True), ('Released', 'release_year', False),
+             ('Last played', 'last_year', True), ('Added', 'added_year', False)]
+    for i, (title, col, need_played) in enumerate(bases):
+        ax = fig.add_subplot(2, 2, i + 1)
+        d = g.dropna(subset=[col]); d = d[d['played']] if need_played else d
         cnt = d.groupby(col).size(); ax.bar(cnt.index, cnt.values, color=ORANGE, width=.7)
         ax.set_ylabel('Games'); ax2 = ax.twinx(); ax2.spines['right'].set_visible(True)
         sc_ = d.groupby(col).agg(me=('my_score_100', 'mean'), cr=('critic_100', 'mean'))
         ax2.plot(sc_.index, sc_['me'], color=DARK, marker='o', ms=3, lw=1, label='My score'); ax2.plot(sc_.index, sc_['cr'], color=PURPLE, lw=1.2, label='Critics')
-        ax2.set_ylim(40, 100); ax.set_title(f'Games by {title.lower()} year (bars) and average score (lines)', loc='left')
+        ax2.set_ylim(40, 100); ax.set_title(f'By {title.lower()} year', loc='left')
         if i == 0: ax2.legend(frameon=False, fontsize=7, loc='upper left')
-    ax = fig.add_subplot(3, 1, 3)
-    add = r.groupby(['added_year', 'ownership']).size().unstack(fill_value=0)
-    bottom = np.zeros(len(add))
-    for c, colr in zip(['Paid', 'Free', 'Friend/Family'], [ORANGE, PURPLE, GREY]):
-        if c in add: ax.bar(add.index, add[c], bottom=bottom, color=colr, label=c, width=.7); bottom += add[c].values
-    ax.legend(frameon=False, fontsize=7, ncol=3, loc='upper left'); ax.set_title('Games added per year by ownership', loc='left')
     fig.tight_layout(rect=[0.02, 0.05, 0.98, 0.91]); footer(fig, n); pdf.savefig(fig); plt.close(fig)
+
+    # ---------------- Page 6b: games added per year, by ownership x platform class
+    fig = plt.figure(figsize=(11, 8.5)); n += 1
+    header(fig, 'Games added per year', 'Stacked by ownership × platform class')
+    ax = fig.add_axes([0.06, 0.14, 0.88, 0.68])
+    combo = r.copy(); combo['combo'] = combo['ownership'] + ' · ' + combo['system_type']
+    order_combo = [f'{o} · {s}' for o in ['Paid', 'Free', 'Friend/Family'] for s in ['PC', 'Console', 'Handheld']]
+    palette = {'Paid · PC': '#C55A11', 'Paid · Console': '#E8914A', 'Paid · Handheld': '#F4B183',
+               'Free · PC': '#8E5BD0', 'Free · Console': '#B18CF0', 'Free · Handheld': '#D4C2F5',
+               'Friend/Family · PC': '#4C4C4C', 'Friend/Family · Console': '#8C8C8C', 'Friend/Family · Handheld': '#C4C4C4'}
+    add = combo.groupby(['added_year', 'combo']).size().unstack(fill_value=0)
+    add = add.reindex(columns=[c for c in order_combo if c in add.columns])
+    bottom = np.zeros(len(add))
+    for c in add.columns:
+        ax.bar(add.index, add[c], bottom=bottom, color=palette.get(c, '#999'), label=c, width=.7); bottom += add[c].values
+    ax.legend(frameon=False, fontsize=6.5, ncol=4, loc='upper left'); ax.set_ylabel('Games added')
+    footer(fig, n); pdf.savefig(fig); plt.close(fig)
 
     # ---------------- Page 7: time played (last 365 days)
     fig = plt.figure(figsize=(11, 8.5)); n += 1
@@ -193,17 +251,28 @@ with PdfPages(OUT) as pdf:
     ax = fig.add_axes([0.06, 0.66, 0.90, 0.22])
     real = log[log['real'] == 1].groupby('date')['hours'].sum().reindex(s365.index, fill_value=0)
     ax.bar(s365.index, s365.values, color=ORANGE, width=1, label='All logged'); (ax.bar(real.index, real.values, color=PURPLE, width=1, label='Flagged Real') if real.sum() > 0 else None)
-    ax.plot(s365.index, s365.rolling(14, min_periods=1).mean(), color=DARK, lw=1.2, label='14-day average')
-    ax.legend(frameon=False, fontsize=7, ncol=3); ax.set_title('Hours per day', loc='left'); ax.set_ylabel('Hours')
+    ax.plot(s365.index, s365.rolling(7, min_periods=1).mean(), color=DARK, lw=1.2, label='7-day average')
+    ax.plot(s365.index, s365.rolling(28, min_periods=1).mean(), color='#4F9DE8', lw=1.4, label='28-day average')
+    ax.legend(frameon=False, fontsize=7, ncol=4); ax.set_title('Hours per day', loc='left'); ax.set_ylabel('Hours')
     ax = fig.add_axes([0.06, 0.38, 0.90, 0.21])
-    ax.plot(s365.index, s365.cumsum(), color=DARK); ax.set_title('Cumulative hours', loc='left'); ax.set_ylabel('Hours')
-    # weekday box + calendar
+    ax.plot(s365.index, s365.cumsum(), color=DARK); ax.set_title('Cumulative hours and games played', loc='left'); ax.set_ylabel('Hours')
+    fp_all = np.sort(log.groupby('game')['date'].min().dropna().values)
+    cum_games = np.searchsorted(fp_all, s365.index.values, side='right')
+    ax2 = ax.twinx(); ax2.spines['right'].set_visible(True)
+    ax2.plot(s365.index, cum_games, color=PURPLE, lw=1.2); ax2.set_ylabel('Games (cumulative)', color=PURPLE); ax2.tick_params(axis='y', colors=PURPLE)
+    # weekday box + range + calendar
     wd = s365.groupby(s365.index.weekday)
-    ax = fig.add_axes([0.06, 0.07, 0.30, 0.22])
+    ax = fig.add_axes([0.06, 0.07, 0.19, 0.22])
     ax.boxplot([v.values for _, v in wd], tick_labels=['M', 'T', 'W', 'T', 'F', 'S', 'S'], showfliers=False, patch_artist=True,
                boxprops=dict(facecolor='#F4B183', color=ORANGE), medianprops=dict(color=DARK))
     ax.plot(range(1, 8), [v.mean() for _, v in wd], 'o', color=PURPLE, ms=4); ax.set_title('Hours by weekday (dot = mean)', loc='left')
-    ax = fig.add_axes([0.42, 0.07, 0.54, 0.22])
+    ax = fig.add_axes([0.29, 0.07, 0.19, 0.22])
+    wmeans = np.array([v.mean() for _, v in wd]); wstds = np.array([v.std() for _, v in wd])
+    xs_wd = range(1, 8)
+    ax.plot(xs_wd, wmeans, color=PURPLE, marker='o', ms=4)
+    ax.fill_between(xs_wd, np.maximum(0, wmeans - wstds), wmeans + wstds, color=PURPLE, alpha=.22)
+    ax.set_xticks(xs_wd); ax.set_xticklabels(['M', 'T', 'W', 'T', 'F', 'S', 'S']); ax.set_title('Weekday range (±1 SD)', loc='left')
+    ax = fig.add_axes([0.52, 0.07, 0.44, 0.22])
     first_monday = start - pd.Timedelta(days=start.weekday())
     grid = np.full((7, ((s365.index[-1] - first_monday).days // 7) + 1), np.nan)
     for d_, v in s365.items(): grid[d_.weekday(), (d_ - first_monday).days // 7] = v
@@ -215,13 +284,26 @@ with PdfPages(OUT) as pdf:
     for s_ in ax.spines.values(): s_.set_visible(False)
     footer(fig, n); pdf.savefig(fig); plt.close(fig)
 
-    # ---------------- Page 8: series & score vs hours
+    # ---------------- Page 7b: frequency of hours played
     fig = plt.figure(figsize=(11, 8.5)); n += 1
-    header(fig, 'Hours played', 'Top series and how hours relate to score')
-    ax = fig.add_subplot(2, 2, 1)
-    ts = g[g['hours'] > 0].groupby('series')['hours'].sum().sort_values().tail(10)
-    ax.barh(ts.index, ts.values, color=ORANGE); ax.set_title('Top 10 series by hours', loc='left'); plt.setp(ax.get_yticklabels(), fontsize=7)
-    ax = fig.add_subplot(2, 2, 2)
+    full_idx = pd.date_range(log['date'].min(), log['date'].max())
+    daily_all = log.groupby('date')['hours'].sum().reindex(full_idx, fill_value=0.0)
+    played_days = daily_all[daily_all > 0]
+    xs_h = list(range(1, 11))
+    pct_all = [float((daily_all <= x).mean() * 100) for x in xs_h]
+    pct_played = [float((played_days <= x).mean() * 100) for x in xs_h]
+    header(fig, 'Frequency of hours played', 'Cumulative % of days at or under X hours played')
+    ax = fig.add_axes([0.08, 0.14, 0.86, 0.68])
+    ax.plot(xs_h, pct_all, marker='o', color=ORANGE, label='% of all days')
+    ax.plot(xs_h, pct_played, marker='o', color=PURPLE, label='% of days played')
+    ax.set_xticks(xs_h); ax.set_xlabel('Up to X hours per day'); ax.set_ylabel('% of days'); ax.set_ylim(0, 100)
+    ax.legend(frameon=False, fontsize=8)
+    footer(fig, n); pdf.savefig(fig); plt.close(fig)
+
+    # ---------------- Page 8: hours by ZP opinion & score vs hours
+    fig = plt.figure(figsize=(11, 8.5)); n += 1
+    header(fig, 'Hours played', 'Hours by Zero Punctuation opinion, and how hours relate to score')
+    ax = fig.add_subplot(2, 1, 1)
     zh = g.groupby('zero_punctuation').agg(hours=('hours', 'sum')).reindex(['Best', 'Good', 'Neutral', 'Bland', 'Bad', 'Worst']).fillna(0)
     ax.bar(zh.index, zh['hours'], color=PURPLE); ax.set_title('Hours by Zero Punctuation opinion', loc='left'); ax.set_ylabel('Hours')
     ax = fig.add_subplot(2, 1, 2)
@@ -232,15 +314,90 @@ with PdfPages(OUT) as pdf:
     ax.set_yscale('log'); ax.set_xlabel('My score'); ax.set_ylabel('Hours (log)'); ax.set_title(f'My score vs. hours played · exponential fit R² = {r2:.2f}', loc='left')
     fig.tight_layout(rect=[0.02, 0.05, 0.98, 0.91]); footer(fig, n); pdf.savefig(fig); plt.close(fig)
 
-    # ---------------- Collage pages (only if covers present): landscape, 20 x 9 per page like the workbook
+    # ---------------- Page 8b: top series detail
+    fig = plt.figure(figsize=(11, 8.5)); n += 1
+    header(fig, 'Top series', 'Hours, games owned and played per series; how concentrated hours are in the top 10')
+    hours_by_series = g.groupby('series')['hours'].sum()
+    owned_by_series = g.groupby('series')['title'].count()
+    played_by_series = g.groupby('series')['played'].sum()
+    top_s = hours_by_series.sort_values().tail(10)
+    ax = fig.add_axes([0.14, 0.12, 0.50, 0.72])
+    y = np.arange(len(top_s))
+    ax.barh(y, top_s.values, color=ORANGE, height=.6)
+    ax.set_yticks(y); ax.set_yticklabels(top_s.index, fontsize=8); ax.set_xlabel('Hours')
+    axn = ax.twiny()
+    axn.plot(owned_by_series.reindex(top_s.index), y, 'o-', color=PURPLE, ms=5, lw=1, label='Games owned')
+    axn.plot(played_by_series.reindex(top_s.index), y, 'o-', color=DARK, ms=5, lw=1, label='Games played')
+    axn.set_xlabel('Games', fontsize=8); axn.legend(frameon=False, fontsize=7, loc='lower right')
+    top10_set = set(top_s.index)
+    g_top, g_all = len(g[g['series'].isin(top10_set)]), len(g)
+    h_top, h_all = float(top_s.sum()), float(g['hours'].sum())
+    for i, (lbl, a_, b_, fmt_) in enumerate([('Games', g_top, g_all - g_top, '{:.0f}'), ('Hours', h_top, h_all - h_top, '{:,.0f}')]):
+        ax2 = fig.add_axes([0.68 + i * 0.16, 0.5, 0.14, 0.3])
+        ax2.pie([a_, b_], colors=[ORANGE, GREY], startangle=90, counterclock=False, wedgeprops=dict(width=.45, edgecolor='white'))
+        ax2.text(0, 0, f'{fmt_.format(a_)}\n{fmt_.format(b_)}', ha='center', va='center', fontsize=8, fontweight='bold')
+        ax2.set_title(lbl, fontsize=9)
+    fig.text(0.68, 0.42, f'Top 10 series = {g_top} of {g_all} games ({g_top / g_all * 100:.0f}%)\n'
+                          f'but {h_top:,.0f} of {h_all:,.0f} hours ({h_top / h_all * 100:.0f}%)', fontsize=9, color=DARK)
+    fig.text(0.68, 0.15, 'Orange = top 10 series   ·   Grey = everything else', fontsize=7, color=GREY)
+    footer(fig, n); pdf.savefig(fig); plt.close(fig)
+
+    # ---------------- Page 8c: Zero Punctuation vs. my score
+    fig = plt.figure(figsize=(11, 8.5)); n += 1
+    header(fig, 'Zero Punctuation vs. my score', 'My score band, grouped by ZP opinion — do I agree with the reviewer?')
+    zp_order = ['Worst', 'Bad', 'Bland', 'Neutral', 'Good', 'Best']
+    bands = [(1, 2), (3, 4), (5, 6), (7, 8), (9, 10)]
+    zp_cmap = LinearSegmentedColormap.from_list('rg', ['#C0392B', '#F4B183', '#FFE699', '#A9D18E', '#538135'])
+    ax = fig.add_axes([0.1, 0.14, 0.8, 0.66])
+    bottom = np.zeros(len(zp_order))
+    for i, (lo, hi) in enumerate(bands):
+        vals = []
+        for zp in zp_order:
+            sub = g.loc[g['zero_punctuation'] == zp, 'my_score'].dropna()
+            vals.append(float(((sub >= lo) & (sub <= hi)).sum() / len(sub) * 100) if len(sub) else 0.0)
+        ax.bar(zp_order, vals, bottom=bottom, color=zp_cmap(i / (len(bands) - 1)), label=f'{lo}-{hi}')
+        bottom += np.array(vals)
+    ax.set_ylabel('% of games'); ax.legend(title='My score', frameon=False, fontsize=7, ncol=5, loc='upper center', bbox_to_anchor=(0.5, 1.14))
+    footer(fig, n); pdf.savefig(fig); plt.close(fig)
+
+    # ---------------- Page 9: soundtrack ownership (the old workbook's "Game Statistics by Soundtrack Ownership")
+    ST = D.soundtrack(g); OWN_C, NOT_C = ORANGE, GREY
+    fig = plt.figure(figsize=(11, 8.5)); n += 1
+    header(fig, 'Soundtrack ownership', f"{ST[1]['games']} games with a soundtrack owned vs. {ST[0]['games']} without")
+    ax = fig.add_subplot(2, 2, 1); xs = np.arange(10); w = .38
+    ax.bar(xs - w / 2, [v * 100 for v in ST[1]['mc_dist']], w, color=OWN_C, label='Owned')
+    ax.bar(xs + w / 2, [v * 100 for v in ST[0]['mc_dist']], w, color=NOT_C, label='Not owned')
+    ax.set_xticks(xs); ax.set_xticklabels([f'{10 * k + 1}-{10 * k + 10}' if k else '0-10' for k in range(10)], fontsize=6.5)
+    ax.set_ylabel('% of games'); ax.set_title('Metacritic distribution', loc='left'); ax.legend(frameon=False, fontsize=7)
+    ax = fig.add_subplot(2, 2, 2); names = list(D.SCORE_COLS); xs = np.arange(len(names))
+    for off, key, c_, lab in [(-w / 2, 1, OWN_C, 'Owned'), (w / 2, 0, NOT_C, 'Not owned')]:
+        vals = [ST[key]['scores'][k_] or 0 for k_ in names]
+        ax.bar(xs + off, vals, w, color=c_, label=lab)
+        for x_, v_ in zip(xs + off, vals): ax.text(x_, v_ + 1, f'{v_:.0f}', ha='center', fontsize=6.5)
+    ax.set_xticks(xs); ax.set_xticklabels(names, rotation=25, ha='right', fontsize=7); ax.set_ylim(0, 118)
+    ax.set_title('Average scores (0-100)', loc='left'); ax.legend(frameon=False, fontsize=7, ncol=2, loc='upper right')
+    for k_, (title, key, fmt_) in enumerate([('Games', 'games', '{:.0f}'), ('Hours played', 'hours', '{:,.0f}')]):
+        ax = fig.add_subplot(2, 4, 5 + 2 * k_ if k_ == 0 else 7)
+        vals = [ST[1][key], ST[0][key]]
+        ax.pie(vals, colors=[OWN_C, NOT_C], startangle=90, counterclock=False, wedgeprops=dict(width=.45, edgecolor='white'))
+        ax.text(0, 0, '\n'.join(fmt_.format(v) for v in vals), ha='center', va='center', fontsize=8, fontweight='bold')
+        ax.set_title(title, loc='center', fontsize=9)
+    fig.text(0.5, 0.06, 'Orange = soundtrack owned   ·   Grey = not owned', ha='center', fontsize=8, color=GREY)
+    fig.tight_layout(rect=[0.02, 0.08, 0.98, 0.91]); footer(fig, n); pdf.savefig(fig); plt.close(fig)
+
+    # ---------------- Collage pages (only if covers present): landscape, 20 x 9 per page like the workbook.
+    # Each page is composited into ONE small image first (PIL) - far smaller/faster than 180 separate figure images.
     ordered = g.sort_values(['series', 'release_date'])
     if '--all' not in sys.argv: ordered = ordered[ordered['played']]
     paths = [p for p in (cover_path(x) for x in ordered['title']) if p]
-    COLS, ROWS, CELLW, CELLH = 20, 9, 0.5 / 11, 0.75 / 8.5
+    COLS, ROWS, TW, TH = 20, 9, 72, 108
     for pg in range(0, len(paths), COLS * ROWS):
-        fig = plt.figure(figsize=(11, 8.5)); n += 1
+        sheet = np.full((ROWS * TH, COLS * TW, 3), 255, np.uint8)
         for k, p in enumerate(paths[pg:pg + COLS * ROWS]):
-            ax = fig.add_axes([(1 / 22) + (k % COLS) * CELLW, 1 - 0.103 - (k // COLS + 1) * CELLH, CELLW, CELLH]); ax.axis('off')
-            ax.imshow(load_cover(p, 140, 210), aspect='auto')
+            r_, c_ = divmod(k, COLS); sheet[r_ * TH:(r_ + 1) * TH, c_ * TW:(c_ + 1) * TW] = load_cover(p, TW, TH)
+        sheet &= 0xF8                       # 5 bits/channel: invisible at this size, compresses much better in the PDF
+        fig = plt.figure(figsize=(11, 8.5)); n += 1
+        ax = fig.add_axes([1 / 22, 1 - 0.103 - 0.75 / 8.5 * ROWS, 0.5 / 11 * COLS, 0.75 / 8.5 * ROWS]); ax.axis('off')
+        ax.imshow(sheet, aspect='auto', interpolation='lanczos')
         fig.text(0.5, 0.045, f'Collection · {len(paths)} covers', ha='center', fontsize=8, color=GREY); footer(fig, n); pdf.savefig(fig); plt.close(fig)
 print('wrote', OUT)

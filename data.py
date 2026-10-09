@@ -79,6 +79,21 @@ def summary(g, r, log, scale):
     return out
 
 
+def soundtrack(g):
+    """Stats split by Soundtrack Owned (REPORT_LOGIC.md SoundtrackStats / SoundtrackDistributionTable).
+    Returns {1: {...}, 0: {...}}: games, hours, mean of each score source on 0-100, and the share of
+    Metacritic scores in each 10-point band (lo < v <= hi, upper-inclusive)."""
+    out = {}
+    for flag in (1, 0):
+        s = g[g['soundtrack_owned'] == flag]
+        mc = (s['metacritic_100']).dropna()
+        out[flag] = dict(games=len(s), hours=float(s['hours'].sum()),
+                         scores={n: (round(float(s[c + '_100'].mean()), 1) if s[c + '_100'].notna().any() else None)
+                                 for n, c in SCORE_COLS.items()},
+                         mc_dist=[float(((mc > 10 * k) & (mc <= 10 * (k + 1))).sum() / len(mc)) if len(mc) else 0.0 for k in range(10)])
+    return out
+
+
 def matrix(r, col, cols):
     """System x category count matrix of releases, with totals (the Summary sheet cross-tabs)."""
     m = pd.crosstab(r['system'], r[col]).reindex(index=SYSTEMS, columns=cols, fill_value=0)

@@ -75,6 +75,20 @@ dialog .btns{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
 .ord img,.ord .ph{width:46px;aspect-ratio:2/3;object-fit:cover;border-radius:4px;background:var(--grid)}
 .ord .r{font-weight:700;color:var(--accent);text-align:center}.ord.cut{opacity:.6}
 .stat{display:flex;gap:10px;flex-wrap:wrap}.stat>div{background:var(--bg);padding:8px 12px;border-radius:8px}.stat b{display:block;font-size:18px;color:var(--accent)}
+.gfilters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}.gfilters input{flex:1;min-width:180px}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+.tile{cursor:pointer;border-radius:10px;overflow:hidden;background:var(--card);border:1px solid var(--grid);position:relative;transition:transform .12s}
+.tile:hover,.tile:focus{transform:translateY(-3px);border-color:var(--accent);outline:none}
+.tile img,.tile .ph{width:100%;aspect-ratio:2/3;object-fit:cover;display:flex;align-items:center;justify-content:center;background:var(--grid);color:var(--muted);text-align:center;padding:8px;font-size:12px}
+.tile .meta{padding:6px 8px;font-size:12px}.tile .meta b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}
+.tile .sc{position:absolute;top:6px;right:6px;background:#000b;color:#fff;border-radius:10px;padding:1px 7px;font-size:12px;font-weight:700}
+.bars .row{display:grid;grid-template-columns:minmax(80px,170px) minmax(0,1fr) 64px;gap:8px;align-items:center;padding:2px 0;font-size:13px}
+.bars .row span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bars .bar{height:14px;background:var(--accent);border-radius:3px;min-width:2px}.bars .row span:last-child{text-align:right;font-variant-numeric:tabular-nums}
+.months{display:flex;align-items:flex-end;gap:2px;height:150px;overflow-x:auto}
+.months .m{flex:1 0 8px;background:var(--accent);border-radius:2px 2px 0 0;min-height:1px}.months .m:hover{background:var(--accent2)}
+.detail{display:flex;gap:16px;flex-wrap:wrap}.detail img{width:150px;aspect-ratio:2/3;object-fit:cover;border-radius:8px;flex:none}
+.detail .info{flex:1;min-width:220px}.detail .scs{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.detail .scs span{background:var(--bg);border-radius:8px;padding:2px 8px;font-size:12px}
 </style>
 </head>
 <body>
@@ -152,6 +166,36 @@ dialog .btns{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
  </div>
 </section>
 
+<!-- ======================= GALLERY ======================= -->
+<section class="tab" id="tab-gallery">
+ <div class="card">
+  <div class="gfilters">
+   <input id="galsearch" placeholder="Search title or series…">
+   <select id="galgenre"></select><select id="galsystem"></select>
+   <select id="galscore"><option value="">Any score</option><option value="9">My score 9+</option><option value="8">My score 8+</option><option value="7">My score 7+</option></select>
+   <select id="galstatus"><option value="">All games</option><option value="played">Played</option><option value="unplayed">Not played yet</option></select>
+   <select id="galsort"><option value="title">Sort: Title</option><option value="my_score">My score</option><option value="metacritic">Metacritic</option><option value="hours">Hours played</option><option value="last_played">Last played</option><option value="year">Release year</option></select>
+   <button class="sm" id="galdir" title="Reverse order">↑</button><span class="muted" id="galcount"></span>
+  </div>
+  <div class="gallery" id="gallery"></div>
+  <div style="margin-top:12px;text-align:center"><button id="galmore" hidden>Show more</button></div>
+ </div>
+</section>
+
+<!-- ======================= STATS ======================= -->
+<section class="tab" id="tab-stats">
+ <div class="card"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><h2 style="margin:0">Play statistics</h2>
+  <select id="statyear"></select></div>
+  <div class="stat" id="statkpi" style="margin-top:12px"></div></div>
+ <div class="cols">
+  <div class="card"><h2>Hours per year</h2><div class="bars" id="st-years"></div></div>
+  <div class="card"><h2>Hours by system</h2><div class="bars" id="st-systems"></div></div>
+  <div class="card"><h2>Hours by genre</h2><div class="bars" id="st-genres"></div></div>
+  <div class="card"><h2>Most played games</h2><div class="bars" id="st-top"></div></div>
+ </div>
+ <div class="card"><h2>Hours per month</h2><div class="months" id="st-months"></div></div>
+</section>
+
 <!-- ======================= CHECKS ======================= -->
 <section class="tab" id="tab-checks">
  <div class="card"><h2>Data checks</h2>
@@ -216,7 +260,7 @@ async function refreshMeta(){META=await api('GET','/api/meta');$('#gamelist').in
 async function afterChange(){await refreshMeta();refreshBadge();const t=currentTab();if(TABS[t])TABS[t].show(true)}
 
 /* ---------- tabs / routing ---------- */
-const NAMES={log:'Log time',games:'Games',top:'Top list',checks:'Checks',history:'History',reports:'Reports'};
+const NAMES={log:'Log time',games:'Games',gallery:'Gallery',stats:'Stats',top:'Top list',checks:'Checks',history:'History',reports:'Reports'};
 const TABS={};
 $('#nav').innerHTML=Object.entries(NAMES).map(([k,n])=>`<a data-k="${k}" href="#${k}">${n}${k==='checks'?'<span class="badge" id="chkbadge" hidden></span>':''}</a>`).join('');
 const currentTab=()=>(location.hash.slice(1).split('/')[0]||'log');
@@ -440,6 +484,60 @@ TABS.history={async show(){const h=await api('GET','/api/audit?limit=60');
   $('#histtable').innerHTML=`<thead><tr><th>When</th><th>Change</th><th class="num">Rows</th><th></th></tr></thead><tbody>`+h.map(x=>`<tr><td>${esc(x.ts)}</td><td>${esc(x.summary)}${x.n>1?` <span class="muted">+ ${x.n-1} more</span>`:''}</td><td class="num">${x.n}</td><td>${x.undone?'<span class="muted">undone</span>':`<button class="sm" data-undo="${x.batch}">Undo</button>`}</td></tr>`).join('')+'</tbody>'}};
 $('#histtable').addEventListener('click',async e=>{const b=e.target.dataset.undo;if(!b)return;try{await api('POST','/api/undo/'+b);toast('Undone');await afterChange()}catch(x){toast(x.message,{err:1})}});
 $('#backupbtn').onclick=async()=>{const r=await api('POST','/api/backup');toast('Backup saved: '+r.path.split(/[\\/]/).pop())};
+
+/* ======================= GALLERY ======================= */
+const GAL={shown:60,desc:false,ready:false};
+TABS.gallery={async show(force){
+  if(!GAMES.list.length||force)GAMES.list=await api('GET','/api/games');
+  if(!GAL.ready){GAL.ready=true;
+    $('#galgenre').innerHTML=selOpts(META.genre,'','All genres');
+    $('#galsystem').innerHTML=selOpts(META.systems,'','All systems')}
+  renderGallery()}};
+function renderGallery(reset){
+  if(reset)GAL.shown=60;
+  const q=$('#galsearch').value.toLowerCase(),gn=$('#galgenre').value,sy=$('#galsystem').value,sc=+$('#galscore').value,st=$('#galstatus').value,key=$('#galsort').value;
+  const rows=GAMES.list.filter(g=>(!q||g.title.toLowerCase().includes(q)||g.series.toLowerCase().includes(q))&&(!gn||g.genre===gn)
+    &&(!sy||(g.systems||'').split(', ').includes(sy))&&(!sc||g.my_score>=sc)&&(!st||(st==='played')===!!g.hours));
+  const dir=GAL.desc?-1:1,desc=key!=='title'?-1:1;                  // numeric sorts default to highest first
+  rows.sort((a,b)=>{const x=a[key],y=b[key];if(x==null&&y==null)return a.title.localeCompare(b.title);if(x==null)return 1;if(y==null)return -1;
+    return (typeof x==='string'?x.localeCompare(y):x-y)*desc*dir||a.title.localeCompare(b.title)});
+  $('#galcount').textContent=rows.length+' games';
+  $('#gallery').innerHTML=rows.slice(0,GAL.shown).map(g=>`<div class="tile" tabindex="0" data-id="${g.id}" title="${esc(g.title)}">${g.cover?`<img src="${g.cover}" loading="lazy" alt="">`:`<div class="ph">${esc(g.title)}</div>`}${g.my_score?`<span class="sc">${g.my_score}</span>`:''}
+    <div class="meta"><b>${esc(g.title)}</b><span class="muted">${g.year||''}${g.hours?' · '+fmt(g.hours,1)+' h':''}</span></div></div>`).join('');
+  $('#galmore').hidden=rows.length<=GAL.shown;$('#galmore').textContent=`Show more (${rows.length-GAL.shown} left)`}
+['#galsearch','#galgenre','#galsystem','#galscore','#galstatus','#galsort'].forEach(s=>$(s).addEventListener(s==='#galsearch'?'input':'change',()=>renderGallery(true)));
+$('#galdir').onclick=()=>{GAL.desc=!GAL.desc;$('#galdir').textContent=GAL.desc?'↓':'↑';renderGallery(true)};
+$('#galmore').onclick=()=>{GAL.shown+=60;renderGallery()};
+const openTile=async t=>{if(!t)return;const id=+t.dataset.id;
+  const [d,tl]=await Promise.all([api('GET','/api/games/'+id),api('GET',`/api/games/${id}/timeline`)]);const g=d.game;
+  const mx=Math.max(1,...tl.by_month.map(m=>m.hours));
+  const scores=[['My score',g.my_score],['Metacritic',g.metacritic],['PC Gamer',g.pc_gamer],['GameSpot',g.gamespot],['IGN',g.ign],['Destructoid',g.destructoid],['Game Informer',g.game_informer]].filter(x=>x[1]!=null);
+  const go=await dialog(`<div class="detail">${d.cover?`<img src="${d.cover}" alt="">`:''}<div class="info"><h2>${esc(g.title)}</h2>
+    <div class="muted">${esc(g.genre)}${g.sub_genre?' / '+esc(g.sub_genre):''} · ${esc(g.camera_view)} · ${esc(g.graphic_style)}${g.series!==g.title?' · '+esc(g.series):''}</div>
+    <div class="scs">${scores.map(([n,v])=>`<span>${n} <b>${fmt(v,1)}</b></span>`).join('')||'<span class="muted">No scores</span>'}</div>
+    <div class="stat"><div><b>${fmt(tl.total,1)}</b>hours</div><div><b>${tl.by_month.reduce((a,m)=>a+m.days,0)}</b>days played</div><div><b>${d.releases.length}</b>release${d.releases.length>1?'s':''}</div></div>
+    <p class="muted" style="margin:8px 0 4px">${tl.first?`First played ${prettyDate(tl.first)} · last ${prettyDate(tl.last)}`:'Not played yet'}</p>
+    ${d.releases.map(r=>`<span class="pill">${esc(r.system)} · ${esc(r.ownership)}</span> `).join('')}
+    ${tl.by_month.length?`<h3>Hours by month</h3><div class="months" style="height:70px">${tl.by_month.map(m=>`<div class="m" style="height:${Math.max(3,m.hours/mx*100)}%" title="${m.month}: ${fmt(m.hours,1)} h"></div>`).join('')}</div>`:''}
+    </div></div>`,{ok:'Edit game',cancel:'Close',wide:true});
+  if(go)location.hash='#games/'+id};
+$('#gallery').addEventListener('click',e=>openTile(e.target.closest('.tile')));
+$('#gallery').addEventListener('keydown',e=>{if(e.key==='Enter')openTile(e.target.closest('.tile'))});
+
+/* ======================= STATS ======================= */
+const bars=(rows,unit='h')=>{const mx=Math.max(1,...rows.map(r=>r.hours));
+  return rows.map(r=>`<div class="row"><span title="${esc(r.name)}">${esc(r.name)}</span><span><div class="bar" style="width:${r.hours/mx*100}%"></div></span><span>${fmt(r.hours,0)} ${unit}</span></div>`).join('')||'<span class="muted">No data</span>'};
+TABS.stats={async show(){
+  const sel=$('#statyear'),cur=sel.value;
+  const s=await api('GET','/api/stats'+(cur?'?year='+cur:''));
+  if(sel.options.length<2)sel.innerHTML='<option value="">All time</option>'+s.years.map(y=>y.year).reverse().map(y=>`<option>${y}</option>`).join('');
+  sel.value=cur;
+  $('#statkpi').innerHTML=`<div><b>${fmt(s.total.hours,0)}</b>hours</div><div><b>${s.total.games}</b>games played</div><div><b>${s.total.days}</b>days played</div><div><b>${s.total.days?fmt(s.total.hours/s.total.days,1):'–'}</b>avg h / day played</div>`;
+  $('#st-years').innerHTML=bars(s.years.map(y=>({name:y.year,hours:y.hours})));
+  $('#st-systems').innerHTML=bars(s.systems);$('#st-genres').innerHTML=bars(s.genres);$('#st-top').innerHTML=bars(s.top_games);
+  const mx=Math.max(1,...s.months.map(m=>m.hours));
+  $('#st-months').innerHTML=s.months.map(m=>`<div class="m" style="height:${Math.max(2,m.hours/mx*100)}%" title="${m.month}: ${fmt(m.hours,0)} h"></div>`).join('')}};
+$('#statyear').addEventListener('change',()=>TABS.stats.show());
 
 /* ======================= REPORTS ======================= */
 TABS.reports={async show(){const r=await api('GET','/api/reports');

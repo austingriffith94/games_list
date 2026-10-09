@@ -10,8 +10,24 @@ from PIL import Image
 import schema
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-DB = os.environ.get('GAMELIST_DB', os.path.join(BASE, 'gamelist.db'))
-COVERS = os.environ.get('GAMELIST_COVERS', os.path.join(BASE, 'covers'))
+
+
+def load_config():
+    """Per-machine settings from config.json next to app.py (optional, gitignored)."""
+    try:
+        with open(os.path.join(BASE, 'config.json'), encoding='utf-8') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
+    except (OSError, ValueError) as e:
+        print(f'WARNING: ignoring config.json ({e})', file=sys.stderr)
+        return {}
+
+
+CONFIG = load_config()
+# precedence: --flag > environment variable > config.json > default next to app.py
+DB = os.environ.get('GAMELIST_DB') or CONFIG.get('db') or os.path.join(BASE, 'gamelist.db')
+COVERS = os.environ.get('GAMELIST_COVERS') or CONFIG.get('covers') or os.path.join(BASE, 'covers')
 BACKUPS = os.environ.get('GAMELIST_BACKUPS', os.path.join(BASE, 'backups'))
 OUT = os.environ.get('GAMELIST_OUT', BASE)
 REPORT_HTML = os.path.join(OUT, 'games_list_dashboard.html')
@@ -351,9 +367,45 @@ def list_games():
         (SELECT round(SUM(hours),2) FROM play_log l WHERE l.game=g.title) AS hours,
         (SELECT MAX(date) FROM play_log l WHERE l.game=g.title) AS last_played
         FROM games g ORDER BY g.title COLLATE NOCASE''')
-    have = {os.path.splitext(f)[0].lower() for f in os.listdir(COVERS)} if os.path.isdir(COVERS) else set()
-    for g in out: g['has_cover'] = cover_base(g['title']).lower() in have
+    have = {os.path.splitext(f)[0].lower(): f for f in os.listdir(COVERS)} if os.path.isdir(COVERS) else {}
+    extra = {r['title']: r for r in rows('SELECT title, MIN(substr(original_release_date,1,4)) AS year FROM releases GROUP BY title')}
+    for g in out:
+        f = have.get(cover_base(g['title']).lower())
+        g['has_cover'] = bool(f)
+        g['cover'] = '/covers/' + quote(f) if f else None
+        g['year'] = (extra.get(g['title']) or {}).get('year')
     return jsonify(out)
+
+
+@app.get('/api/games/<int:gid>/timeline')
+def game_timeline(gid):
+    game = get_row('games', gid)
+    if not game: raise ApiError('Game not found', 404)
+    by_month = rows('''SELECT substr(date,1,7) AS month, round(SUM(hours),2) AS hours, COUNT(DISTINCT date) AS days
+                       FROM play_log WHERE game=? GROUP BY month ORDER BY month''', (game['title'],))
+    by_system = rows('SELECT system, round(SUM(hours),2) AS hours FROM play_log WHERE game=? GROUP BY system ORDER BY 2 DESC', (game['title'],))
+    return jsonify(by_month=by_month, by_system=by_system, total=game_total(game['title']),
+                   first=scalar('SELECT MIN(date) FROM play_log WHERE game=?', (game['title'],)),
+                   last=scalar('SELECT MAX(date) FROM play_log WHERE game=?', (game['title'],)))
+
+
+@app.get('/api/stats')
+def stats():
+    yr = request.args.get('year')
+    w, a = (' WHERE substr(date,1,4)=?', (yr,)) if yr else ('', ())
+    tot = one(f'SELECT round(COALESCE(SUM(hours),0),1) AS hours, COUNT(DISTINCT game) AS games, COUNT(DISTINCT date) AS days FROM play_log{w}', a)
+    sys_type = {r['name']: r['type'] for r in rows('SELECT name, type FROM ref_system')}
+    return jsonify(
+        total=tot,
+        years=rows('''SELECT substr(date,1,4) AS year, round(SUM(hours),1) AS hours, COUNT(DISTINCT game) AS games, COUNT(DISTINCT date) AS days
+                      FROM play_log GROUP BY year ORDER BY year'''),
+        systems=rows(f'SELECT system AS name, round(SUM(hours),1) AS hours, COUNT(DISTINCT game) AS games FROM play_log{w} GROUP BY system ORDER BY 2 DESC', a),
+        genres=rows(f'''SELECT g.genre AS name, round(SUM(l.hours),1) AS hours, COUNT(DISTINCT l.game) AS games
+                        FROM play_log l JOIN games g ON g.title=l.game{w.replace('date', 'l.date')} GROUP BY g.genre ORDER BY 2 DESC''', a),
+        top_games=rows(f'SELECT game AS name, round(SUM(hours),1) AS hours FROM play_log{w} GROUP BY game ORDER BY 2 DESC LIMIT 15', a),
+        months=rows(f'''SELECT substr(date,1,7) AS month, round(SUM(hours),1) AS hours FROM play_log{w} GROUP BY month ORDER BY month''', a),
+        new_games=rows('''SELECT substr(f,1,4) AS year, COUNT(*) AS n FROM (SELECT MIN(date) AS f FROM play_log GROUP BY game) GROUP BY year ORDER BY year'''),
+        system_types={k: v for k, v in sys_type.items()})
 
 
 @app.get('/api/games/<int:gid>')
@@ -709,7 +761,7 @@ def rebuild():
     try:
         env = dict(os.environ, GAMELIST_DB=DB)
         res = {}
-        for name, cmd in (('dashboard', [sys.executable, os.path.join(BASE, 'build_html.py'), REPORT_HTML]),
+        for name, cmd in (('dashboard', [sys.executable, os.path.join(BASE, 'build_html.py'), REPORT_HTML, COVERS]),
                           ('pdf', [sys.executable, os.path.join(BASE, 'build_pdf.py'), COVERS, REPORT_PDF])):
             t0 = dt.datetime.now()
             p = subprocess.run(cmd, cwd=BASE, env=env, capture_output=True, text=True, timeout=600)
@@ -733,7 +785,7 @@ def main():
     global DB, COVERS, BACKUPS
     ap = argparse.ArgumentParser()
     ap.add_argument('--db', default=DB); ap.add_argument('--covers', default=COVERS)
-    ap.add_argument('--port', type=int, default=8765); ap.add_argument('--no-browser', action='store_true')
+    ap.add_argument('--port', type=int, default=CONFIG.get('port', 8765)); ap.add_argument('--no-browser', action='store_true')
     a = ap.parse_args()
     DB, COVERS = os.path.abspath(a.db), os.path.abspath(a.covers)
     os.environ['GAMELIST_DB'] = DB

@@ -45,6 +45,10 @@ table.gt th{cursor:pointer;text-align:left;padding:6px;border-bottom:2px solid v
 table.gt td{padding:5px 6px;border-bottom:1px solid var(--grid)}
 table.gt tr:hover td{background:var(--hl)}
 .tablewrap{max-height:70vh;overflow:auto}
+#sgames svg,#shours svg{max-width:240px;margin:0 auto}
+#mosaic{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:3px}
+#mosaic img{width:100%;aspect-ratio:2/3;object-fit:cover;display:block;border-radius:2px;cursor:pointer;background:var(--grid)}
+#mosaic img:hover{outline:2px solid var(--accent);position:relative;z-index:1}
 #tip{position:fixed;pointer-events:none;background:#000d;color:#fff;padding:6px 9px;border-radius:6px;font-size:12px;z-index:50;display:none;max-width:260px}
 .legend{display:flex;gap:12px;font-size:12px;color:var(--muted);margin-bottom:4px}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
@@ -71,32 +75,54 @@ table.gt tr:hover td{background:var(--hl)}
    <div class="card"><h2>Score distribution</h2><div class="row"><select id="distsrc"></select></div><div id="dist"></div></div>
    <div class="card"><h2>Zero Punctuation opinions</h2><div id="zp"></div></div>
   </div>
+  <div class="card"><h2>Soundtrack ownership</h2><p class="note">Games where I own the soundtrack vs. not.</p>
+   <div class="legend"><span><i style="background:var(--accent)"></i>Owned</span><span><i style="background:#8c8c8c"></i>Not owned</span></div>
+   <div class="grid2"><div><h2 style="font-size:13px">Metacritic distribution</h2><div id="sdist"></div></div><div><h2 style="font-size:13px">Average scores (0–100)</h2><div id="savg"></div></div></div>
+   <div class="grid2" style="margin-top:10px"><div><h2 style="font-size:13px">Games</h2><div id="sgames"></div></div><div><h2 style="font-size:13px">Hours played</h2><div id="shours"></div></div></div></div>
   <div class="card"><h2>Average score by category</h2><div class="row"><select id="catdim"><option value="genre">Genre</option><option value="system">System</option><option value="view">Camera view</option><option value="style">Graphic style</option></select><label>Critics <select id="catsrc"></select></label></div>
    <div class="legend"><span><i style="background:var(--accent)"></i>My score</span><span><i style="background:var(--accent2);border-radius:50%"></i>Critic average</span></div><div id="cat"></div></div>
+  <div class="card"><h2>My score vs. each critic</h2><p class="note">Linear fit and R² per outlet.</p>
+   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px" id="critgrid"></div></div>
+  <div class="card"><h2>Zero Punctuation vs. my score</h2><p class="note">My score band, grouped by ZP opinion — do I agree with the reviewer?</p>
+   <div class="legend" id="zpvsleg"></div><div id="zpvs"></div></div>
  </section>
 
  <section class="tab" id="t-years">
-  <div class="card"><h2>Games per year</h2><div class="row"><label>Group by <select id="yrbasis"><option value="fp">First played year</option><option value="lp">Last played year</option><option value="rel">Release year</option></select></label></div>
+  <div class="card"><h2>Games per year</h2><div class="row"><label>Group by <select id="yrbasis"><option value="fp">First played year</option><option value="lp">Last played year</option><option value="rel">Release year</option><option value="ay">Added year</option></select></label></div>
    <div class="legend"><span><i style="background:var(--accent)"></i>Games</span><span><i style="background:var(--line)"></i>My score</span><span><i style="background:var(--accent2)"></i>Critic average</span></div><div id="yr"></div></div>
-  <div class="card"><h2>Games added per year</h2><div class="legend" id="addleg"></div><div id="add"></div></div>
+  <div class="card"><h2>Average year per score</h2><p class="note">Mean release / added / first played / last played year, by my score (plus Top 20).</p>
+   <div class="legend" id="ypsleg"></div><div id="yps"></div></div>
+  <div class="card"><h2>Games added per year</h2><p class="note">Stacked by ownership × platform class.</p><div class="legend" id="addleg"></div><div id="add"></div></div>
  </section>
 
  <section class="tab" id="t-time">
   <div class="card"><h2>Hours per day</h2><div class="row"><label>Window <select id="win"><option value="30">Last 30 days</option><option value="90">Last 90 days</option><option value="365" selected>Last 365 days</option><option value="0">All time</option></select></label></div>
-   <div class="legend"><span><i style="background:var(--accent)"></i>Hours</span><span><i style="background:var(--line)"></i>14-day average</span></div><div id="daily"></div></div>
+   <div class="legend"><span><i style="background:var(--accent)"></i>Hours</span><span><i style="background:var(--line)"></i>7-day average</span><span><i style="background:var(--accent2)"></i>28-day average</span></div><div id="daily"></div></div>
+  <div class="card"><h2>Cumulative hours and games played</h2><div class="legend"><span><i style="background:var(--line)"></i>Hours</span><span><i style="background:var(--accent2)"></i>Games (cumulative)</span></div><div id="cum"></div></div>
   <div class="grid2">
-   <div class="card"><h2>Cumulative hours</h2><div id="cum"></div></div>
    <div class="card"><h2>Average hours by weekday</h2><div id="wd"></div></div>
+   <div class="card"><h2>Weekday range (±1 SD)</h2><div id="wdrange"></div></div>
   </div>
+  <div class="card"><h2>Frequency of hours played</h2><p class="note">Cumulative % of days at or under X hours played.</p>
+   <div class="legend"><span><i style="background:var(--accent)"></i>% of all days</span><span><i style="background:var(--accent2)"></i>% of days played</span></div><div id="freq"></div></div>
   <div class="card"><h2>Calendar heat map</h2><div class="row"><label>Year <select id="calyr"></select></label></div><div id="cal"></div></div>
  </section>
 
  <section class="tab" id="t-hours">
   <div class="grid2">
-   <div class="card"><h2>Top series by hours</h2><div class="row"><label>Show <select id="nser"><option>10</option><option>20</option><option>30</option></select></label></div><div id="ser"></div></div>
+   <div class="card"><h2>Top series by hours</h2><p class="note">Pale bar = games owned in that series.</p><div class="row"><label>Show <select id="nser"><option>10</option><option>20</option><option>30</option></select></label></div><div id="ser"></div></div>
    <div class="card"><h2>Hours by Zero Punctuation opinion</h2><div id="zph"></div></div>
   </div>
+  <div class="card"><h2>Top 10 series concentration</h2><p class="note" id="topnote"></p>
+   <div class="grid2"><div><h2 style="font-size:13px">Games</h2><div id="topgames"></div></div><div><h2 style="font-size:13px">Hours</h2><div id="tophours"></div></div></div></div>
   <div class="card"><h2>Score vs hours played</h2><div class="row"><label>Score <select id="scx"></select></label><label>Y axis <select id="scy"><option value="log">Log</option><option value="lin">Linear</option></select></label></div><div id="sc"></div></div>
+ </section>
+
+ <section class="tab" id="t-mosaic">
+  <div class="card"><h2>Collection mosaic</h2><p class="note">Small compressed thumbnails, embedded in this file. Hover for the title, click for details.</p>
+   <div class="row"><label>Order <select id="mzo"><option value="series">By series</option><option value="score">By my score</option><option value="hours">By hours</option><option value="title">By title</option></select></label>
+    <label>Show <select id="mzf"><option value="played">Played games</option><option value="all">All games with a cover</option></select></label><span id="mzn" style="color:var(--muted);font-size:12px"></span></div>
+   <div id="mosaic"></div></div>
  </section>
 
  <section class="tab" id="t-games">
@@ -108,7 +134,7 @@ table.gt tr:hover td{background:var(--hl)}
 <div id="tip"></div>
 <script>
 const DATA = /*DATA*/;
-const {G,R,L,SYSTEMS,GENRES,VIEWS,STYLES,OWN,RELT,TOP,SUMMARY,SCORES,ASOF,END} = DATA;
+const {G,R,L,SYSTEMS,GENRES,VIEWS,STYLES,OWN,RELT,TOP,SUMMARY,SCORES,ASOF,END,SOUND,THUMBS,SERIES_ORDER} = DATA;
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const NS='http://www.w3.org/2000/svg';
 const fmt=(v,d=0)=>v==null||isNaN(v)?'–':(+v).toLocaleString(undefined,{maximumFractionDigits:d});
@@ -128,13 +154,15 @@ function tip(el,html){el.addEventListener('mousemove',e=>{tipEl.innerHTML=html;t
 const css=v=>`var(--${v})`;
 
 /* vertical bars with optional line series on right axis. items:[{x,label,v,tip}] */
-function vbars(sel,items,{w=1000,h=300,color=css('accent'),lines=[],lineRange=[40,100],xEvery=1,yFmt}={}){
+function vbars(sel,items,{w=1000,h=300,color=css('accent'),lines=[],lineRange=null,xEvery=1,yFmt,ymax=null}={}){
   const c=canvas(sel,w,h,{t:10,r:lines.length?36:14,b:36,l:44});
-  const mx=Math.max(1,...items.map(i=>i.v)),ticks=niceTicks(0,mx,5),top=ticks[ticks.length-1]||mx,y=lin(0,top,c.H,0);
+  const mx=ymax||Math.max(1,...items.map(i=>i.v)),ticks=niceTicks(0,mx,5),top=ticks[ticks.length-1]||mx,y=lin(0,top,c.H,0);
   yAxis(c,y,ticks,yFmt);
   const bw=c.W/items.length;
   items.forEach((it,i)=>{const x=i*bw,hh=c.H-y(it.v);const r=mk('rect',{x:x+bw*.12,y:y(it.v),width:Math.max(.5,bw*.76),height:Math.max(0,hh),fill:it.color||color,rx:Math.min(2,bw/6)},c.g);if(it.tip)tip(r,it.tip);if(i%xEvery===0)txt(c.g,x+bw/2,c.H+14,it.label,{'text-anchor':'middle'})});
-  if(lines.length){const y2=lin(lineRange[0],lineRange[1],c.H,0);niceTicks(lineRange[0],lineRange[1],4).forEach(t=>txt(c.g,c.W+6,y2(t)+4,t));
+  if(lines.length){const lv=lines.flatMap(L=>L.values).filter(v=>v!=null);
+    if(!lineRange)lineRange=lv.length?[Math.max(0,Math.floor((Math.min(...lv)-2)/10)*10),Math.min(100,Math.ceil((Math.max(...lv)+2)/10)*10)]:[0,100];
+    const y2=lin(lineRange[0],lineRange[1],c.H,0);niceTicks(lineRange[0],lineRange[1],4).forEach(t=>txt(c.g,c.W+6,y2(t)+4,t));
     lines.forEach(L=>{const pts=L.values.map((v,i)=>v==null?null:[i*bw+bw/2,y2(v)]);let d='';pts.forEach(p=>{if(p)d+=(d&&!d.endsWith('M')?'L':'M')+p[0]+','+p[1]});
       // break the line across gaps
       d='';let pen=false;pts.forEach(p=>{if(!p){pen=false;return}d+=(pen?'L':'M')+p[0].toFixed(1)+','+p[1].toFixed(1);pen=true});
@@ -143,23 +171,25 @@ function vbars(sel,items,{w=1000,h=300,color=css('accent'),lines=[],lineRange=[4
   return c}
 
 /* horizontal bars + optional dot per row. rows:[{label,v,dot,tip}] */
-function hbars(sel,rows,{w=1000,rowH=24,xmax=null,xmin=0,color=css('accent'),dotColor=css('accent2'),labelW=190}={}){
+function hbars(sel,rows,{w=1000,rowH=24,xmax=null,xmin=0,color=css('accent'),dotColor=css('accent2'),labelW=190,bgColor=null,bgMax=null}={}){
   const h=rows.length*rowH+34,c=canvas(sel,w,h,{t:4,r:20,b:26,l:labelW});
   const m=xmax||Math.max(1,...rows.map(r=>Math.max(r.v||0,r.dot||0))),x=lin(xmin,m,0,c.W);
+  const bgX=bgColor?lin(0,bgMax||Math.max(1,...rows.map(r=>r.bg||0)),0,c.W):null;
   niceTicks(xmin,m,6).forEach(t=>{mk('line',{class:'gridline',x1:x(t),x2:x(t),y1:0,y2:rows.length*rowH},c.g);txt(c.g,x(t),rows.length*rowH+16,fmt(t),{'text-anchor':'middle'})});
   rows.forEach((r,i)=>{const y=i*rowH;txt(c.g,-8,y+rowH/2+4,r.label,{'text-anchor':'end',class:'lbl'});
-    if(r.v!=null){const b=mk('rect',{x:0,y:y+4,width:Math.max(0,x(r.v)),height:rowH-8,fill:color,rx:2},c.g);if(r.tip)tip(b,r.tip)}
+    if(bgColor&&r.bg!=null){const bb=mk('rect',{x:0,y:y+2,width:Math.max(0,bgX(r.bg)),height:rowH-4,fill:bgColor,'fill-opacity':.3,rx:2},c.g);if(r.bgTip)tip(bb,r.bgTip)}
+    if(r.v!=null){const b=mk('rect',{x:0,y:y+5,width:Math.max(0,x(r.v)),height:rowH-10,fill:color,rx:2},c.g);if(r.tip)tip(b,r.tip)}
     if(r.dot!=null){const d=mk('circle',{cx:x(r.dot),cy:y+rowH/2,r:4.5,fill:dotColor},c.g);tip(d,r.tip||fmt(r.dot,1))}});
   return c}
 
 /* ---------- derived helpers ---------- */
-const CRIT=['mc','gs','des','gi','pg','ign'];
-G.forEach(g=>{g.crit=mean(CRIT.map(k=>g[k]));g.played=g.fp!=null});
+const CRIT=[['mc',1],['gs',10],['des',10],['gi',10],['pg',1],['ign',10]]; // [key, multiplier to reach 0-100]
+G.forEach(g=>{g.crit=mean(CRIT.map(([k,m])=>g[k]==null?null:g[k]*m));g.played=g.fp!=null});
 const yearOf=d=>d?+d.slice(0,4):null;
 function valueFor(g,dim){return dim==='genre'?g.genre:dim==='view'?g.view:dim==='style'?g.style:null}
 
 /* ---------- tabs ---------- */
-const TABS=[['overview','Overview'],['scores','Scores'],['years','Years'],['time','Time played'],['hours','Hours'],['games','All games']];
+const TABS=[['overview','Overview'],['scores','Scores'],['years','Years'],['time','Time played'],['hours','Hours'],['mosaic','Mosaic'],['games','All games']];
 const built={};
 function show(id){$('#panel').classList.remove('open');TABS.forEach(([k])=>$('#t-'+k).classList.toggle('on',k===id));$$('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.k===id));location.hash=id;if(!built[id]){built[id]=1;BUILD[id]()}}
 TABS.forEach(([k,n])=>{const b=document.createElement('button');b.textContent=n;b.dataset.k=k;b.onclick=()=>show(k);$('#nav').appendChild(b)});
@@ -178,9 +208,16 @@ overview(){
 scores(){
   const srcs=[['My Score','ms',1],['Metacritic','mc',10],['PC Gamer','pg',10],['GameSpot','gs',1],['IGN','ign',1],['Game Informer','gi',1],['Destructoid','des',1]];
   $('#distsrc').innerHTML=srcs.map(s=>`<option value="${s[1]}">${s[0]}</option>`).join('');
-  const drawDist=()=>{const k=$('#distsrc').value,vals=G.map(g=>g[k]).filter(v=>v!=null).map(v=>v*10/(srcs.find(s=>s[1]===k)[2]));
-    const bins=Array.from({length:10},(_,i)=>({lo:i*10,n:0}));vals.forEach(v=>bins[Math.min(9,Math.floor(v/10))].n++);
-    vbars('#dist',bins.map(b=>({label:`${b.lo}s`,v:b.n,tip:`${b.lo}–${b.lo+9}: <b>${b.n}</b> games`})),{w:560,h:260});};
+  // percentage-of-games on a shared 1-10 axis/scale, so switching sources stays comparable by eye
+  const distBins={};let distMax=0;
+  srcs.forEach(([name,key,mult])=>{
+    const v10=G.map(g=>g[key]).filter(v=>v!=null).map(v=>v/mult);
+    const counts=Array.from({length:10},()=>0);v10.forEach(v=>counts[Math.min(9,Math.max(0,Math.round(v)-1))]++);
+    const n=v10.length,pct=counts.map(c=>n?c/n*100:0);
+    distBins[key]={counts,pct,n};distMax=Math.max(distMax,...pct)});
+  const drawDist=()=>{const k=$('#distsrc').value,{counts,pct,n}=distBins[k];
+    vbars('#dist',pct.map((p,i)=>({label:String(i+1),v:p,tip:`Score ${i+1}: <b>${fmt(p,1)}%</b> (${counts[i]} games)`})),
+      {w:560,h:260,ymax:distMax*1.08,yFmt:v=>fmt(v,0)+'%'});};
   $('#distsrc').onchange=drawDist;drawDist();
   const order=['Best','Good','Neutral','Bland','Bad','Worst'],cnt=order.map(o=>({label:o,v:G.filter(g=>g.zp===o).length}));cnt.forEach(c=>c.tip=`${c.label}: ${c.v} games`);
   vbars('#zp',cnt,{w:560,h:260,color:css('accent2')});
@@ -192,39 +229,130 @@ scores(){
     let rows=keys.map(k=>{const gs=rowsOf(k);const me=mean(gs.map(g=>g.ms==null?null:g.ms*10));
       const cr=cs==='crit'?mean(gs.map(g=>g.crit)):mean(gs.map(g=>g[cs]==null?null:g[cs]*10/sc(cs)));
       return {label:`${k} (${gs.length})`,v:me,dot:cr,tip:`<b>${esc(k)}</b><br>${gs.length} games<br>My score ${fmt(me,1)} · Critics ${fmt(cr,1)}`}}).filter(r=>r.v!=null||r.dot!=null).sort((a,b)=>(b.v??0)-(a.v??0));
-    hbars('#cat',rows,{w:1000,xmin:40,xmax:100,labelW:200})};
-  $('#catdim').onchange=drawCat;$('#catsrc').onchange=drawCat;drawCat()},
+    hbars('#cat',rows,{w:1000,xmin:0,xmax:100,labelW:200})};
+  $('#catdim').onchange=drawCat;$('#catsrc').onchange=drawCat;drawCat();
+  // my score vs. each critic, with a least-squares fit and R² per outlet
+  const critOutlets=srcs.slice(1);
+  $('#critgrid').innerHTML=critOutlets.map(([name,key])=>`<div><div style="font-size:12px;color:var(--muted);margin-bottom:2px">${esc(name)}</div><div id="crit-${key}"></div></div>`).join('');
+  critOutlets.forEach(([name,key,mult])=>{
+    const pts=G.filter(g=>g.ms!=null&&g[key]!=null).map(g=>({x:g.ms*10,y:g[key]*10/mult}));
+    const X=pts.map(p=>p.x),Y=pts.map(p=>p.y),mx_=mean(X),my_=mean(Y);let sxy=0,sxx=0,syy=0;
+    X.forEach((x,i)=>{sxy+=(x-mx_)*(Y[i]-my_);sxx+=(x-mx_)**2;syy+=(Y[i]-my_)**2});
+    const b=sxy/sxx,a=my_-b*mx_,r2=sxy*sxy/(sxx*syy);
+    const c=canvas(`#crit-${key}`,300,220,{t:6,r:8,b:24,l:30});
+    const xs=lin(0,100,0,c.W),ys=lin(0,100,c.H,0);
+    niceTicks(0,100,5).forEach(t_=>mk('line',{class:'gridline',x1:0,x2:c.W,y1:ys(t_),y2:ys(t_)},c.g));
+    pts.forEach(p=>{const k_=mk('circle',{cx:xs(p.x)+(((p.x*37)%10)-5)*.4,cy:ys(p.y),r:2.6,fill:css('line'),'fill-opacity':.5},c.g);tip(k_,`score ${fmt(p.x)} · ${esc(name)} ${fmt(p.y)}`)});
+    mk('path',{d:`M${xs(0).toFixed(1)},${ys(a).toFixed(1)}L${xs(100).toFixed(1)},${ys(a+b*100).toFixed(1)}`,stroke:css('accent'),'stroke-width':2,fill:'none'},c.g);
+    txt(c.g,4,12,`R² = ${r2.toFixed(2)} · n=${pts.length}`,{class:'lbl',style:'font-size:10px'})});
+  // Zero Punctuation vs my score: % of games per my-score band, stacked by ZP opinion
+  const zpOrder=['Worst','Bad','Bland','Neutral','Good','Best'];
+  const scoreBands=[[1,2],[3,4],[5,6],[7,8],[9,10]];
+  const bandColors=['#C0392B','#F4B183','#FFE699','#A9D18E','#538135'];
+  $('#zpvsleg').innerHTML=scoreBands.map(([lo,hi],i)=>`<span><i style="background:${bandColors[i]}"></i>${lo}-${hi}</span>`).join('');
+  const zc=canvas('#zpvs',900,280,{t:10,r:14,b:30,l:44}),zy=lin(0,100,zc.H,0),zbw=zc.W/zpOrder.length;
+  yAxis(zc,zy,[0,20,40,60,80,100],v=>v+'%');
+  zpOrder.forEach((zp,i)=>{
+    const sub=G.filter(g=>g.zp===zp&&g.ms!=null);let bottom=0;
+    scoreBands.forEach(([lo,hi],j)=>{const n_=sub.filter(g=>g.ms>=lo&&g.ms<=hi).length,pct=sub.length?n_/sub.length*100:0;
+      const r_=mk('rect',{x:i*zbw+zbw*.1,y:zy(bottom+pct),width:zbw*.8,height:zy(bottom)-zy(bottom+pct),fill:bandColors[j]},zc.g);
+      tip(r_,`<b>${zp}</b> · score ${lo}-${hi}<br>${fmt(pct,1)}% (${n_} of ${sub.length})`);bottom+=pct});
+    txt(zc.g,i*zbw+zbw/2,zc.H+16,zp,{'text-anchor':'middle'})});
+  soundtrack()},
 years(){
   const draw=()=>{const b=$('#yrbasis').value;const by=new Map();
-    G.forEach(g=>{const y=b==='rel'?g.rel:yearOf(b==='fp'?g.fp:g.lp);if(!y||(b!=='rel'&&!g.played))return;if(!by.has(y))by.set(y,[]);by.get(y).push(g)});
+    G.forEach(g=>{const y=b==='rel'?g.rel:b==='ay'?g.ay:yearOf(b==='fp'?g.fp:g.lp);if(!y||((b==='fp'||b==='lp')&&!g.played))return;if(!by.has(y))by.set(y,[]);by.get(y).push(g)});
     const ys=[...by.keys()].sort((a,c)=>a-c),full=[];for(let y=ys[0];y<=ys[ys.length-1];y++)full.push(y);
     vbars('#yr',full.map(y=>{const n=(by.get(y)||[]).length;return{label:y,v:n,tip:`<b>${y}</b>: ${n} games`}}),{xEvery:2,h:340,
       lines:[{name:'My score',color:css('line'),dot:1,values:full.map(y=>mean((by.get(y)||[]).map(g=>g.ms==null?null:g.ms*10)))},{name:'Critics',color:css('accent2'),values:full.map(y=>mean((by.get(y)||[]).map(g=>g.crit)))}]})};
   $('#yrbasis').onchange=draw;draw();
-  const ays=[...new Set(R.map(r=>r.ay).filter(Boolean))].sort(),cols={Paid:css('accent'),Free:css('accent2'),'Friend/Family':'#8c8c8c'};
-  $('#addleg').innerHTML=OWN.map(o=>`<span><i style="background:${cols[o]||'#999'}"></i>${o}</span>`).join('');
+  // average year per score: release / added / first played / last played, by my score 1-10 plus Top 20
+  const ypsSeries=[['Release year','rel',css('accent')],['Added year','ay',css('accent2')],['First played','fp',css('line')],['Last played','lp','#4F9DE8']];
+  $('#ypsleg').innerHTML=ypsSeries.map(([name,,color])=>`<span><i style="background:${color}"></i>${esc(name)}</span>`).join('');
+  const ypsCats=[...Array.from({length:10},(_,i)=>String(i+1)),'Top 20'];
+  const top20=new Set(G.filter(g=>g.rank!=null&&g.rank<=20).map(g=>g.t));
+  const ypsC=canvas('#yps',900,280,{t:10,r:14,b:30,l:44});
+  const ypsVals=ypsSeries.map(([,key])=>ypsCats.map((cat,i)=>{
+    const grp=i<10?G.filter(g=>g.ms===i+1):G.filter(g=>top20.has(g.t));
+    return mean(grp.map(g=>key==='fp'||key==='lp'?yearOf(g[key]):g[key]))}));
+  const allY=ypsVals.flat().filter(v=>v!=null);
+  const yLo=Math.floor(Math.min(...allY)/2)*2,yHi=Math.ceil(Math.max(...allY)/2)*2,ypsY=lin(yLo,yHi,ypsC.H,0);
+  yAxis(ypsC,ypsY,niceTicks(yLo,yHi,6));
+  const ypsX=i=>i*(ypsC.W/(ypsCats.length-1));
+  ypsCats.forEach((cat,i)=>txt(ypsC.g,ypsX(i),ypsC.H+16,cat,{'text-anchor':'middle'}));
+  ypsSeries.forEach(([name,,color],si)=>{const vals=ypsVals[si];
+    let d='';vals.forEach((v,i)=>{if(v==null)return;d+=(d?'L':'M')+ypsX(i).toFixed(1)+','+ypsY(v).toFixed(1)});
+    mk('path',{d,fill:'none',stroke:color,'stroke-width':2},ypsC.g);
+    vals.forEach((v,i)=>{if(v==null)return;const k_=mk('circle',{cx:ypsX(i),cy:ypsY(v),r:3,fill:color},ypsC.g);tip(k_,`<b>${esc(name)}</b> · score ${ypsCats[i]}<br>${fmt(v,1)}`)})});
+  // games added per year, stacked by ownership x platform class
+  const ays=[...new Set(R.map(r=>r.ay).filter(Boolean))].sort(),
+        ownCols={Paid:'#C55A11',Free:'#8E5BD0','Friend/Family':'#8C8C8C'},
+        ptShade={PC:1,Console:.68,Handheld:.4};
+  const shade=(hex,f)=>{const n=parseInt(hex.slice(1),16),r_=(n>>16)&255,g_=(n>>8)&255,b_=n&255,mix=v=>Math.round(v*f+255*(1-f));return `rgb(${mix(r_)},${mix(g_)},${mix(b_)})`};
+  const combos=[];OWN.forEach(o=>['PC','Console','Handheld'].forEach(p=>combos.push([o,p])));
+  $('#addleg').innerHTML=combos.filter(([o,p])=>R.some(r=>r.own===o&&r.pt===p)).map(([o,p])=>`<span><i style="background:${shade(ownCols[o]||'#999',ptShade[p])}"></i>${o} · ${p}</span>`).join('');
   const full=[];for(let y=ays[0];y<=ays[ays.length-1];y++)full.push(y);
   const c=canvas('#add',1000,300,{t:10,r:14,b:36,l:44});const tot=full.map(y=>R.filter(r=>r.ay===y).length),top=niceTicks(0,Math.max(...tot),5),mx=top[top.length-1],y=lin(0,mx,c.H,0);yAxis(c,y,top);
-  const bw=c.W/full.length;full.forEach((yr,i)=>{let acc=0;OWN.forEach(o=>{const n=R.filter(r=>r.ay===yr&&r.own===o).length;if(!n)return;const r=mk('rect',{x:i*bw+bw*.12,y:y(acc+n),width:bw*.76,height:y(acc)-y(acc+n),fill:cols[o]||'#999'},c.g);tip(r,`<b>${yr}</b> ${o}: ${n}`);acc+=n});if(i%2===0)txt(c.g,i*bw+bw/2,c.H+14,yr,{'text-anchor':'middle'})})},
+  const bw=c.W/full.length;full.forEach((yr,i)=>{let acc=0;combos.forEach(([o,p])=>{const n=R.filter(r=>r.ay===yr&&r.own===o&&r.pt===p).length;if(!n)return;const col=shade(ownCols[o]||'#999',ptShade[p]);const r_=mk('rect',{x:i*bw+bw*.12,y:y(acc+n),width:bw*.76,height:y(acc)-y(acc+n),fill:col},c.g);tip(r_,`<b>${yr}</b> ${o} · ${p}: ${n}`);acc+=n});if(i%2===0)txt(c.g,i*bw+bw/2,c.H+14,yr,{'text-anchor':'middle'})})},
 time(){
   const byDay=new Map();L.forEach(r=>{byDay.set(r[0],(byDay.get(r[0])||0)+r[3])});
   const lastLog=L.reduce((m,r)=>r[0]>m?r[0]:m,'0'),last=new Date((END>lastLog?END:lastLog)+'T00:00:00Z');
   const iso=d=>d.toISOString().slice(0,10),addD=(d,n)=>new Date(d.getTime()+n*864e5);
   const series=n=>{const first=n?addD(last,-(n-1)):new Date(L.reduce((m,r)=>r[0]<m?r[0]:m,'9')+'T00:00:00Z');const out=[];for(let d=first;d<=last;d=addD(d,1))out.push([iso(d),byDay.get(iso(d))||0,d.getUTCDay()]);return out};
+  // cumulative distinct games played, by first-ever log date across all history (binary search against the window's dates)
+  const firstPlay=new Map();L.forEach(r=>{if(!firstPlay.has(r[1])||r[0]<firstPlay.get(r[1]))firstPlay.set(r[1],r[0])});
+  const fpSorted=[...firstPlay.values()].sort();
+  const cumGamesAt=dateStr=>{let lo=0,hi=fpSorted.length;while(lo<hi){const mid=(lo+hi)>>1;if(fpSorted[mid]<=dateStr)lo=mid+1;else hi=mid}return lo};
   const draw=()=>{const n=+$('#win').value,s=series(n);
-    const ma=s.map((_,i)=>mean(s.slice(Math.max(0,i-13),i+1).map(x=>x[1])));
+    const ma7=s.map((_,i)=>mean(s.slice(Math.max(0,i-6),i+1).map(x=>x[1])));
+    const ma28=s.map((_,i)=>mean(s.slice(Math.max(0,i-27),i+1).map(x=>x[1])));
     const every=Math.ceil(s.length/12);
     const c=vbars('#daily',s.map((d,i)=>({label:d[0].slice(n&&n<=90?5:0,n&&n<=90?10:7),v:d[1],tip:`<b>${d[0]}</b><br>${fmt(d[1],2)} h`})),{h:300,xEvery:every});
     const bw=c.W/s.length,mx=niceTicks(0,Math.max(1,...s.map(x=>x[1])),5),y=lin(0,mx[mx.length-1],c.H,0);
-    mk('path',{d:ma.map((v,i)=>(i?'L':'M')+(i*bw+bw/2).toFixed(1)+','+y(v).toFixed(1)).join(''),fill:'none',stroke:css('line'),'stroke-width':1.6},c.g);
-    let cum=0;const cs=s.map(d=>(cum+=d[1]));vbarsLine('#cum',cs,s.map(d=>d[0]));
-    const wd=[0,0,0,0,0,0,0],wn=[0,0,0,0,0,0,0];s.forEach(d=>{wd[d[2]]+=d[1];wn[d[2]]++});
-    const names=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];vbars('#wd',[1,2,3,4,5,6,0].map(k=>({label:names[k],v:wd[k]/(wn[k]||1),tip:`${names[k]}: ${fmt(wd[k]/(wn[k]||1),2)} h avg (${fmt(wd[k],1)} h total)`})),{w:560,h:260,color:css('accent2'),yFmt:v=>fmt(v,1)})};
-  function vbarsLine(sel,vals,labels){const c=canvas(sel,560,260,{t:10,r:14,b:30,l:50}),ticks=niceTicks(0,Math.max(...vals),5),y=lin(0,ticks[ticks.length-1],c.H,0),x=lin(0,vals.length-1,0,c.W);yAxis(c,y,ticks);
-    const p=mk('path',{d:vals.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+','+y(v).toFixed(1)).join(''),fill:'none',stroke:css('accent'),'stroke-width':2},c.g);
+    mk('path',{d:ma7.map((v,i)=>(i?'L':'M')+(i*bw+bw/2).toFixed(1)+','+y(v).toFixed(1)).join(''),fill:'none',stroke:css('line'),'stroke-width':1.4},c.g);
+    mk('path',{d:ma28.map((v,i)=>(i?'L':'M')+(i*bw+bw/2).toFixed(1)+','+y(v).toFixed(1)).join(''),fill:'none',stroke:css('accent2'),'stroke-width':1.8},c.g);
+    let cum=0;const cs=s.map(d=>(cum+=d[1])),cg=s.map(d=>cumGamesAt(d[0]));
+    vbarsLine('#cum',cs,s.map(d=>d[0]),{vals2:cg});
+    const wd=[0,0,0,0,0,0,0],wn=[0,0,0,0,0,0,0],wvals=[[],[],[],[],[],[],[]];s.forEach(d=>{wd[d[2]]+=d[1];wn[d[2]]++;wvals[d[2]].push(d[1])});
+    const names=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],order=[1,2,3,4,5,6,0];
+    vbars('#wd',order.map(k=>({label:names[k],v:wd[k]/(wn[k]||1),tip:`${names[k]}: ${fmt(wd[k]/(wn[k]||1),2)} h avg (${fmt(wd[k],1)} h total)`})),{w:560,h:260,color:css('accent2'),yFmt:v=>fmt(v,1)});
+    const wdStats=order.map(k=>{const vals=wvals[k],m_=wd[k]/(wn[k]||1),variance=vals.length?vals.reduce((a,v)=>a+(v-m_)**2,0)/vals.length:0,sd=Math.sqrt(variance);
+      return {label:names[k],mean:m_,sd,lo:Math.max(0,m_-sd),hi:m_+sd}});
+    rangeBand('#wdrange',wdStats,{w:560,h:260,color:css('accent2')})};
+  function vbarsLine(sel,vals,labels,{vals2=null,color2=css('accent2')}={}){
+    const c=canvas(sel,560,260,{t:10,r:vals2?44:14,b:30,l:50}),ticks=niceTicks(0,Math.max(...vals),5),y=lin(0,ticks[ticks.length-1],c.H,0),x=lin(0,vals.length-1,0,c.W);yAxis(c,y,ticks);
+    const p=mk('path',{d:vals.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+','+y(v).toFixed(1)).join(''),fill:'none',stroke:css('line'),'stroke-width':2},c.g);
+    let y2=null;
+    if(vals2){const ticks2=niceTicks(0,Math.max(1,...vals2),4);y2=lin(0,ticks2[ticks2.length-1],c.H,0);
+      ticks2.forEach(t_=>txt(c.g,c.W+6,y2(t_)+4,fmt(t_)));
+      mk('path',{d:vals2.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+','+y2(v).toFixed(1)).join(''),fill:'none',stroke:color2,'stroke-width':2},c.g)}
     [0,Math.floor(vals.length/2),vals.length-1].forEach(i=>txt(c.g,x(i),c.H+16,labels[i],{'text-anchor':i?i===vals.length-1?'end':'middle':'start'}));
-    const hit=mk('rect',{width:c.W,height:c.H,fill:'transparent'},c.g);hit.addEventListener('mousemove',e=>{const r=hit.getBoundingClientRect(),i=Math.max(0,Math.min(vals.length-1,Math.round((e.clientX-r.left)/r.width*(vals.length-1))));tipEl.innerHTML=`<b>${labels[i]}</b><br>${fmt(vals[i],1)} h cumulative`;tipEl.style.display='block';tipEl.style.left=e.clientX+12+'px';tipEl.style.top=e.clientY+14+'px'});hit.addEventListener('mouseleave',()=>tipEl.style.display='none')}
+    const hit=mk('rect',{width:c.W,height:c.H,fill:'transparent'},c.g);hit.addEventListener('mousemove',e=>{const r=hit.getBoundingClientRect(),i=Math.max(0,Math.min(vals.length-1,Math.round((e.clientX-r.left)/r.width*(vals.length-1))));tipEl.innerHTML=`<b>${labels[i]}</b><br>${fmt(vals[i],1)} h cumulative`+(vals2?`<br>${fmt(vals2[i])} games`:'');tipEl.style.display='block';tipEl.style.left=e.clientX+12+'px';tipEl.style.top=e.clientY+14+'px'});hit.addEventListener('mouseleave',()=>tipEl.style.display='none')}
+  /* mean line with a +-1 SD filled band. items:[{label,mean,sd,lo,hi}] */
+  function rangeBand(sel,items,{w=560,h=260,color=css('accent2')}={}){
+    const c=canvas(sel,w,h,{t:10,r:14,b:30,l:44});
+    const mx_=Math.max(1,...items.map(i=>i.hi)),ticks=niceTicks(0,mx_,5),y=lin(0,ticks[ticks.length-1]||mx_,c.H,0);
+    yAxis(c,y,ticks,v=>fmt(v,1));
+    const bw=c.W/items.length,cx=i=>i*bw+bw/2;
+    const top=items.map((it,i)=>[cx(i),y(it.hi)]),bot=items.map((it,i)=>[cx(i),y(it.lo)]);
+    const d='M'+top.map(p=>p.join(',')).join('L')+'L'+bot.slice().reverse().map(p=>p.join(',')).join('L')+'Z';
+    mk('path',{d,fill:color,'fill-opacity':.22,stroke:'none'},c.g);
+    mk('path',{d:items.map((it,i)=>(i?'L':'M')+cx(i)+','+y(it.mean)).join(''),fill:'none',stroke:color,'stroke-width':2},c.g);
+    items.forEach((it,i)=>{const k_=mk('circle',{cx:cx(i),cy:y(it.mean),r:3,fill:color},c.g);tip(k_,`${it.label}: ${fmt(it.mean,2)} h avg (±${fmt(it.sd,2)})`);txt(c.g,cx(i),c.H+14,it.label,{'text-anchor':'middle'})})}
   $('#win').onchange=draw;draw();
+  // frequency of hours played: cumulative % of days at or under X hours, all days vs. days played
+  const fStart=new Date(L.reduce((m,r)=>r[0]<m?r[0]:m,'9')+'T00:00:00Z');
+  const allDays=[];for(let d=fStart;d<=last;d=addD(d,1))allDays.push(byDay.get(iso(d))||0);
+  const playedDays=allDays.filter(v=>v>0);
+  const freqX=Array.from({length:10},(_,i)=>i+1);
+  const pctAll=freqX.map(x=>allDays.filter(v=>v<=x).length/allDays.length*100);
+  const pctPlayed=freqX.map(x=>playedDays.filter(v=>v<=x).length/playedDays.length*100);
+  const fc=canvas('#freq',900,280,{t:10,r:14,b:30,l:44}),fy=lin(0,100,fc.H,0),fx=lin(1,10,0,fc.W);
+  yAxis(fc,fy,[0,20,40,60,80,100],v=>v+'%');
+  niceTicks(1,10,9).forEach(t_=>txt(fc.g,fx(t_),fc.H+16,t_,{'text-anchor':'middle'}));
+  [['% of all days',pctAll,css('accent')],['% of days played',pctPlayed,css('accent2')]].forEach(([name,vals,color])=>{
+    mk('path',{d:vals.map((v,i)=>(i?'L':'M')+fx(freqX[i]).toFixed(1)+','+fy(v).toFixed(1)).join(''),fill:'none',stroke:color,'stroke-width':2},fc.g);
+    vals.forEach((v,i)=>{const k_=mk('circle',{cx:fx(freqX[i]),cy:fy(v),r:3.5,fill:color},fc.g);tip(k_,`<b>${name}</b><br>up to ${freqX[i]} h: ${fmt(v,1)}%`)})});
   const yrs=[...new Set(L.map(r=>+r[0].slice(0,4)))].sort((a,b)=>b-a);$('#calyr').innerHTML=yrs.map(y=>`<option>${y}</option>`).join('');
   const cal=()=>{const yr=+$('#calyr').value,start=new Date(Date.UTC(yr,0,1)),end=new Date(Date.UTC(yr,11,31));const off=(start.getUTCDay()+6)%7,weeks=Math.ceil((off+365+(yr%4===0?1:0))/7);
     const cell=17,c=canvas('#cal',weeks*cell+50,7*cell+30,{t:18,r:6,b:6,l:34});const mxv=Math.max(2,...[...byDay].filter(([d])=>d.startsWith(yr)).map(x=>x[1]));
@@ -234,11 +362,31 @@ time(){
       const rc=mk('rect',{x:k*cell,y:r*cell,width:cell-2,height:cell-2,rx:3,fill:col},c.g);tip(rc,`<b>${iso(d)}</b><br>${h?fmt(h,2)+' h':'no play'}`);
       if(d.getUTCDate()===1)txt(c.g,k*cell,-6,d.toLocaleString('en',{month:'short',timeZone:'UTC'}))}};
   $('#calyr').onchange=cal;cal()},
+mosaic(){
+  const draw=()=>{const o=$('#mzo').value,all=$('#mzf').value==='all';
+    let gs=SERIES_ORDER.map(t=>gByTitle.get(t)).filter(g=>g&&THUMBS[g.t]&&(all||g.played));
+    if(o==='score')gs.sort((a,b)=>(b.ms??-1)-(a.ms??-1)||(b.hrs||0)-(a.hrs||0));else if(o==='hours')gs.sort((a,b)=>(b.hrs||0)-(a.hrs||0));else if(o==='title')gs.sort((a,b)=>a.t.localeCompare(b.t));
+    $('#mzn').textContent=gs.length+' covers';
+    $('#mosaic').innerHTML=gs.map(g=>`<img loading="lazy" decoding="async" alt="${esc(g.t)}" data-t="${esc(g.t)}" src="data:image/jpeg;base64,${THUMBS[g.t]}">`).join('');
+    $$('#mosaic img').forEach(im=>{const g=gByTitle.get(im.dataset.t);tip(im,`<b>${esc(g.t)}</b><br>${esc(g.genre||'')} · ${g.rel||''}<br>${fmt(g.hrs)} h · score ${g.ms??'–'}/10`);
+      im.onclick=()=>{$('#pbody').innerHTML=`<img src="data:image/jpeg;base64,${THUMBS[g.t]}" style="width:120px;float:right;margin:0 0 8px 8px;border-radius:4px"><h3>${esc(g.t)}</h3><p>${esc(g.s||'')}<br>${esc(g.genre||'')} · ${esc(g.view||'')} · ${g.rel||''}<br>${(g.sys||[]).join(', ')}<br>${fmt(g.hrs,1)} h · My score ${g.ms??'–'}/10${g.so?'<br>Soundtrack owned':''}</p>`;$('#panel').classList.add('open')}})};
+  $('#mzo').onchange=draw;$('#mzf').onchange=draw;draw()},
 hours(){
-  const draw=()=>{const n=+$('#nser').value,m=new Map();G.forEach(g=>{if(g.hrs>0)m.set(g.s,(m.get(g.s)||0)+g.hrs)});
-    const rows=[...m].sort((a,b)=>b[1]-a[1]).slice(0,n).map(([s,h])=>({label:s,v:h,tip:`<b>${esc(s)}</b><br>${fmt(h)} h · ${G.filter(g=>g.s===s&&g.hrs>0).length} games played`}));
-    hbars('#ser',rows,{w:560,rowH:22,labelW:170})};$('#nser').onchange=draw;draw();
+  const owned=new Map(),played=new Map(),hrsBySeries=new Map();
+  G.forEach(g=>{owned.set(g.s,(owned.get(g.s)||0)+1);if(g.hrs>0){hrsBySeries.set(g.s,(hrsBySeries.get(g.s)||0)+g.hrs);played.set(g.s,(played.get(g.s)||0)+1)}});
+  const draw=()=>{const n=+$('#nser').value;
+    const rows=[...hrsBySeries].sort((a,b)=>b[1]-a[1]).slice(0,n).map(([s,h])=>({label:s,v:h,bg:owned.get(s)||0,
+      tip:`<b>${esc(s)}</b><br>${fmt(h)} h · ${played.get(s)||0} played of ${owned.get(s)||0} owned`,
+      bgTip:`<b>${esc(s)}</b>: ${owned.get(s)||0} games owned`}));
+    hbars('#ser',rows,{w:560,rowH:22,labelW:170,bgColor:'#8c8c8c',bgMax:Math.max(...owned.values())})};$('#nser').onchange=draw;draw();
   const order=['Best','Good','Neutral','Bland','Bad','Worst'];vbars('#zph',order.map(o=>({label:o,v:G.filter(g=>g.zp===o).reduce((a,g)=>a+g.hrs,0),tip:`${o}: ${fmt(G.filter(g=>g.zp===o).reduce((a,g)=>a+g.hrs,0))} h`})),{w:560,h:260,color:css('accent2')});
+  // top 10 series concentration: what share of games/hours sit in the 10 biggest series
+  const top10Series=new Set([...hrsBySeries].sort((a,b)=>b[1]-a[1]).slice(0,10).map(x=>x[0]));
+  const gTop=G.filter(g=>top10Series.has(g.s)).length,gAll=G.length;
+  const hTop=[...hrsBySeries].filter(([s])=>top10Series.has(s)).reduce((a,[,h])=>a+h,0),hAll=[...hrsBySeries.values()].reduce((a,b)=>a+b,0);
+  $('#topnote').textContent=`Top 10 series = ${gTop} of ${gAll} games (${fmt(gTop/gAll*100,0)}%) but ${fmt(hTop)} of ${fmt(hAll)} hours (${fmt(hTop/hAll*100,0)}%).`;
+  donut('#topgames',gTop,gAll-gTop,v=>fmt(v),['Top 10 series','Rest']);
+  donut('#tophours',hTop,hAll-hTop,v=>fmt(v),['Top 10 series','Rest']);
   const srcs=[['My Score','ms',1],['Metacritic','mc',10],['IGN','ign',1],['GameSpot','gs',1],['Game Informer','gi',1]];$('#scx').innerHTML=srcs.map(s=>`<option value="${s[1]}">${s[0]}</option>`).join('');
   const sc=()=>{const k=$('#scx').value,f=srcs.find(s=>s[1]===k)[2],log=$('#scy').value==='log';
     const pts=G.filter(g=>g[k]!=null&&g.hrs>0).map(g=>({g,x:g[k]*10/f,y:g.hrs}));
@@ -251,7 +399,7 @@ hours(){
     // fit: log-linear (log) or least-squares (linear)
     const X=pts.map(p=>p.x),Yv=pts.map(p=>log?Math.log(p.y):p.y),mx=mean(X),my=mean(Yv);let sxy=0,sxx=0,syy=0;X.forEach((x,i)=>{sxy+=(x-mx)*(Yv[i]-my);sxx+=(x-mx)**2;syy+=(Yv[i]-my)**2});
     const b=sxy/sxx,a=my-b*mx,r2=sxy*sxy/(sxx*syy);const f1=x=>log?Math.exp(a+b*x):a+b*x;
-    const xsPts=Array.from({length:51},(_,i)=>10+i*1.8);mk('path',{d:xsPts.map((x,i)=>(i?'L':'M')+xs(x).toFixed(1)+','+Y(Math.max(.01,f1(x))).toFixed(1)).join(''),fill:'none',stroke:css('accent'),'stroke-width':2.5},c.g);
+    const xsPts=Array.from({length:51},(_,i)=>10+i*1.8);mk('path',{d:xsPts.map((x,i)=>(i?'L':'M')+xs(x).toFixed(1)+','+Math.max(0,Math.min(c.H,Y(Math.max(.01,f1(x))))).toFixed(1)).join(''),fill:'none',stroke:css('accent'),'stroke-width':2.5},c.g);
     txt(c.g,8,14,`${log?'Exponential':'Linear'} fit · R² = ${r2.toFixed(2)} · n = ${pts.length}`,{class:'lbl'})};
   $('#scx').onchange=sc;$('#scy').onchange=sc;sc()},
 games(){
@@ -266,6 +414,25 @@ games(){
     $$('#gt th').forEach(th=>th.onclick=()=>{const k=th.dataset.k;sd=k===sk?-sd:1;sk=k;draw()})};
   ['#q','#fg','#fs','#fp'].forEach(s=>$(s).addEventListener('input',draw));draw()}
 };
+
+/* two-slice donut with big numbers in the middle. colors default to accent/grey */
+function donut(sel,a,b,f,labels=['A','B'],colors=[css('accent'),'#8c8c8c']){
+  const cc=canvas(sel,240,170,{t:4,r:4,b:4,l:4}),cx=cc.W/2,cy=cc.H/2,R=70,r=42,t=a+b;let a0=-Math.PI/2;
+  [[a,colors[0],labels[0]],[b,colors[1],labels[1]]].forEach(([v,col,nm])=>{const a1=a0+v/t*2*Math.PI,big=a1-a0>Math.PI?1:0,P=(rr,an)=>[cx+rr*Math.cos(an),cy+rr*Math.sin(an)];
+    const [x0,y0]=P(R,a0),[x1,y1]=P(R,a1-1e-4),[x2,y2]=P(r,a1-1e-4),[x3,y3]=P(r,a0);
+    const p=mk('path',{d:`M${x0},${y0}A${R},${R} 0 ${big} 1 ${x1},${y1}L${x2},${y2}A${r},${r} 0 ${big} 0 ${x3},${y3}Z`,fill:col},cc.g);tip(p,`<b>${nm}</b>: ${f(v)} (${fmt(v/t*100,1)}%)`);a0=a1});
+  txt(cc.g,cx,cy-2,f(a),{'text-anchor':'middle',style:`fill:${colors[0]};font-weight:700;font-size:14px`});txt(cc.g,cx,cy+16,f(b),{'text-anchor':'middle',style:'font-weight:700;font-size:14px'})}
+
+function soundtrack(){
+  const O=SOUND['1'],N=SOUND['0'],GR='#8c8c8c';
+  const bands=Array.from({length:10},(_,k)=>k?`${10*k+1}-${10*k+10}`:'0-10');
+  const c=canvas('#sdist',560,260,{t:10,r:14,b:30,l:44}),mx=Math.max(...O.mc_dist,...N.mc_dist)*100,tk=niceTicks(0,mx,5),y=lin(0,tk[tk.length-1],c.H,0),bw=c.W/10;
+  yAxis(c,y,tk,v=>v+'%');
+  bands.forEach((b,i)=>{[[O.mc_dist[i],css('accent'),'Owned'],[N.mc_dist[i],GR,'Not owned']].forEach(([v,col,nm],j)=>{const r=mk('rect',{x:i*bw+bw*.1+j*bw*.4,y:y(v*100),width:bw*.4,height:c.H-y(v*100),fill:col},c.g);tip(r,`<b>${nm}</b> · Metacritic ${b}<br>${fmt(v*100,1)}% of games`)});txt(c.g,i*bw+bw/2,c.H+16,b,{'text-anchor':'middle'})});
+  const names=Object.keys(O.scores),c2=canvas('#savg',560,260,{t:10,r:14,b:40,l:44}),y2=lin(0,100,c2.H,0),bw2=c2.W/names.length;
+  yAxis(c2,y2,[0,20,40,60,80,100]);
+  names.forEach((n,i)=>{[[O.scores[n],css('accent'),'Owned'],[N.scores[n],GR,'Not owned']].forEach(([v,col,nm],j)=>{if(v==null)return;const r=mk('rect',{x:i*bw2+bw2*.1+j*bw2*.4,y:y2(v),width:bw2*.4,height:c2.H-y2(v),fill:col},c2.g);tip(r,`<b>${nm}</b> · ${n}: ${fmt(v,1)}`);txt(c2.g,i*bw2+bw2*.3+j*bw2*.4,y2(v)-3,fmt(v),{'text-anchor':'middle'})});txt(c2.g,i*bw2+bw2/2,c2.H+16,n,{'text-anchor':'middle'})});
+  donut('#sgames',O.games,N.games,v=>fmt(v),['Owned','Not owned']);donut('#shours',O.hours,N.hours,v=>fmt(v),['Owned','Not owned'])}
 
 function drawMatrix(){
   const dim=$('#mxdim').value;const cols=dim==='genre'?GENRES:dim==='view'?VIEWS:dim==='style'?STYLES:dim==='own'?OWN:RELT;
