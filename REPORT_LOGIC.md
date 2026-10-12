@@ -296,10 +296,10 @@ Scripts are in `tools/` and need **no third-party packages** — they read the `
 `zipfile` + `ElementTree`, so they run on a bare Python:
 
 ```
-python tools/verify_halo.py
-python tools/verify_heat.py
-python tools/verify_stats.py
-python tools/verify_stats2.py
+python docs/archive/verify/verify_halo.py
+python docs/archive/verify/verify_heat.py
+python docs/archive/verify/verify_stats.py
+python docs/archive/verify/verify_stats2.py
 ```
 
 Re-run them after the rebuild to confirm `data.py` still agrees with the workbook.

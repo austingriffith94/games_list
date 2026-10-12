@@ -1,20 +1,17 @@
-"""Database schema (v2): real constraints replace the workbook's check columns.
+"""Database schema (v4). games_list.db is the master copy; this file documents its structure and applies upgrades.
 
-* titles are unique ignoring case (Excel lookups ignored case; this keeps that behaviour but makes it explicit)
+* titles are unique ignoring case
 * releases -> games and play_log -> releases are foreign keys with ON UPDATE CASCADE, so renaming a game
   renames it everywhere, and deleting something that is still referenced is refused
 * dropdown values live in ref_* tables (add a genre/system without touching code)
 * audit records every change made through the app so it can be undone
-* halo_levels (v3) holds the HaloRank level ratings; the score/tier columns are derived (halo.py), never stored
+* halo_levels holds the HaloRank level ratings; the score/tier columns are derived (halo.py), never stored
+
+DDL and HALO_DDL below are a reference for the current structure (the database already exists; they are not run).
 """
 import sqlite3
 
-VERSION = 3
-STYLE_ORDER = ['2D', '2.5D', '3D']
-SYSTEM_ORDER = ['PS1', 'PS2', 'PCSX2', 'PS4', 'PS5', 'Xbox', 'Xbox 360', 'Xbox One', 'Nintendo 64', 'Nintendo Gamecube',
-                'Nintendo Switch', 'Wii', 'Steam', 'GOG', 'Origin', 'EPIC', 'Battle.net', 'Prime Gaming', 'Windows',
-                'Gameboy', 'PSP', 'Mobile']
-RELEASE_TYPES = ['Retail', 'DLC/Expansion', 'Demo', 'Mod']
+VERSION = 4
 
 DDL = """
 CREATE TABLE ref_genre(name TEXT PRIMARY KEY COLLATE NOCASE);
@@ -68,7 +65,6 @@ CREATE TABLE play_log(
   game TEXT NOT NULL COLLATE NOCASE,
   system TEXT NOT NULL COLLATE NOCASE,
   hours NUMERIC NOT NULL CHECK(hours > 0),
-  real INTEGER CHECK(real IS NULL OR real = 1),
   UNIQUE(date, game, system),
   FOREIGN KEY(game, system) REFERENCES releases(title, system) ON UPDATE CASCADE ON DELETE RESTRICT
 );
@@ -113,17 +109,6 @@ CREATE TABLE halo_levels(
 CREATE INDEX ix_halo_game ON halo_levels(series_order, level_order);
 """
 
-GAME_COLS = ['title', 'series', 'graphic_style', 'camera_view', 'genre', 'sub_genre', 'singleplayer', 'local_co_op',
-             'online_co_op', 'local_multiplayer', 'online_multiplayer', 'my_score', 'metacritic', 'pc_gamer', 'gamespot',
-             'ign', 'destructoid', 'game_informer', 'zero_punctuation', 'goty_votes', 'wikipedia_goat',
-             'soundtrack_owned', 'playthroughs', 'average_playthrough']
-REL_COLS = ['title', 'release', 'system', 'ownership', 'original_release_date', 'version_release_date', 'added_date']
-LOG_COLS = ['date', 'game', 'system', 'hours', 'real']
-
-SUPERSEDED = ['lk_genretable', 'lk_viewstable', 'lk_stylestable', 'lk_ownershiptable', 'lk_gametypetable',
-              'lk_systemtypemap', 'lk_zeropunctuationopinions', 'lk_subgenremaptable', 'lk_subgenrecontroldynamic',
-              'lk_topranktable']
-
 
 def connect(path):
     con = sqlite3.connect(path)
@@ -132,65 +117,23 @@ def connect(path):
     return con
 
 
-def _col(con, table):
-    return [r[1] for r in con.execute(f'PRAGMA table_info({table})')]
-
-
 def upgrade(path):
-    """Upgrade a v1 (workbook copy) or v2 database to the current schema, each in one transaction."""
+    """Apply pending upgrades in one transaction. v3 -> v4 drops the unused play_log.real flag."""
     con = sqlite3.connect(path, isolation_level=None)
-    ver = con.execute('PRAGMA user_version').fetchone()[0]
-    if ver >= VERSION:
-        con.close(); return False
-    if ver == 2:                                     # v2 -> v3: add the HaloRank level table
+    try:
+        ver = con.execute('PRAGMA user_version').fetchone()[0]
+        if ver >= VERSION: return False
+        if ver != 3: raise RuntimeError(f'unsupported schema version {ver}; expected 3 or {VERSION}')
+        con.execute('BEGIN')
         try:
-            con.execute('BEGIN')
-            for stmt in HALO_DDL.split(';\n'):
-                if stmt.strip(): con.execute(stmt)
+            con.execute('ALTER TABLE play_log DROP COLUMN real')
             con.execute(f'PRAGMA user_version={VERSION}')
             con.execute('COMMIT')
         except Exception:
             con.execute('ROLLBACK'); raise
-        finally:
-            con.close()
         return True
-    con.execute('PRAGMA foreign_keys=OFF')
-    con.execute('BEGIN')
-    try:
-        for t in ('games', 'releases', 'play_log'):
-            con.execute(f'ALTER TABLE {t} RENAME TO {t}_v1')
-        for stmt in (DDL + HALO_DDL).split(';\n'):
-            if stmt.strip(): con.execute(stmt)
-        one = lambda t: [r[0] for r in con.execute(f'SELECT * FROM {t}')]
-        ins = lambda t, rows: con.executemany(f'INSERT OR IGNORE INTO {t} VALUES ({",".join("?" * len(rows[0]))})', rows) if rows else None
-        ins('ref_genre', [(g,) for g in sorted(one('lk_genretable'))])
-        ins('ref_view', [(g,) for g in sorted(one('lk_viewstable'))])
-        styles = one('lk_stylestable'); ins('ref_style', [(s,) for s in STYLE_ORDER + [x for x in styles if x not in STYLE_ORDER]])
-        ins('ref_ownership', [(g,) for g in ['Paid', 'Free', 'Friend/Family'] if g in one('lk_ownershiptable')] +
-            [(g,) for g in one('lk_ownershiptable') if g not in ('Paid', 'Free', 'Friend/Family')])
-        ins('ref_release_type', [(g,) for g in RELEASE_TYPES + [x for x in one('lk_gametypetable') if x not in RELEASE_TYPES]])
-        ins('ref_zp', [(g,) for g in ['Best', 'Good', 'Neutral', 'Bland', 'Bad', 'Worst'] + [x for x in one('lk_zeropunctuationopinions') if x not in ('Best', 'Good', 'Neutral', 'Bland', 'Bad', 'Worst')]])
-        smap = {r[0]: r[1] for r in con.execute('SELECT system, type FROM lk_systemtypemap')}
-        ins('ref_system', [(s, smap[s]) for s in SYSTEM_ORDER if s in smap] + [(s, t) for s, t in smap.items() if s not in SYSTEM_ORDER])
-        ins('ref_subgenre', [(g, s) for g, s, *_ in con.execute('SELECT * FROM lk_subgenremaptable')])
-        ins('top_rank', [(int(r), g) for g, r in con.execute('SELECT game, rank FROM lk_topranktable')])
-        # copy data (columns that exist in v1 under the same names)
-        for t, cols in (('games', GAME_COLS), ('releases', REL_COLS), ('play_log', LOG_COLS)):
-            have = _col(con, t + '_v1')
-            sel = ', '.join(c if c in have else 'NULL' for c in cols)
-            con.execute(f'INSERT INTO {t}(id, {", ".join(cols)}) SELECT id, {sel} FROM {t}_v1')
-        for t in ('games_v1', 'releases_v1', 'play_log_v1'): con.execute(f'DROP TABLE {t}')
-        for t in SUPERSEDED: con.execute(f'DROP TABLE IF EXISTS {t}')
-        con.execute('PRAGMA foreign_keys=ON')
-        bad = con.execute('PRAGMA foreign_key_check').fetchall()
-        if bad: raise sqlite3.IntegrityError(f'foreign key violations after upgrade: {bad[:5]}')
-        con.execute(f'PRAGMA user_version={VERSION}')
-        con.execute('COMMIT')
-    except Exception:
-        con.execute('ROLLBACK'); raise
     finally:
         con.close()
-    return True
 
 
 if __name__ == '__main__':

@@ -16,13 +16,13 @@ SQLite database + Python + generated reports + a local entry app.
 - `build_pdf.py` makes the PDF (matplotlib, Letter, 24 pages plus a cover collage).
 - `build_html.py` + `dashboard.template.html` make a self-contained dashboard (vanilla JS, inline SVG, no CDN).
 - `data.py` replaces about 90K workbook formulas with pandas.
-- `migrate.py` converted the xlsm to SQLite. `schema.py` holds the DDL and upgrade.
-- Tests: `test_parity.py` (numbers match the workbook) and `test_api.py` (68 checks) pass cleanly on Windows. `test_e2e.py` (39 Playwright UI checks) is unresolved on Windows — see **Windows test status** below before touching it.
+- `gamelist.db` is now the master copy (the one-time workbook import was removed). `schema.py` documents the structure and holds upgrades (v4 dropped `play_log.real`).
+- Tests: `test_data.py` (derived numbers are internally consistent) and `test_api.py` (68 checks) pass cleanly on Windows. `test_e2e.py` (39 Playwright UI checks) is unresolved on Windows — see **Windows test status** below before touching it.
 - `REPORT_LOGIC.md` is a verified spec decoding the workbook's HaloRank, HeatMapScore and Stats sheet formulas (see **Reports decoded** below) — read it before rebuilding any of those reports.
 - Run: `pip install -r requirements.txt`, then `python app.py` (or `start_app.bat`).
 
 ## Data model notes
-- Tables: games, releases (title + system, FK to games), play_log (date, game, system, hours, real; unique on date+game+system), top_rank, audit (undo), `ref_*` lookup tables.
+- Tables: games, releases (title + system, FK to games), play_log (date, game, system, hours; unique on date+game+system), top_rank, audit (undo), `ref_*` lookup tables.
 - Titles and lookups are case-insensitive (`COLLATE NOCASE`), as in Excel. Renaming a game cascades to its releases and log rows.
 - Workbook checks ported to the app's Checks tab:
   - Data Filled: system, modes, scores, years.
@@ -50,7 +50,7 @@ Full spec, including the exact tier bands, bin edges, bucket definitions, and se
 non-obvious gotchas (upper-inclusive tier bands, a real off-by-one gap in
 `LastVsFirstBuckets`, Excel's sample-corrected `SKEW`/`KURT`, `DATEDIF`'s `IFERROR(...,0)`
 swallowing data errors) is in **`REPORT_LOGIC.md`**. Re-runnable, dependency-free verification
-scripts are in `tools/verify_*.py`.
+scripts are archived in `docs/archive/verify/`.
 
 **This also surfaced a real data problem:** the two out-of-range scores (WRC 8 IGN, Overwatch 2
 GameSpot) roughly tripled the standard deviation of GameSpot and IGN scores. They were fixed in
@@ -61,7 +61,7 @@ windows (see `docs/archive/ACTION_PLAN_workbook_parity.md` 3.4). Soundtrack stat
 
 **Built and verified:** HaloRank (app tab, `halo.py`, `halo_levels` table), HeatMapScore
 (`data.heatmap()`) and all fourteen Stats tables (`data.stats_tables()`), plus the Phase 1 and 2
-charts. `tools/verify_rebuild.py` diffs them against the workbook's cached values (ALL MATCH).
+charts. `docs/archive/verify/verify_rebuild.py` diffed them against the workbook's cached values (ALL MATCH).
 The workbook-parity plan (including the Phase 4 HTML-only ideas) is finished and archived in
 `docs/archive/ACTION_PLAN_workbook_parity.md`. **What's next is in `ACTION_PLAN.md`:** UI and chart
 presentation fixes from the Oct 12 2026 rendered review.
@@ -83,11 +83,10 @@ Used by the dashboard (`--accent`, `--accent2`, `--line`, `--muted` in `dashboar
 Red is not used for any data encoding.
 
 Not yet on this scheme: the date-basis series in *Average year per score* (Added year is purple) and the
-"Flagged Real" overlay on PDF p7. Zero Punctuation always runs Best to Worst.
+PDF p7 (the "Flagged Real" overlay is gone). Zero Punctuation always runs Best to Worst.
 
 ## Open items
-1. **Data question for me, still open:** what the `Real` flag on log rows means. 361 of 2,717 rows
-   have it set (15 of the 23 entries over 24 hours). The reports currently label it "Flagged Real".
+1. ~~`Real` flag~~: resolved. It marked estimated time and was dropped in schema v4 (Oct 12 2026).
    (The two out-of-range scores were corrected in `eb381be`.)
 2. ~~Reports not yet rebuilt from the workbook~~ — HaloRank, HeatMapScore, Stats and the Phase 1/2
    charts, the 3.4 heat map comparison and the Phase 4 HTML ideas are built (archived plan in `docs/archive/`).
@@ -99,7 +98,7 @@ The app now runs on Windows in a real conda env (`game1`, has pandas/numpy/matpl
 openpyxl/pillow/playwright — use this env, not bare `python`/`python3`, which are empty
 Microsoft Store stubs on this machine).
 
-- `test_parity.py` — **passes.**
+- `test_data.py` — **passes.**
 - `test_api.py` — **passes, 53/53**, after one fix already applied: `counts()` left a sqlite
   connection open, which only breaks cleanup on Windows (Windows keeps the file locked for
   `rmtree`; Linux doesn't care). Already fixed in the repo.
@@ -132,9 +131,9 @@ Microsoft Store stubs on this machine).
   (`C:\Users\austg\miniconda3\envs\game1\python.exe`), not `python`/`python3` on PATH.
 
 ## Suggested next step
-1. Tell the assistant what the `Real` flag means (item 1).
+1. (done) the `Real` flag was removed.
 2. Get one clean, uninterrupted `test_e2e.py` run on Windows to actually know if it passes.
 3. Work through the UI and chart presentation plan in `ACTION_PLAN.md`,
-   re-running `tools/verify_*.py` after each change.
+   re-running `test_data.py` and `test_api.py` after each change.
 4. I'll use the app for a week or two after that; tell the assistant which reports I actually
    use, and prioritize those for dashboard/PDF layout work.

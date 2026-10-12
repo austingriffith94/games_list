@@ -22,10 +22,10 @@ The workbook-parity plan that came before this one is finished and archived in
 of the work is in `dashboard.template.html`, plus a few real bugs in `build_pdf.py`.
 
 **Guard rails.** No item changes a value in the database or a number in a Statistics table, so
-`test_parity.py` and `tools/verify_rebuild.py` should keep passing unchanged. One thing can still
+`test_data.py` and `test_api.py` should keep passing unchanged. (The archived workbook verifiers no longer apply.) One thing can still
 trip them: `data.ZP_ORDER`, which the verifier uses to line up workbook rows (see 2.3), so leave it
 alone. The report window end date (see Decisions) does not affect the verifier, which feeds the
-workbook's own From/To dates into the same code (`tools/verify_rebuild.py:157`), but it does change
+workbook's own From/To dates into the same code (`docs/archive/verify/verify_rebuild.py:157`), but it does change
 what the Time played pages show.
 
 A review coverage note is at the bottom: what was looked at and what was not.
@@ -211,7 +211,7 @@ colour-role table and apply it everywhere (dashboard CSS tokens and the PDF cons
 (474). The PDF repeats the split (`build_pdf.py:268` and `:448` vs. `:489`; p4/p14 vs. p16).
 
 **Use Best→Worst everywhere.** The Statistics tables and `data.ZP_ORDER` (`data.py:229`) already use
-it, it matches the workbook, and `tools/verify_rebuild.py` (lines 97 and 101) indexes workbook rows by
+it, it matches the workbook, and `docs/archive/verify/verify_rebuild.py` (lines 97 and 101) indexes workbook rows by
 that order, so changing `ZP_ORDER` would break verification for no visual gain. So the fix is two
 charts only: reverse `zpOrder` in the dashboard (474) and `zp_order` in the PDF (489). Do not touch
 `data.py`.
@@ -426,8 +426,8 @@ annoying.
 4. **2.1, 2.2, 2.5 together for each page**, taking p15 as one change, then 2.3 and 2.4 (2.4 also fixes
    the heat ramp, so decide the palette first).
 5. The rest of Phase 2, then the **Gate** (G1-G3), then Phase 3, then Phase 4.
-6. After each step: rebuild both reports, screenshot, run `test_parity.py`, `test_api.py` and
-   `tools/verify_*.py` (use the `game1` env). `test_e2e.py` is still unresolved on Windows (see
+6. After each step: rebuild both reports, screenshot, run `test_data.py` and `test_api.py`
+   (use the `game1` env). `test_e2e.py` is still unresolved on Windows (see
    `PROJECT_CONTEXT.md`), so check the entry-app changes in 3.4 by hand until it is.
 
 ## Decisions for the owner

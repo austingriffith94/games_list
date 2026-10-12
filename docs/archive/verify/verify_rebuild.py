@@ -1,5 +1,5 @@
 """Check the rebuilt reports (data.py heatmap()/stats_tables(), halo.py) against the values Excel cached in the
-workbook.  Needs pandas (run it in the project env):  python tools/verify_rebuild.py
+workbook.  Needs pandas (run it in the project env):  python docs/archive/verify/verify_rebuild.py
 
 Two things legitimately differ from the workbook and are handled explicitly, not ignored:
   * WRC 8's IGN (84) and Overwatch 2's GameSpot (80) were out of range in the workbook and are fixed in
@@ -9,12 +9,12 @@ Two things legitimately differ from the workbook and are handled explicitly, not
     That table is compared with the 6-year games added back to the "6-9" row.
 """
 import os, sys, zipfile, xml.etree.ElementTree as ET
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..'))
 import numpy as np
 import pandas as pd
 import data as D, halo
 
-XLSM = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'old_excel', 'games_list.xlsm')
+XLSM = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..', 'old_excel', 'games_list.xlsm')
 NS = '{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
 z = zipfile.ZipFile(XLSM)
 ss = [''.join(t.text or '' for t in si.iter(NS + 't')) for si in ET.fromstring(z.read('xl/sharedStrings.xml'))]

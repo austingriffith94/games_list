@@ -36,17 +36,15 @@ Covers are cropped to 2:3 and downscaled in the PDF, so large originals are fine
 ## Data notes
 * Two review scores were outside their scale in the workbook: **WRC 8** IGN = 84 and **Overwatch 2** GameSpot = 80
   (probably 8.4 and 8.0). They are flagged on the Checks tab and can't be re-saved until fixed.
-* The time log's old **Real** flag (361 entries from 2001-2018, a marker for estimated rather than save-file time) is kept in the database but no longer shown or edited anywhere.
+* The old workbook's time-log "Real" flag (estimated vs save-file time) was dropped in schema v4.
 
 ## Tests
-    python test_parity.py   # rebuilt numbers vs the original workbook / PDF
+    python test_data.py     # internal consistency of the derived numbers
     python test_api.py      # 68 checks on a scratch copy of the data
     python test_e2e.py      # 39 checks driving the real UI in a headless browser (needs playwright)
 
-## One-time import from the workbook
-    python migrate.py games_list.xlsm gamelist.db
 (Excel ignores letter case in lookups; log rows that differed only by case, e.g. "Dirt Rally" vs "DiRT Rally", are corrected and listed in `data_fixes`.)
 
 ## Files
-app.py (server + API) · static/app.html (UI) · schema.py (constraints) · data.py (derived metrics) ·
-build_html.py / build_pdf.py (reports) · dashboard.template.html · migrate.py · test_*.py
+app.py (server + API) · static/app.html (UI) · schema.py (constraints, upgrades) · data.py (derived metrics) ·
+build_html.py / build_pdf.py (reports) · dashboard.template.html · test_*.py
