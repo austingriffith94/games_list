@@ -66,6 +66,25 @@ The workbook-parity plan (including the Phase 4 HTML-only ideas) is finished and
 `docs/archive/ACTION_PLAN_workbook_parity.md`. **What's next is in `ACTION_PLAN.md`:** UI and chart
 presentation fixes from the Oct 12 2026 rendered review.
 
+## Chart colour roles
+
+Used by the dashboard (`--accent`, `--accent2`, `--line`, `--muted` in `dashboard.template.html`) and the PDF
+(`ORANGE`, `PURPLE`, `DARK`, `GREY` in `build_pdf.py`). Keep new charts to these roles.
+
+| Role | Colour | Use |
+|---|---|---|
+| Mine / default | Orange | My score, and every single-series chart (including the weekday and Zero Punctuation bars) |
+| Critics / comparison | Purple | Critic average and outlet comparisons only |
+| Averages, fits, "everything else" | Ink (`--line` / `DARK`) or grey (`--muted` / `GREY`) | 7-day and 28-day averages, cumulative games, "% of days played", regression lines |
+| Ownership classes | Teal (Paid), gold (Free), grey (Friend/Family), shaded by platform | *Games added per year* only |
+| My score bands | Single-hue blue, light → dark: 1-2 / 3-4 / 5-6 / 7-8 / 9-10 (`--s1`..`--s5`, `SCORE5`; dark mode has its own lighter set) | Every chart stacked or coloured by my score |
+| Counts (heat) | White → report orange `#C55A11`, one hue family | Matrices, heat maps, Statistics tables, calendars |
+
+Red is not used for any data encoding.
+
+Not yet on this scheme: the date-basis series in *Average year per score* (Added year is purple) and the
+"Flagged Real" overlay on PDF p7. Zero Punctuation always runs Best to Worst.
+
 ## Open items
 1. **Data question for me, still open:** what the `Real` flag on log rows means. 361 of 2,717 rows
    have it set (15 of the 23 entries over 24 hours). The reports currently label it "Flagged Real".

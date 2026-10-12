@@ -13,7 +13,7 @@ The workbook-parity plan that came before this one is finished and archived in
 |---|---|
 | Phase 0: render-and-screenshot tool | Not started |
 | Phase 1 (1.1-1.10): rendering, layout and contrast bugs | Done (1.1-1.10) |
-| Phase 2 (2.1-2.8): chart form and encoding | Not started |
+| Phase 2 (2.1-2.8): chart form and encoding | Done (2.1-2.8) |
 | Gate (G1-G3): finish the review before Phase 3 | Not started |
 | Phase 3 (3.1-3.7): layout, polish, hygiene | Not started |
 | Phase 4 (4.1-4.2): carried over from the parity plan | Not started |
@@ -420,8 +420,8 @@ annoying.
   - **(a)** keep ending on today and say so in the subtitle;
   - **(b)** end on the last log date;
   - **(c)** end on today but grey out the days after the last log.
-- **Score palette (2.4):** single-hue (magnitude) or diverging (bad↔good)? Diverging keeps the current
-  "red is bad, green is good" reading on a colour-blind-safe pair.
+- **Resolved, score palette (2.4):** single-hue blue, light (1-2) to dark (9-10), in 5 bands. Chosen over
+  diverging because it also stays ordered on a greyscale printout.
 - **Resolved, printing (1.7):** the PDF is the printable output; the dashboard only prints the open tab.
 - **Overview labels (3.3):** relabel "Games" to "Releases" and keep "406d 3.5h" (recommended), or leave
   the labels as they are.
