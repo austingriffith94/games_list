@@ -132,6 +132,33 @@ def daily_hours(log, days=365, end=None):
     return s
 
 
+CAL_STAT_NAMES = ['Max', '75%', 'Avg', 'Median', '25%', 'Min']
+
+
+def calendar_stats(s, include_zero=False):
+    """Max / 75% / Avg / Median / 25% / Min of a daily-hours series (the calendar heat map's stats block).
+    Played days only by default; include_zero=True counts every day in the window, as the workbook does.
+    Percentiles are PERCENTILE.INC (linear interpolation), not the workbook's PERCENTILE.EXC."""
+    v = s if include_zero else s[s > 0]
+    if len(v) == 0: return dict.fromkeys(CAL_STAT_NAMES, 0.0)
+    q = v.quantile
+    return {'Max': float(v.max()), '75%': float(q(.75)), 'Avg': float(v.mean()), 'Median': float(v.median()),
+            '25%': float(q(.25)), 'Min': float(v.min())}
+
+
+def calendar_windows(log, end=None, years=4, days=365):
+    """The heat map comparison's windows (TimeHeatComp): the last `days` days ending at `end`, then the same
+    window shifted back one year at a time. Newest first, each as (start, end, daily-hours Series).
+    A window that begins before the first log row is dropped rather than shown part-empty."""
+    end = pd.Timestamp(end) if end is not None else log['date'].max()
+    out = []
+    for k in range(years):
+        e = end - pd.DateOffset(years=k)
+        s = daily_hours(log, days, end=e)
+        if s.index[0] >= log['date'].min(): out.append((s.index[0], e, s))
+    return out
+
+
 def bucket_label(lo, hi, open_end=100):
     if hi - lo == 1: return f'{lo:g}'
     if hi >= open_end: return f'{lo:g}<'

@@ -136,6 +136,63 @@ def score_bucket_bars(ax, g, value_col, edges, title):
     return m
 
 
+DOW_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+
+def calendar_vmax(*series):
+    """Colour-scale top for the calendar heat map: the 95th percentile of the daily hours, never below 4 h."""
+    return max(4, float(np.percentile(np.concatenate([s.values for s in series]), 95)))
+
+
+def draw_calendar_grid(fig, s, vmax, holidays, x0=0.18, x1=0.95, y0=0.42, y1=0.72, week_h=0.07, week_gap=0.02, fs=6, dow_max=None):
+    """Calendar heat map of a daily-hours Series (weekday rows x week columns) with the workbook's furniture:
+    day-of-week average bars on the left, a weekly-average bar strip below, month labels, month-boundary
+    stair-step rules and dashed holiday cells. `vmax` is the colour-scale top: pass one value to every panel
+    that has to be compared; `dow_max` does the same for the weekday bars' length. Positions are figure
+    fractions; the grid sits in [x0, x1] x [y0, y1]."""
+    start = s.index[0]
+    first_monday = start - pd.Timedelta(days=start.weekday())
+    n_weeks = (s.index[-1] - first_monday).days // 7 + 1
+    grid = np.full((7, n_weeks), np.nan)
+    for d_, v in s.items(): grid[d_.weekday(), (d_ - first_monday).days // 7] = v
+    # day-of-week average mini bars, to the left of each grid row
+    dow_avg = [s[s.index.weekday == d].mean() for d in range(7)]
+    axd = fig.add_axes([0.03, y0, x0 - 0.03 - 0.01, y1 - y0])
+    axd.barh(range(7), dow_avg, color=ORANGE, height=.6); axd.set_ylim(6.5, -.5); axd.axis('off')
+    axd.set_xlim((dow_max or max(dow_avg)) / .55, 0)            # bars use the right 55%, labels sit in the left 45%
+    for i, v in enumerate(dow_avg):
+        axd.text(axd.get_xlim()[0], i, f'{DOW_NAMES[i]} {v:.1f}h', ha='left', va='center', fontsize=fs, color=DARK, fontweight='bold')
+    # main grid: weekdays (rows) x weeks (columns)
+    axg = fig.add_axes([x0, y0, x1 - x0, y1 - y0])
+    axg.imshow(grid, cmap=HEAT, aspect='auto', vmin=0, vmax=vmax)
+    axg.set_yticks([])
+    axg.set_xticks(np.arange(-.5, n_weeks), minor=True); axg.set_yticks(np.arange(-.5, 7), minor=True)
+    axg.grid(which='minor', color='white', lw=.6); axg.tick_params(which='minor', length=0)
+    axg.set_xticks([]); axg.tick_params(length=0)
+    for s_ in axg.spines.values(): s_.set_visible(False)
+    # holiday marking: dashed border on any cell whose date is in lk_holidaystable
+    for d_ in s.index:
+        if d_.strftime('%Y-%m-%d') in holidays:
+            wk = (d_ - first_monday).days // 7
+            axg.add_patch(plt.Rectangle((wk - .5, d_.weekday() - .5), 1, 1, fill=False, ec=DARK, ls='--', lw=.8, zorder=5))
+    # month-boundary stair-step rule: a step wherever a new month's 1st falls
+    for d_ in pd.date_range(start.replace(day=1), s.index[-1], freq='MS'):
+        if d_ < start: continue
+        wk, dow = (d_ - first_monday).days // 7, d_.weekday()
+        axg.plot([wk - .5, wk - .5], [-.5, dow - .5], color=DARK, lw=1.2, zorder=4)
+        axg.plot([wk - .5, wk + .5], [dow - .5, dow - .5], color=DARK, lw=1.2, zorder=4)
+        axg.plot([wk + .5, wk + .5], [dow - .5, 6.5], color=DARK, lw=1.2, zorder=4)
+    # weekly-average bars, below the grid, one per week column
+    weekly_avg = [np.nanmean(grid[:, w]) if not np.all(np.isnan(grid[:, w])) else 0 for w in range(n_weeks)]
+    axw = fig.add_axes([x0, y0 - week_gap - week_h, x1 - x0, week_h])
+    axw.bar(range(n_weeks), weekly_avg, color=ORANGE, width=.7); axw.set_xlim(-.5, n_weeks - .5); axw.axis('off')
+    # month labels along the bottom, under the weekly-average bars
+    for i in range(n_weeks):
+        w = first_monday + pd.Timedelta(weeks=i)
+        if w.day <= 7: fig.text(x0 + (i / n_weeks) * (x1 - x0), y0 - week_gap - week_h - 0.005, w.strftime('%b'), fontsize=6.5, color=DARK, ha='left', va='top')
+
+
+
 with PdfPages(OUT) as pdf:
     n = 0
     # ---------------- Page 1: Top 10 + totals (portrait)
@@ -333,20 +390,14 @@ with PdfPages(OUT) as pdf:
     # ---------------- Page 7c: calendar heat map, with the workbook's original furniture
     fig = plt.figure(figsize=(11, 8.5)); n += 1
     header(fig, 'Calendar heat map', f'{start:%b %d, %Y} – {s365.index[-1]:%b %d, %Y}')
-    first_monday = start - pd.Timedelta(days=start.weekday())
-    n_weeks = (s365.index[-1] - first_monday).days // 7 + 1
-    grid = np.full((7, n_weeks), np.nan)
-    for d_, v in s365.items(): grid[d_.weekday(), (d_ - first_monday).days // 7] = v
-    played = s365[s365 > 0]
-    stats = [('Max', played.max()), ('75%', played.quantile(.75)), ('Avg', played.mean()),
-              ('Median', played.median()), ('25%', played.quantile(.25)), ('Min', played.min())]
-    for i, (lbl, v) in enumerate(stats):
+    stats = D.calendar_stats(s365)
+    for i, lbl in enumerate(D.CAL_STAT_NAMES):
         x = 0.06 + i * 0.145
         fig.patches.append(plt.Rectangle((x, 0.13), 0.13, 0.08, transform=fig.transFigure, fc='#FBE5D6', ec=ORANGE, lw=.8))
-        fig.text(x + .065, 0.185, f'{v:.2f} h', ha='center', va='center', fontsize=11, fontweight='bold', color=ORANGE)
+        fig.text(x + .065, 0.185, f'{stats[lbl]:.2f} h', ha='center', va='center', fontsize=11, fontweight='bold', color=ORANGE)
         fig.text(x + .065, 0.148, lbl, ha='center', va='center', fontsize=7, color=DARK)
-    fig.text(0.06, 0.24, 'Hours played per day, over the last 365 days', fontsize=9, fontweight='bold', color=ORANGE)
-    GX0, GX1, GY0, GY1 = 0.18, 0.95, 0.42, 0.72
+    fig.text(0.06, 0.24, 'Hours played per day, over the last 365 days (stats over days played)', fontsize=9, fontweight='bold', color=ORANGE)
+    GX0, GX1 = 0.18, 0.95
     # 7-day rolling average sparkline, full width above the grid
     axs = fig.add_axes([GX0, 0.80, GX1 - GX0, 0.1])
     roll7 = s365.rolling(7, min_periods=1).mean()
@@ -354,42 +405,24 @@ with PdfPages(OUT) as pdf:
     axs.fill_between(s365.index, 0, roll7.values, color=PURPLE, alpha=.15)
     axs.set_xlim(s365.index[0], s365.index[-1]); axs.set_title('7-day rolling average', loc='left', fontsize=8)
     axs.set_xticks([]); [s_.set_visible(False) for s_ in axs.spines.values()]
-    # day-of-week average mini bars, to the left of each grid row
-    dow_avg = [s365[s365.index.weekday == d].mean() for d in range(7)]
-    axd = fig.add_axes([0.03, GY0, GX0 - 0.03 - 0.01, GY1 - GY0])
-    DOW_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-    axd.barh(range(7), dow_avg, color=ORANGE, height=.6); axd.set_ylim(6.5, -.5); axd.invert_xaxis(); axd.axis('off')
-    for i, v in enumerate(dow_avg):
-        axd.text(axd.get_xlim()[1], i, f'{DOW_NAMES[i]} {v:.1f}h  ', ha='right', va='center', fontsize=6, color='white', fontweight='bold')
-    # main grid: weekdays (rows) x weeks (columns)
-    axg = fig.add_axes([GX0, GY0, GX1 - GX0, GY1 - GY0])
-    vmax = max(4, np.nanpercentile(grid, 95))
-    axg.imshow(grid, cmap=HEAT, aspect='auto', vmin=0, vmax=vmax)
-    axg.set_yticks([])
-    axg.set_xticks(np.arange(-.5, n_weeks), minor=True); axg.set_yticks(np.arange(-.5, 7), minor=True)
-    axg.grid(which='minor', color='white', lw=.6); axg.tick_params(which='minor', length=0)
-    axg.set_xticks([]); axg.tick_params(length=0)
-    for s_ in axg.spines.values(): s_.set_visible(False)
-    # holiday marking: dashed border on any cell whose date is in lk_holidaystable
-    for d_ in s365.index:
-        if d_.strftime('%Y-%m-%d') in t['holidays']:
-            wk = (d_ - first_monday).days // 7
-            axg.add_patch(plt.Rectangle((wk - .5, d_.weekday() - .5), 1, 1, fill=False, ec=DARK, ls='--', lw=.8, zorder=5))
-    # month-boundary stair-step rule: a step wherever a new month's 1st falls
-    for d_ in pd.date_range(start.replace(day=1), s365.index[-1], freq='MS'):
-        if d_ < start: continue
-        wk, dow = (d_ - first_monday).days // 7, d_.weekday()
-        axg.plot([wk - .5, wk - .5], [-.5, dow - .5], color=DARK, lw=1.2, zorder=4)
-        axg.plot([wk - .5, wk + .5], [dow - .5, dow - .5], color=DARK, lw=1.2, zorder=4)
-        axg.plot([wk + .5, wk + .5], [dow - .5, 6.5], color=DARK, lw=1.2, zorder=4)
-    # weekly-average bar column, below the grid, one bar per week column
-    weekly_avg = [np.nanmean(grid[:, w]) if not np.all(np.isnan(grid[:, w])) else 0 for w in range(n_weeks)]
-    axw = fig.add_axes([GX0, GY0 - 0.09, GX1 - GX0, 0.07])
-    axw.bar(range(n_weeks), weekly_avg, color=ORANGE, width=.7); axw.set_xlim(-.5, n_weeks - .5); axw.axis('off')
-    # month labels along the bottom, under the weekly-average bars
-    week_starts = [first_monday + pd.Timedelta(weeks=i) for i in range(n_weeks)]
-    for i, w in enumerate(week_starts):
-        if w.day <= 7: fig.text(GX0 + (i / n_weeks) * (GX1 - GX0), GY0 - 0.095, w.strftime('%b'), fontsize=6.5, color=DARK, ha='left', va='top')
+    draw_calendar_grid(fig, s365, calendar_vmax(s365), t['holidays'], x0=GX0, x1=GX1, y0=0.42, y1=0.72)
+    footer(fig, n); pdf.savefig(fig); plt.close(fig)
+
+    # ---------------- Page 7d: calendar heat map comparison (the workbook's TimeHeatComp): the same window, four years
+    wins = D.calendar_windows(log, s365.index[-1])
+    vmax = calendar_vmax(*[w[2] for w in wins])
+    fig = plt.figure(figsize=(11, 8.5)); n += 1
+    header(fig, 'Calendar heat map comparison', f'Last 365 days and the same window in the {len(wins) - 1} years before · '
+                                                 f'one colour scale for every year (0–{vmax:.1f} h) · stats over days played')
+    dow_max = max(w[2][w[2].index.weekday == d].mean() for w in wins for d in range(7))   # shared weekday-bar scale
+    PH = 0.215                                        # panel pitch
+    for i, (w0, w1, ws) in enumerate(wins):
+        top = 0.905 - i * PH
+        st = D.calendar_stats(ws)
+        fig.text(0.04, top, f'{w0:%b %d, %Y} – {w1:%b %d, %Y}', fontsize=9, fontweight='bold', color=ORANGE, va='top')
+        fig.text(0.96, top, f'{ws.sum():,.1f} h   ·   {int((ws > 0).sum())} of {len(ws)} days played   ·   ' +
+                 '   '.join(f'{k} {st[k]:.2f}' for k in D.CAL_STAT_NAMES), fontsize=7, color=DARK, ha='right', va='top')
+        draw_calendar_grid(fig, ws, vmax, t['holidays'], y0=top - 0.135, y1=top - 0.035, week_h=0.035, week_gap=0.006, fs=5, dow_max=dow_max)
     footer(fig, n); pdf.savefig(fig); plt.close(fig)
 
     # ---------------- Page 7b: frequency of hours played

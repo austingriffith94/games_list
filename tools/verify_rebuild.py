@@ -11,6 +11,7 @@ Two things legitimately differ from the workbook and are handled explicitly, not
 import os, sys, zipfile, xml.etree.ElementTree as ET
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 import numpy as np
+import pandas as pd
 import data as D, halo
 
 XLSM = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'old_excel', 'games_list.xlsm')
@@ -146,6 +147,21 @@ for gm in halo.game_summary(list(lv.values()), tiers):
           (f'{gm["game"]} levels', gm['levels'], S4.get(f'F{ri}'))]
     P += [(f'{gm["game"]} {tt}', gm['tiers'][tt], S4.get(f'{col(7 + k)}{ri}')) for k, tt in enumerate('SABCDF')]
 report('HaloRankLetterScore', P)
+
+print('TimeHeatComp (calendar heat map comparison; every day counted, as the workbook does)')
+S19 = cells('xl/worksheets/sheet19.xml')
+xl_date = lambda n: pd.Timestamp('1899-12-30') + pd.Timedelta(days=int(float(n)))
+P = []
+for k, c0 in enumerate(('L', 'AD', 'AV', 'BN')):                 # the four panels; each one's value column follows its label column
+    f, to = xl_date(S19[f'{c0}3']), xl_date(S19[f'{c0}4'])
+    s = D.daily_hours(log, (to - f).days + 1, end=to)               # the workbook's window is From..To inclusive (366-367 days)
+    st = D.calendar_stats(s, include_zero=True)
+    P += [(f'panel {k + 1} total', s.sum(), S19[f'{c0}5']), (f'panel {k + 1} max', st['Max'], S19[f'{c0}7']),
+          (f'panel {k + 1} avg', st['Avg'], S19[f'{c0}9']), (f'panel {k + 1} median', st['Median'], S19[f'{c0}10']),
+          (f'panel {k + 1} min', st['Min'], S19[f'{c0}12'])]
+report('TimeHeatComp', P, tol=1e-9)
+print('  (75% / 25% are not compared: the workbook uses PERCENTILE.EXC, data.calendar_stats uses PERCENTILE.INC on purpose)')
+
 con.close()
 
 print('\nALL MATCH' if not total_bad else f'\n{total_bad} MISMATCHES')

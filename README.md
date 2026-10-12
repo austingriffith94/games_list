@@ -40,7 +40,7 @@ Covers are cropped to 2:3 and downscaled in the PDF, so large originals are fine
 
 ## Tests
     python test_parity.py   # rebuilt numbers vs the original workbook / PDF
-    python test_api.py      # 53 checks on a scratch copy of the data
+    python test_api.py      # 68 checks on a scratch copy of the data
     python test_e2e.py      # 39 checks driving the real UI in a headless browser (needs playwright)
 
 ## One-time import from the workbook

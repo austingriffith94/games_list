@@ -11,13 +11,13 @@ They don't need to look identical. The HTML can be more interactive. A reliable 
 
 ## Architecture (approved)
 SQLite database + Python + generated reports + a local entry app.
-- `gamelist.db` is the source of truth (schema v2). Counts: 656 games, 783 releases (game x system), 2,717 play-log rows, 9,747.5 hours.
-- `app.py` is a Flask app on 127.0.0.1. Tabs: Log time, Games, Top list, Checks, History (undo), Reports.
-- `build_pdf.py` makes the PDF (matplotlib, Letter, 8 pages plus a cover collage).
+- `gamelist.db` is the source of truth (schema v3). Counts: 656 games, 783 releases (game x system), 2,717 play-log rows, 9,747.5 hours.
+- `app.py` is a Flask app on 127.0.0.1. Tabs: Log time, Games, Top list, HaloRank, Gallery, Stats, Checks, History (undo), Reports.
+- `build_pdf.py` makes the PDF (matplotlib, Letter, 24 pages plus a cover collage).
 - `build_html.py` + `dashboard.template.html` make a self-contained dashboard (vanilla JS, inline SVG, no CDN).
 - `data.py` replaces about 90K workbook formulas with pandas.
 - `migrate.py` converted the xlsm to SQLite. `schema.py` holds the DDL and upgrade.
-- Tests: `test_parity.py` (numbers match the workbook) and `test_api.py` (53 checks) pass cleanly on Windows. `test_e2e.py` (39 Playwright UI checks) is unresolved on Windows — see **Windows test status** below before touching it.
+- Tests: `test_parity.py` (numbers match the workbook) and `test_api.py` (68 checks) pass cleanly on Windows. `test_e2e.py` (39 Playwright UI checks) is unresolved on Windows — see **Windows test status** below before touching it.
 - `REPORT_LOGIC.md` is a verified spec decoding the workbook's HaloRank, HeatMapScore and Stats sheet formulas (see **Reports decoded** below) — read it before rebuilding any of those reports.
 - Run: `pip install -r requirements.txt`, then `python app.py --covers "D:\Pictures\Game List Covers"` (or `start_app.bat`).
 
@@ -52,32 +52,24 @@ non-obvious gotchas (upper-inclusive tier bands, a real off-by-one gap in
 swallowing data errors) is in **`REPORT_LOGIC.md`**. Re-runnable, dependency-free verification
 scripts are in `tools/verify_*.py`.
 
-**This also surfaces a real data problem, not just a reporting one:** the two out-of-range
-scores below (item 1) aren't cosmetic — they roughly triple the standard deviation of
-GameSpot and IGN scores and corrupt `ScoreDistributionTable`, `StatTable` and
-`CorrelationMatrix`. Fix them before rebuilding `StatTable`.
+**This also surfaced a real data problem:** the two out-of-range scores (WRC 8 IGN, Overwatch 2
+GameSpot) roughly tripled the standard deviation of GameSpot and IGN scores. They were fixed in
+commit `eb381be`, so the Stats tables are built on clean inputs.
 
-Still not decoded: `TimeHeatComp` (heat-map comparison sheets) and a few smaller charts.
-Soundtrack stats *are* now covered — they turned out to be part of the Stats sheet.
+`TimeHeatComp` is decoded and built too: it is the single-year heat map block repeated for four year
+windows (see `ACTION_PLAN.md` 3.4). Soundtrack stats were part of the Stats sheet.
 
-**What's left to build, concretely:**
-- **HaloRank** needs a schema/migration addition first — the level ratings, `TierListScoring`
-  and the section weights were never migrated into `gamelist.db` (`schema.py` has no table for
-  them, `migrate.py` never reads that sheet).
-- **HeatMapScore** and all fourteen **Stats** tables need only derived columns in `data.py` —
-  every input already exists in the DB. `REPORT_LOGIC.md` §3.1 lists the four derived
-  `Game_Table` columns to add (`Hours Per Series Rank`, `Normalized Playthroughs`, and the two
-  `DATEDIF` gap columns).
+**Built and verified:** HaloRank (app tab, `halo.py`, `halo_levels` table), HeatMapScore
+(`data.heatmap()`) and all fourteen Stats tables (`data.stats_tables()`), plus the Phase 1 and 2
+charts. `tools/verify_rebuild.py` diffs them against the workbook's cached values (ALL MATCH).
+**What's left is in `ACTION_PLAN.md`:** the Phase 4 HTML-only ideas.
 
 ## Open items
-1. **Data questions for me — now with evidence, still need my answer:**
-   - WRC 8's IGN = 84 and Overwatch 2's GameSpot = 80 are outside the 0–10 scale, and they're
-     the *only* two out-of-range values in the whole workbook (confirmed exhaustively). They
-     need fixing, but I still need to say what the correct values should be.
-   - What the `Real` flag on log rows means: 15 of the 23 entries over 24 hours have it set.
-     The reports currently label it "Flagged Real".
-2. ~~Reports not yet rebuilt from the workbook~~ — decoded now, see **Reports decoded** above.
-   `TimeHeatComp` and a few smaller charts are still undecoded.
+1. **Data question for me, still open:** what the `Real` flag on log rows means. 361 of 2,717 rows
+   have it set (15 of the 23 entries over 24 hours). The reports currently label it "Flagged Real".
+   (The two out-of-range scores were corrected in `eb381be`.)
+2. ~~Reports not yet rebuilt from the workbook~~ — HaloRank, HeatMapScore, Stats and the Phase 1/2
+   charts and the 3.4 heat map comparison are rebuilt; Phase 4 is next (see `ACTION_PLAN.md`).
 3. Possible dashboard cover collage/cover tab.
 4. **Windows testing — done, but test_e2e.py is unresolved.** See below.
 
@@ -119,10 +111,9 @@ Microsoft Store stubs on this machine).
   (`C:\Users\austg\miniconda3\envs\game1\python.exe`), not `python`/`python3` on PATH.
 
 ## Suggested next step
-1. Give me the correct WRC 8 IGN score and Overwatch 2 GameSpot score (item 1).
+1. Tell the assistant what the `Real` flag means (item 1).
 2. Get one clean, uninterrupted `test_e2e.py` run on Windows to actually know if it passes.
-3. Rebuild HaloRank (needs the schema/migration work first), HeatMapScore and Stats using
-   `REPORT_LOGIC.md` as the spec — then re-run `tools/verify_*.py` to confirm `data.py` still
-   agrees with the workbook.
+3. Build the Phase 4 HTML-only ideas from `ACTION_PLAN.md`,
+   re-running `tools/verify_*.py` after each change.
 4. I'll use the app for a week or two after that; tell the assistant which reports I actually
    use, and prioritize those for dashboard/PDF layout work.
