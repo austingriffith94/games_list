@@ -418,7 +418,7 @@ function flipBack(g,rk){
 // the game detail panel (mosaic click etc.); every attribute in it is a filter link
 function gameCard(g){
   $('#pbody').innerHTML=(THUMBS[g.t]?`<img src="data:image/jpeg;base64,${THUMBS[g.t]}" style="width:120px;float:right;margin:0 0 8px 8px;border-radius:4px">`:'')+
-    `<h3>${esc(g.t)}</h3><p>${xfLink('series',g.s)}<br>${xfLink('genre',g.genre)} · ${xfLink('view',g.view)} · ${xfLink('rel',g.rel)}<br>${(g.sys||[]).map(s=>xfLink('system',s)).join(', ')}<br>${fmt(g.hrs,1)} h · My score ${g.ms!=null?xfLink('ms',g.ms):'–'}/10${g.zp&&g.zp!=='None'?` · ZP ${xfLink('zp',g.zp)}`:''}${g.so?'<br>Soundtrack owned':''}</p><p class="note" style="color:var(--muted);font-size:12px">Click any underlined value to filter the dashboard to it.</p>`;
+    `<h3>${esc(g.t)}</h3><p>${xfLink('series',g.s)}<br>${xfLink('genre',g.genre)} · ${xfLink('view',g.view)} · ${xfLink('rel',g.rel)}<br>${(g.sys||[]).map(s=>xfLink('system',s)).join(', ')}<br>${g.played?fmt(g.hrs,1)+' h':'– h (not played)'} · My score ${g.ms!=null?xfLink('ms',g.ms):'–'}/10${g.zp&&g.zp!=='None'?` · ZP ${xfLink('zp',g.zp)}`:''}${g.so?'<br>Soundtrack owned':''}</p><p class="note" style="color:var(--muted);font-size:12px">Click any underlined value to filter the dashboard to it.</p>`;
   wireXf($('#pbody'));$('#panel').classList.add('open')}
 
 /* ---------- tabs ---------- */

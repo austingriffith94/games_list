@@ -14,8 +14,8 @@ The workbook-parity plan that came before this one is finished and archived in
 | Phase 0: render-and-screenshot tool | Done |
 | Phase 1 (1.1-1.10): rendering, layout and contrast bugs | Done (1.1-1.10) |
 | Phase 2 (2.1-2.8): chart form and encoding | Done (2.1-2.8) |
-| Gate (G1-G3): finish the review before Phase 3 | Not started |
-| Phase 3 (3.1-3.7): layout, polish, hygiene | Done (before the Gate; G1-G3 still open) |
+| Gate (G1-G3): finish the review before Phase 3 | Done (run after Phase 3; see findings below) |
+| Phase 3 (3.1-3.7): layout, polish, hygiene | Done |
 | Phase 4 (4.1-4.2): carried over from the parity plan | Not started |
 
 **Scope.** The entry app (`static/app.html`) is in good shape and only gets small items (3.4). Most
@@ -304,6 +304,26 @@ values.
 - **Firefox and Safari:** check the 3D card flip once, with 3.1. Nothing else is likely to differ.
 - **PDF viewers:** only if a printed page looks wrong.
 
+### Gate results (Oct 12 2026, run after Phase 3 with `tools/screenshot.py --width 768 --width 1024`)
+- **G1:** no horizontal overflow on the dashboard or the app at 768 or 1024 px (checked every tab by
+  script, `document.documentElement.scrollWidth`). Statistics settles into a sensible layout at both
+  widths (the two full-width tables stay full-width; the rest pair up). The Top 10 grid is 4 columns at
+  768 px. The app header wraps to two rows at 768 px without clipping "Save entry" or the nav.
+- **G2:** dashboard dark on Mosaic, All games and the game detail panel all read fine (checked contrast
+  by eye, no unreadable text). App dark on Games, Gallery, Checks, History and Reports the same. App at
+  390 px on History and Reports: no overflow, the nav scrolls on its own row (3.4/3.5), the Reports
+  buttons wrap cleanly. Dashboard at 390 px on Time played, Mosaic and All games: no overflow.
+- **G3:** the 5 longest titles (worst: *Dr. Langeskov, The Tiger, and The Terribly Cursed Emerald: A
+  Whirlwind Heist*, 76 chars) render fully in the All games table and the detail panel (the panel's
+  `<h3>` wraps); the Gallery still truncates to "…" with no tooltip, as already known (not fixed here).
+  Checked a backlog game (*A Plague Tale: Innocence*, no score/no playtime) in All games, the detail
+  panel, Gallery and the Log time picker: All games and the Log time picker already show blanks
+  correctly, but the **detail panel showed "0 h" for an unplayed game instead of a dash** — fixed
+  (`gameCard`, `dashboard.template.html`): now "– h (not played)". Every game in the database actually
+  has a release row and a cover (the "no cover" candidates found by a case-sensitive filename check
+  turned out to have covers under a differently-cased filename, which Windows' case-insensitive
+  filesystem already resolves correctly), so those two sub-cases had nothing to check against.
+
 ---
 
 ## Phase 3: Layout and polish
@@ -445,13 +465,17 @@ for the PDF), plus measured values where a number mattered (contrast, page width
   the game edit and new-game forms, the delete dialog, the HaloRank edit grid and the gallery detail.
 - **Entry app, 390 px:** Log time, Games, Gallery, Stats, Top list, HaloRank and Checks.
 
-**Not reviewed yet** (the Gate section schedules these):
-- Dashboard dark mode on Mosaic and All games; app dark mode on Games, Gallery, Checks, History and
-  Reports; app 390 px on History and Reports (G2).
-- Tablet widths of 768-1024 px (G1). Browser zoom and large system fonts are not scheduled.
-- Very long titles and games with missing data (G3).
+**Reviewed by the Gate** (see "Gate results" above for findings): dashboard dark mode on Mosaic, All
+games and the game detail panel; app dark mode on Games, Gallery, Checks, History and Reports; app
+390 px on History and Reports (G2); tablet widths 768-1024 px on every dashboard and app tab (G1); the
+5 longest titles and a representative no-score/no-playtime game across Gallery, All games, the detail
+panel and the Log time picker (G3).
+
+**Still not reviewed:**
+- Browser zoom and large system fonts are not scheduled.
 - Calendar Play, the card flip transition, touch tooltips, keyboard focus, and the app's toasts and
-  undo: checked as items 3.1 and 3.7 land.
+  undo: checked as items 3.1 and 3.7 land (both are done; the card flip and keyboard focus were
+  exercised incidentally during the Gate and looked correct, but not as a dedicated pass).
 - Firefox and Safari (everything was Chromium): the card flip, once, with 3.1.
 - PDF viewers: only rasterized, not opened in a viewer.
 

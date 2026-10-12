@@ -3,15 +3,16 @@ works from pixels instead of guessing. Optionally also screenshots the entry app
 database. Needs PyMuPDF and Playwright (see requirements-dev.txt; `playwright install chromium` once), and
 must run in the project env (`game1` on Windows, not bare python/python3 - see PROJECT_CONTEXT.md):
 
-    python tools/screenshot.py [--app] [--tab TAB ...] [--no-rebuild]
+    python tools/screenshot.py [--app] [--tab TAB ...] [--width PX ...] [--no-rebuild]
 
 Writes PNGs to screenshots/ (git-ignored):
     screenshots/pdf/p01.png ...                         one per PDF page
-    screenshots/dashboard/<tab>_<theme>_<width>.png      theme in {light,dark}, width in {1280,390}
+    screenshots/dashboard/<tab>_<theme>_<width>.png      theme in {light,dark}, width defaults to {1280,390}
     screenshots/app/<tab>_<theme>_<width>.png            only with --app
 
 --tab restricts the dashboard/app pass to the given tab key(s) (e.g. --tab overview --tab stats), for a
-quick look at one area instead of the whole set. --no-rebuild skips the two `python build_*.py` calls and
+quick look at one area instead of the whole set. --width replaces the default widths (e.g. --width 768
+--width 1024 for a tablet-width pass). --no-rebuild skips the two `python build_*.py` calls and
 screenshots whatever games_list_dashboard.html / games_list_report.pdf already exist.
 """
 import argparse, os, shutil, socket, subprocess, sys, tempfile, time
@@ -42,11 +43,11 @@ def shoot_pdf():
     print(f'PDF: {len(doc)} pages -> {d}')
 
 
-def shoot_dashboard(page, tabs):
+def shoot_dashboard(page, tabs, widths):
     d = os.path.join(OUT, 'dashboard')
     os.makedirs(d, exist_ok=True)
     url = 'file:///' + DASH_HTML.replace('\\', '/')
-    for width in (1280, 390):
+    for width in widths:
         page.set_viewport_size({'width': width, 'height': 900})
         page.goto(url)
         page.wait_for_timeout(300)
@@ -56,7 +57,7 @@ def shoot_dashboard(page, tabs):
                 page.evaluate(f"show('{tab}')")
                 page.wait_for_timeout(250)
                 page.screenshot(path=os.path.join(d, f'{tab}_{theme}_{width}.png'), full_page=True)
-    print(f'dashboard: {len(tabs)} tabs x 2 themes x 2 widths -> {d}')
+    print(f'dashboard: {len(tabs)} tabs x 2 themes x {len(widths)} width(s) -> {d}')
 
 
 def free_port():
@@ -67,7 +68,7 @@ def free_port():
     return port
 
 
-def shoot_app(page, tabs):
+def shoot_app(page, tabs, widths):
     d = os.path.join(OUT, 'app')
     os.makedirs(d, exist_ok=True)
     tmp = tempfile.mkdtemp(prefix='gamelist_shot_')
@@ -89,7 +90,7 @@ def shoot_app(page, tabs):
                 time.sleep(0.2)
         else:
             raise RuntimeError(f'app.py did not come up on port {port}')
-        for width in (1280, 390):
+        for width in widths:
             page.set_viewport_size({'width': width, 'height': 900})
             for theme in ('light', 'dark'):
                 for tab in tabs:
@@ -97,7 +98,7 @@ def shoot_app(page, tabs):
                     page.evaluate(f"document.documentElement.dataset.theme='{theme}'")
                     page.wait_for_timeout(400)
                     page.screenshot(path=os.path.join(d, f'{tab}_{theme}_{width}.png'), full_page=True)
-        print(f'app: {len(tabs)} tabs x 2 themes x 2 widths -> {d}')
+        print(f'app: {len(tabs)} tabs x 2 themes x {len(widths)} width(s) -> {d}')
     finally:
         proc.terminate()
         try:
@@ -111,8 +112,10 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--app', action='store_true', help='also screenshot the entry app on a throwaway DB copy')
     ap.add_argument('--tab', action='append', dest='tabs', help='restrict to this tab (repeatable); default is every tab')
+    ap.add_argument('--width', action='append', dest='widths', type=int, help='viewport width, px (repeatable); default 1280 and 390')
     ap.add_argument('--no-rebuild', action='store_true', help='skip the build_html.py/build_pdf.py rebuild')
     a = ap.parse_args()
+    widths = a.widths or [1280, 390]
 
     if not a.no_rebuild:
         rebuild()
@@ -134,10 +137,10 @@ def main():
         page = browser.new_page()
         page.on('pageerror', lambda e: print('  JS error:', e))
         if dash_tabs:
-            shoot_dashboard(page, dash_tabs)
+            shoot_dashboard(page, dash_tabs, widths)
         if a.app:
             if app_tabs:
-                shoot_app(page, app_tabs)
+                shoot_app(page, app_tabs, widths)
             else:
                 print('app: no requested --tab matches an app tab, skipping')
         browser.close()
