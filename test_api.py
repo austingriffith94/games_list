@@ -75,7 +75,7 @@ check(post('/api/log', {**log, 'game': 'No Such Game'}).status_code == 400, 'unk
 check(post('/api/log', {**log, 'hours': 0}).status_code == 400 and post('/api/log', {**log, 'hours': -1}).status_code == 400, 'zero/negative hours rejected')
 check(post('/api/log', {**log, 'game': T.upper(), 'date': '2026-09-30'}).status_code == 201, 'game name matched ignoring case, stored canonically')
 check(get('/api/log?game=' + T).get_json()['rows'][0]['game'] == T, 'canonical title stored')
-r = put(f'/api/log/{lid}', {**log, 'hours': 2.25, 'real': True}); check(r.status_code == 200 and get(f'/api/log?game={T}').get_json()['total'] == 3, 'edit log entry')
+r = put(f'/api/log/{lid}', {**log, 'hours': 2.25}); check(r.status_code == 200 and get(f'/api/log?game={T}').get_json()['total'] == 3, 'edit log entry')
 r = put(f'/api/log/{lid}', {**log, 'date': '2026-09-30'}); check(r.status_code == 409, 'edit into duplicate rejected')
 # --- rename cascades (+ cover follows)
 from PIL import Image

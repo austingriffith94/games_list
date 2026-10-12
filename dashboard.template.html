@@ -115,7 +115,7 @@ table.mx th.xf:hover,table.mx td.sys.xf:hover{color:var(--accent-ink)}table.mx .
    <div class="grid2"><div><h2 style="font-size:13px">Metacritic distribution</h2><div id="sdist"></div></div><div><h2 style="font-size:13px">Average scores (0–100)</h2><div id="savg"></div></div></div>
    <div class="stack" style="margin-top:10px"><div><h2 style="font-size:13px">Games</h2><div id="sgames"></div></div><div><h2 style="font-size:13px">Hours played</h2><div id="shours"></div></div></div></div>
   <div class="card"><h2>Average score by category</h2><div class="row"><select id="catdim"><option value="genre">Genre</option><option value="system">System</option><option value="view">Camera view</option><option value="style">Graphic style</option></select><label>Critics <select id="catsrc"></select></label></div>
-   <div class="legend"><span><i style="background:var(--accent)"></i>My score</span><span><i style="background:var(--accent2);border-radius:50%"></i>Critic average</span></div><div id="cat"></div></div>
+   <div class="legend"><span><i style="background:var(--accent)"></i>My score</span><span><i style="background:var(--accent2);border-radius:50%"></i>Critic average</span><span><i style="background:#8c8c8c;opacity:.3"></i>Games (sample size)</span></div><div id="cat"></div></div>
   <div class="card"><h2>Who do I agree with?</h2><p class="note">R² of my score against each outlet: the share of the outlet's variation my scores explain, as a percentage (n = games both scored). Click a bar to open that scatter, with its least-squares fit.</p>
    <div id="r2"></div><div id="critone" style="max-width:520px;margin:6px auto 0"></div>
    <div class="row" style="margin-top:8px"><label><input type="checkbox" id="critall"> Show all six scatters</label></div>
@@ -482,8 +482,8 @@ scores(){
     const sc=k=>srcs.find(s=>s[1]===k)?.[2]??1;
     let rows=keys.map(k=>{const gs=rowsOf(k);const me=mean(gs.map(g=>g.ms==null?null:g.ms*10));
       const cr=cs==='crit'?mean(gs.map(g=>g.crit)):mean(gs.map(g=>g[cs]==null?null:g[cs]*10/sc(cs)));
-      return {label:`${k} (${gs.length})`,v:me,dot:cr,click:xf(dim,k),on:isOn(dim,k),tip:`<b>${esc(k)}</b><br>${gs.length} games<br>My score ${fmt(me,1)} · Critics ${fmt(cr,1)}`}}).filter(r=>r.v!=null||r.dot!=null).sort((a,b)=>(b.v??0)-(a.v??0));
-    hbars('#cat',rows,{w:1000,xmin:0,xmax:100,labelW:200})};
+      return {label:`${k} (${gs.length})`,v:me,dot:cr,bg:gs.length,bgTip:`<b>${esc(k)}</b>: ${gs.length} games`,click:xf(dim,k),on:isOn(dim,k),tip:`<b>${esc(k)}</b><br>${gs.length} games<br>My score ${fmt(me,1)} · Critics ${fmt(cr,1)}`}}).filter(r=>r.v!=null||r.dot!=null).sort((a,b)=>(b.v??0)-(a.v??0));
+    hbars('#cat',rows,{w:1000,xmin:0,xmax:100,labelW:200,bgColor:'#8c8c8c',bgMax:Math.max(1,...rows.map(r=>r.bg))})};
   $('#catdim').onchange=drawCat;$('#catsrc').onchange=drawCat;drawCat();
   // who do I agree with: ranked R² per outlet; clicking a bar opens its scatter
   const critOutlets=srcs.slice(1);

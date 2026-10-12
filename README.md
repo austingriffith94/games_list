@@ -36,7 +36,7 @@ Covers are cropped to 2:3 and downscaled in the PDF, so large originals are fine
 ## Data notes
 * Two review scores were outside their scale in the workbook: **WRC 8** IGN = 84 and **Overwatch 2** GameSpot = 80
   (probably 8.4 and 8.0). They are flagged on the Checks tab and can't be re-saved until fixed.
-* The time log's **Real** column (set on 361 entries from 2001-2018) is carried over as-is.
+* The time log's old **Real** flag (361 entries from 2001-2018, a marker for estimated rather than save-file time) is kept in the database but no longer shown or edited anywhere.
 
 ## Tests
     python test_parity.py   # rebuilt numbers vs the original workbook / PDF

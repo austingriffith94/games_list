@@ -46,7 +46,7 @@ G = [dict(t=x.title, s=clean(x.series), genre=clean(x.genre), view=clean(x.camer
      for x in g.itertuples()]
 R = [dict(t=x.title, sys=x.system, own=clean(x.ownership), rt=clean(x.release), hrs=num(x.hours), ay=num(x.added_year),
           pt=clean(x.system_type), genre=clean(x.genre), view=clean(x.camera_view), style=clean(x.graphic_style)) for x in r.itertuples()]
-L = [[x.date.strftime('%Y-%m-%d'), x.game, x.system, num(x.hours), int(x.real) if pd.notna(x.real) else 0] for x in log.itertuples()]
+L = [[x.date.strftime('%Y-%m-%d'), x.game, x.system, num(x.hours)] for x in log.itertuples()]
 top = list(D.top10(t)['title'])
 
 

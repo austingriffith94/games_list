@@ -375,13 +375,12 @@ with PdfPages(OUT) as pdf:
     # ---------------- Page 7: time played (last 365 days)
     fig = plt.figure(figsize=(11, 8.5)); n += 1
     s365 = D.daily_hours(log, 365, end=max(today, pd.Timestamp(datetime.date.today()))); start = s365.index[0]
-    header(fig, 'Time played', f'{start:%b %d, %Y} – {s365.index[-1]:%b %d, %Y}')
+    header(fig, 'Time played', f'Last 365 days, {start:%b %d, %Y} – {s365.index[-1]:%b %d, %Y} (ends today; last logged {today:%b %d, %Y})')
     ax = fig.add_axes([0.06, 0.66, 0.90, 0.22])
-    real = log[log['real'] == 1].groupby('date')['hours'].sum().reindex(s365.index, fill_value=0)
-    ax.bar(s365.index, s365.values, color=ORANGE, width=1, label='All logged'); (ax.bar(real.index, real.values, color=PURPLE, width=1, label='Flagged Real') if real.sum() > 0 else None)
+    ax.bar(s365.index, s365.values, color=ORANGE, width=1, label='All logged')
     ax.plot(s365.index, s365.rolling(7, min_periods=1).mean(), color=DARK, lw=1.2, label='7-day average')
     ax.plot(s365.index, s365.rolling(28, min_periods=1).mean(), color=GREY, lw=1.4, label='28-day average')
-    ax.legend(frameon=False, fontsize=7, ncol=4); ax.set_title('Hours per day', loc='left'); ax.set_ylabel('Hours')
+    ax.legend(frameon=False, fontsize=7, ncol=3); ax.set_title('Hours per day', loc='left'); ax.set_ylabel('Hours')
     for ser, nm, col, dy in [(s365.rolling(7, min_periods=1).mean(), '7-day avg', DARK, 16), (s365.rolling(28, min_periods=1).mean(), '28-day avg', GREY, 5)]:
         ax.annotate(nm, (s365.index[-1], ser.iloc[-1]), xytext=(-3, dy), textcoords='offset points', ha='right', fontsize=7, color=col, fontweight='bold', bbox=dict(fc='white', ec='none', pad=.6, alpha=.85))
     ax = fig.add_axes([0.06, 0.49, 0.90, 0.10])

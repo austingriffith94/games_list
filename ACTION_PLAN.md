@@ -16,7 +16,7 @@ The workbook-parity plan that came before this one is finished and archived in
 | Phase 2 (2.1-2.8): chart form and encoding | Done (2.1-2.8) |
 | Gate (G1-G3): finish the review before Phase 3 | Done (run after Phase 3; see findings below) |
 | Phase 3 (3.1-3.7): layout, polish, hygiene | Done |
-| Phase 4 (4.1-4.2): carried over from the parity plan | Not started |
+| Phase 4 (4.1-4.2): carried over from the parity plan | 4.1 done; 4.2 deferred (optional) |
 
 **Scope.** The entry app (`static/app.html`) is in good shape and only gets small items (3.4). Most
 of the work is in `dashboard.template.html`, plus a few real bugs in `build_pdf.py`.
@@ -402,7 +402,7 @@ After 1.4, re-check 390 px:
 
 ## Phase 4: Carried over from the parity plan
 
-### 4.1 Sample-size bar on the dashboard's category chart (was 1.3, dashboard half)
+### 4.1 Sample-size bar on the dashboard's category chart (was 1.3, dashboard half)  — DONE (Oct 12 2026: `hbars` bg bar, scaled to the largest category count, with a legend entry)
 The PDF draws a faint Games Played bar behind each category row. The dashboard shows sample size only
 as `(n)` in the label, so a 2-game system reads the same as a 147-game one. Add the faint bar in
 `drawCat` (`dashboard.template.html:429`), and fold it into 2.1's no-second-axis rule.
@@ -445,8 +445,7 @@ annoying.
 - **Resolved, printing (1.7):** the PDF is the printable output; the dashboard only prints the open tab.
 - **Overview labels (3.3):** relabel "Games" to "Releases" and keep "406d 3.5h" (recommended), or leave
   the labels as they are.
-- **Still open from before:** what the `Real` flag on log rows means, and whether the multiplayer-mode
-  flags, `wikipedia_goat` and `goty_votes` should be shown anywhere.
+- **Resolved (Oct 12 2026):** window end date is (a), ends today, PDF subtitle says so and gives the last log date. The `Real` flag (marked estimated time) is dropped from the app, PDF and dashboard but kept in the DB column. Multiplayer flags are for filtering only. `wikipedia_goat` and `goty_votes` are a possible future visualization.
 
 ## Review coverage
 

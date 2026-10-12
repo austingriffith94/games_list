@@ -324,7 +324,7 @@ async function loadRecent(reset){if(reset){LOG.offset=0;LOG.rows=[]}
   const r=await api('GET',`/api/log?limit=${LOG.limit}&offset=${LOG.offset}`+(m?`&game=${encodeURIComponent(m.title)}`:''));
   LOG.rows=LOG.rows.concat(r.rows);LOG.total=r.total;LOG.offset=LOG.rows.length;renderLog()}
 function renderLog(){
-  $('#logtable').innerHTML=`<thead><tr><th>Date</th><th>Game</th><th>System</th><th class="num">Hours</th><th></th></tr></thead><tbody>`+LOG.rows.map(x=>`<tr><td>${x.date}</td><td>${esc(x.game)}</td><td>${esc(x.system)}</td><td class="num">${fmt(x.hours)}${x.real?' <span class="pill" title="Flagged Real">R</span>':''}</td><td style="white-space:nowrap"><button class="sm" data-edit="${x.id}">Edit</button> <button class="sm danger" data-del="${x.id}">Delete</button></td></tr>`).join('')+'</tbody>';
+  $('#logtable').innerHTML=`<thead><tr><th>Date</th><th>Game</th><th>System</th><th class="num">Hours</th><th></th></tr></thead><tbody>`+LOG.rows.map(x=>`<tr><td>${x.date}</td><td>${esc(x.game)}</td><td>${esc(x.system)}</td><td class="num">${fmt(x.hours)}</td><td style="white-space:nowrap"><button class="sm" data-edit="${x.id}">Edit</button> <button class="sm danger" data-del="${x.id}">Delete</button></td></tr>`).join('')+'</tbody>';
   $('#logcount').textContent=`${LOG.rows.length} of ${LOG.total}`;$('#logmore').hidden=LOG.rows.length>=LOG.total}
 async function logPreview(){
   const f=logf(),t=titleMatch(f.game.value);LOG.selected=t?.title||null;
@@ -365,9 +365,8 @@ function editLog(x){
   dialog(`<h2>Edit entry</h2><div class="grid"><label data-f="date">Date<input type="date" name="date" value="${x.date}"><span class="err"></span></label>
    <label data-f="game">Game<input name="game" list="gamelist" value="${esc(x.game)}"><span class="err"></span></label>
    <label data-f="system">System<select name="system">${selOpts(sys,x.system)}</select><span class="err"></span></label>
-   <label data-f="hours">Hours<input type="number" step="0.25" name="hours" value="${x.hours}"><span class="err"></span></label></div>
-   <label class="chk" style="margin-top:10px"><input type="checkbox" name="real" ${x.real?'checked':''}> Flagged <b>Real</b> (flag carried over from your workbook)</label>`,
-   {onOk:async d=>{const g=$('[name=game]',d),f=$('[name=system]',d);const body={date:$('[name=date]',d).value,game:g.value,system:f.value,hours:$('[name=hours]',d).value,real:$('[name=real]',d).checked};
+   <label data-f="hours">Hours<input type="number" step="0.25" name="hours" value="${x.hours}"><span class="err"></span></label></div>`,
+   {onOk:async d=>{const g=$('[name=game]',d),f=$('[name=system]',d);const body={date:$('[name=date]',d).value,game:g.value,system:f.value,hours:$('[name=hours]',d).value};
      try{const r=await api('PUT','/api/log/'+x.id,body);toast('Entry updated',{undo:r._batch})}catch(e){if(e.status===409&&e.data?.needs_confirm==='large'){if(!await confirmBox('More than 24 hours?',esc(e.message),'Save anyway',false))return false;const r=await api('PUT','/api/log/'+x.id,{...body,allow_large:true});toast('Entry updated',{undo:r._batch})}else throw e}
      await Promise.all([loadRecent(true),loadDate(),loadChips()])}});
   const d=$('#dlg');$('[name=game]',d).addEventListener('change',e=>{const t=titleMatch(e.target.value);$('[name=system]',d).innerHTML=selOpts(t?META.releases[t.title]:[],'')})}

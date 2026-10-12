@@ -525,7 +525,6 @@ def clean_log(d, lid=None):
     hrs = _num(d.get('hours'), 'hours', errs, gt=0)
     if hrs is None and 'hours' not in errs: errs['hours'] = 'Enter the hours played'
     out['hours'] = hrs
-    out['real'] = 1 if _bool(d.get('real')) else None
     return out, errs
 
 
