@@ -95,18 +95,25 @@ dialog .btns{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
 .lv{--g:#999;border:1px solid var(--grid);border-left:5px solid var(--g);background:var(--card);border-radius:6px;padding:4px 9px;font-size:12.5px;cursor:pointer;display:inline-flex;gap:6px;align-items:baseline}
 .lv:hover,.lv:focus{border-color:var(--accent);border-left-color:var(--g);outline:none}.lv small{color:var(--muted);font-size:10.5px}
 .gkey{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin:2px 0 10px}.gkey i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
-table.hg input.rt{width:46px;padding:3px 4px;text-align:center}table.hg input.nm{min-width:170px;padding:3px 6px}table.hg input.nt{min-width:150px;padding:3px 6px}
+table.hg input.rt{width:46px;padding:3px 4px;text-align:center}table.hg input.nm{min-width:260px;padding:3px 6px}table.hg input.nt{min-width:230px;padding:3px 6px}
 table.hg td,table.hg th{padding:4px 4px}table.hg tr.inc input.rt:placeholder-shown{border-color:var(--warn)}table.hg td.sc{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
 .tp{display:inline-block;min-width:24px;text-align:center;border-radius:5px;padding:0 6px;font-weight:700;color:#222}
 .detail{display:flex;gap:16px;flex-wrap:wrap}.detail img{width:150px;aspect-ratio:2/3;object-fit:cover;border-radius:8px;flex:none}
 .detail .info{flex:1;min-width:220px}.detail .scs{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.detail .scs span{background:var(--bg);border-radius:8px;padding:2px 8px;font-size:12px}
+#logtable td:first-child{white-space:nowrap}
+#logtable button.danger{color:var(--muted);border-color:var(--grid)}
+#logtable button.danger:hover,#logtable button.danger:focus-visible{color:var(--err);border-color:var(--err)}
+#toplist{max-width:680px}.ord{padding:3px 0;gap:8px}.ord button{min-width:28px;min-height:28px;padding:2px 6px}
+.ord img,.ord .ph{width:36px}.ord{grid-template-columns:30px 36px minmax(0,1fr) auto}
+.repline{margin:2px 0}
+@media(max-width:700px){nav{order:3;flex:1 0 100%;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin;padding-bottom:4px}nav a{white-space:nowrap;flex:none}}
 </style>
 </head>
 <body>
 <header>
   <h1>Game List</h1>
   <nav id="nav"></nav>
-  <button id="themebtn" class="sm" title="Toggle light / dark">◐</button>
+  <button id="themebtn" class="sm" title="Toggle light / dark">◐ Theme</button>
 </header>
 <main>
 <!-- ======================= LOG TIME ======================= -->
@@ -240,7 +247,7 @@ table.hg td,table.hg th{padding:4px 4px}table.hg tr.inc input.rt:placeholder-sho
 <!-- ======================= REPORTS ======================= -->
 <section class="tab" id="tab-reports">
  <div class="card"><h2>Reports</h2>
-  <div id="repstatus" class="stat"></div>
+  <div id="repstatus"></div>
   <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="primary" id="rebuildbtn">Rebuild dashboard + PDF</button>
    <a href="/dashboard" target="_blank"><button type="button">Open dashboard</button></a><a href="/report.pdf" target="_blank"><button type="button">Open PDF</button></a></div>
   <div id="replog" class="muted" style="margin-top:10px;white-space:pre-wrap"></div></div>
@@ -640,7 +647,7 @@ TABS.stats={async show(){
   const s=await api('GET','/api/stats'+(cur?'?year='+cur:''));
   if(sel.options.length<2)sel.innerHTML='<option value="">All time</option>'+s.years.map(y=>y.year).reverse().map(y=>`<option>${y}</option>`).join('');
   sel.value=cur;
-  $('#statkpi').innerHTML=`<div><b>${fmt(s.total.hours,0)}</b>hours</div><div><b>${s.total.games}</b>games played</div><div><b>${s.total.days}</b>days played</div><div><b>${s.total.days?fmt(s.total.hours/s.total.days,1):'–'}</b>avg h / day played</div>`;
+  $('#statkpi').innerHTML=`<div><b>${fmt(s.total.hours,0)}</b>hours</div><div><b>${fmt(s.total.games,0)}</b>games played</div><div><b>${fmt(s.total.days,0)}</b>days played</div><div><b>${s.total.days?fmt(s.total.hours/s.total.days,1):'–'}</b>avg h / day played</div>`;
   $('#st-years').innerHTML=bars(s.years.map(y=>({name:y.year,hours:y.hours})));
   $('#st-systems').innerHTML=bars(s.systems);$('#st-genres').innerHTML=bars(s.genres);$('#st-top').innerHTML=bars(s.top_games);
   const mx=Math.max(1,...s.months.map(m=>m.hours));
@@ -649,9 +656,9 @@ $('#statyear').addEventListener('change',()=>TABS.stats.show());
 
 /* ======================= REPORTS ======================= */
 TABS.reports={async show(){const r=await api('GET','/api/reports');
-  const st=(n,x)=>`<div><b>${x.exists?esc(x.built.replace('T',' ')):'not built'}</b>${n}${x.kb?` · ${x.kb} KB`:''}</div>`;
+  const st=(n,x)=>`<div class="repline">${n}: ${x.exists?'built '+esc(x.built.replace('T',' ')):'not built'}${x.kb?`, ${fmt(x.kb)} KB`:''}</div>`;
   const stale=r.last_change&&r.dashboard.built&&r.last_change.replace(' ','T')>r.dashboard.built;
-  $('#repstatus').innerHTML=st('Dashboard',r.dashboard)+st('PDF',r.pdf)+(stale?'<div><b style="color:var(--warn)">Out of date</b>changes since last build</div>':'')}};
+  $('#repstatus').innerHTML=st('Dashboard',r.dashboard)+st('PDF',r.pdf)+(stale?'<div class="repline" style="color:var(--warn)">Out of date: changes since the last build</div>':'')}};
 $('#rebuildbtn').onclick=async()=>{const b=$('#rebuildbtn');b.disabled=true;b.textContent='Building…';$('#replog').textContent='';
   try{const r=await api('POST','/api/rebuild');toast(`Reports rebuilt (${r.dashboard.seconds}s + ${r.pdf.seconds}s)`)}catch(e){$('#replog').textContent=JSON.stringify(e.data,null,1);toast('Rebuild failed',{err:1})}
   b.disabled=false;b.textContent='Rebuild dashboard + PDF';TABS.reports.show()};

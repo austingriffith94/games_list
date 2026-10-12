@@ -1,0 +1,5 @@
+# Extra dependencies for tools/screenshot.py and test_e2e.py (not needed by the dashboard/PDF themselves).
+# After installing, run once: playwright install chromium
+-r requirements.txt
+pymupdf
+playwright

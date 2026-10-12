@@ -29,3 +29,6 @@ old_excel/
 
 # Per-machine settings (copy config.example.json)
 config.json
+
+# Review screenshots (tools/screenshot.py)
+screenshots/

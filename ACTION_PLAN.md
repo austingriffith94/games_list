@@ -11,11 +11,11 @@ The workbook-parity plan that came before this one is finished and archived in
 
 | Item | State |
 |---|---|
-| Phase 0: render-and-screenshot tool | Not started |
+| Phase 0: render-and-screenshot tool | Done |
 | Phase 1 (1.1-1.10): rendering, layout and contrast bugs | Done (1.1-1.10) |
 | Phase 2 (2.1-2.8): chart form and encoding | Done (2.1-2.8) |
 | Gate (G1-G3): finish the review before Phase 3 | Not started |
-| Phase 3 (3.1-3.7): layout, polish, hygiene | Not started |
+| Phase 3 (3.1-3.7): layout, polish, hygiene | Done (before the Gate; G1-G3 still open) |
 | Phase 4 (4.1-4.2): carried over from the parity plan | Not started |
 
 **Scope.** The entry app (`static/app.html`) is in good shape and only gets small items (3.4). Most

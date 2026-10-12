@@ -209,8 +209,8 @@ with PdfPages(OUT) as pdf:
     # ---------------- Page 1: Top 10 + totals (portrait)
     fig = plt.figure(figsize=(8.5, 11)); n += 1
     header(fig, 'Personal Top 10', 'Ranked favorites, with game totals')
-    kp = [('Games', S['games']), ('Games played', S['games_played']), ('Unique games', S['unique_games']),
-          ('Unique played', S['unique_played']), ('Backlog', S['backlog']), ('Total time', S['total_time'])]
+    kp = [('Releases', S['games']), ('Games played', S['games_played']), ('Unique games', S['unique_games']),
+          ('Unique played', S['unique_played']), ('Backlog', S['backlog']), ('Total time · ' + f"{S['total_hours']:,.0f} h", S['total_time'])]
     for i, (k, v) in enumerate(kp):
         x = 0.04 + i * 0.158
         fig.patches.append(plt.Rectangle((x, 0.855), 0.145, 0.055, transform=fig.transFigure, fc='#FBE5D6', ec=ORANGE, lw=.8))
@@ -252,7 +252,7 @@ with PdfPages(OUT) as pdf:
     for title, col, cols in [('Systems by genre', 'genre', genres), ('Systems by camera view', 'camera_view', views)]:
         fig = plt.figure(figsize=(11, 8.5)); n += 1
         header(fig, 'Table summary', f'{title} · count of games per system')
-        ax = fig.add_axes([0.13, 0.08, 0.80 if col == 'genre' else 0.55, 0.72])
+        ax = fig.add_axes([0.13, 0.08, 0.80, 0.72])
         heat_matrix(ax, D.matrix(r, col, cols), title)
         footer(fig, n); pdf.savefig(fig); plt.close(fig)
 
@@ -358,7 +358,7 @@ with PdfPages(OUT) as pdf:
     # ---------------- Page 6b: games added per year, by ownership x platform class
     fig = plt.figure(figsize=(11, 8.5)); n += 1
     header(fig, 'Games added per year', 'Stacked by ownership × platform class')
-    ax = fig.add_axes([0.06, 0.14, 0.88, 0.68])
+    ax = fig.add_axes([0.06, 0.09, 0.88, 0.77])
     combo = r.copy(); combo['combo'] = combo['ownership'] + ' · ' + combo['system_type']
     order_combo = [f'{o} · {s}' for o in ['Paid', 'Free', 'Friend/Family'] for s in ['PC', 'Console', 'Handheld']]
     palette = {'Paid · PC': '#1B7F79', 'Paid · Console': '#4FA39E', 'Paid · Handheld': '#9CCBC7',
@@ -369,7 +369,7 @@ with PdfPages(OUT) as pdf:
     bottom = np.zeros(len(add))
     for c in add.columns:
         ax.bar(add.index, add[c], bottom=bottom, color=palette.get(c, '#999'), label=c, width=.7); bottom += add[c].values
-    ax.legend(frameon=False, fontsize=6.5, ncol=4, loc='upper left'); ax.set_ylabel('Games added')
+    ax.set_ylim(0, bottom.max() * 1.1); ax.legend(frameon=False, fontsize=7, ncol=3, loc='upper left'); ax.set_ylabel('Games added')
     footer(fig, n); pdf.savefig(fig); plt.close(fig)
 
     # ---------------- Page 7: time played (last 365 days)
@@ -577,7 +577,8 @@ with PdfPages(OUT) as pdf:
         for (i, j), v in np.ndenumerate(grid):
             if v: ax.text(j, i, int(v), ha='center', va='center', fontsize=6.5 if grid.shape[0] > 30 else 7.5)
         ax.set_xticks(range(grid.shape[1])); ax.set_xticklabels(hm['x_labels'], fontsize=7)
-        yt = [i for i, l in enumerate(hm['y_labels']) if l]
+        occ = np.flatnonzero(grid.sum(axis=1) > 0); last_row = int(occ.max()) if len(occ) else grid.shape[0] - 1   # start the y axis at the lowest occupied bin
+        yt = [i for i, l in enumerate(hm['y_labels']) if l and i <= last_row + 1]
         ax.set_yticks(yt); ax.set_yticklabels([hm['y_labels'][i] for i in yt], fontsize=7)
         ax.set_xticks(np.arange(-.5, grid.shape[1]), minor=True); ax.set_yticks(np.arange(-.5, grid.shape[0]), minor=True)
         ax.grid(which='minor', color='white', lw=.6); ax.tick_params(which='minor', length=0)
@@ -586,7 +587,7 @@ with PdfPages(OUT) as pdf:
         ys_line = hm['intercept'] + hm['slope'] * xs_line
         ax.plot((xs_line - hm['x_lows'][0]) / (hm['x_int'] * hm['x_scale']),
                 (hm['y_lows'][0] - ys_line) / (hm['y_int'] * hm['y_scale']) + .5, color=DARK, lw=1.8)
-        ax.set_xlim(-.5, grid.shape[1] - .5); ax.set_ylim(grid.shape[0] - .5, -.5)
+        ax.set_xlim(-.5, grid.shape[1] - .5); ax.set_ylim(min(grid.shape[0] - 1, last_row + 1) + .5, -.5)
         ax.set_xlabel('My score'); ax.set_ylabel(yn)
         ax.set_title(f"{yn} vs. my score · n={hm['n']} · R² = {hm['rsq']:.2f} · y = {hm['slope']:.2f}x + {hm['intercept']:.2f}", loc='left', fontsize=8.5)
     footer(fig, n); pdf.savefig(fig); plt.close(fig)
@@ -638,12 +639,13 @@ with PdfPages(OUT) as pdf:
     paths = [p for p in (cover_path(x) for x in ordered['title']) if p]
     COLS, ROWS, TW, TH = 20, 9, 72, 108
     for pg in range(0, len(paths), COLS * ROWS):
-        sheet = np.full((ROWS * TH, COLS * TW, 3), 255, np.uint8)
-        for k, p in enumerate(paths[pg:pg + COLS * ROWS]):
+        chunk = paths[pg:pg + COLS * ROWS]; rows_used = -(-len(chunk) // COLS)    # size the panel to the rows actually used
+        sheet = np.full((rows_used * TH, COLS * TW, 3), 255, np.uint8)
+        for k, p in enumerate(chunk):
             r_, c_ = divmod(k, COLS); sheet[r_ * TH:(r_ + 1) * TH, c_ * TW:(c_ + 1) * TW] = load_cover(p, TW, TH)
         sheet &= 0xF8                       # 5 bits/channel: invisible at this size, compresses much better in the PDF
         fig = plt.figure(figsize=(11, 8.5)); n += 1
-        ax = fig.add_axes([1 / 22, 1 - 0.103 - 0.75 / 8.5 * ROWS, 0.5 / 11 * COLS, 0.75 / 8.5 * ROWS]); ax.axis('off')
+        ax = fig.add_axes([1 / 22, 1 - 0.103 - 0.75 / 8.5 * rows_used, 0.5 / 11 * COLS, 0.75 / 8.5 * rows_used]); ax.axis('off')
         ax.imshow(sheet, aspect='auto', interpolation='lanczos')
         fig.text(0.5, 0.045, f'Collection · {len(paths)} covers', ha='center', fontsize=8, color=GREY); footer(fig, n); pdf.savefig(fig); plt.close(fig)
 print('wrote', OUT)

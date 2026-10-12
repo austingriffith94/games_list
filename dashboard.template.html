@@ -15,7 +15,10 @@ h1{margin:0;font-size:22px;color:var(--accent-ink)}
 header .sub{color:var(--muted);font-size:12px;flex:1}
 button,select,input{font:inherit;color:var(--text);background:var(--card);border:1px solid var(--grid);border-radius:6px;padding:5px 9px}
 button{cursor:pointer}
-nav{max-width:1200px;margin:0 auto;padding:4px 16px;display:flex;gap:6px;flex-wrap:wrap;position:sticky;top:0;background:var(--bg);z-index:5}
+nav{max-width:1200px;margin:0 auto;padding:4px 16px;position:sticky;top:0;background:var(--bg);z-index:5}
+#tabs{display:flex;gap:6px;flex-wrap:wrap}
+@media (max-width:700px){#tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin;padding-bottom:4px}#tabs button{flex:none;white-space:nowrap}}
+#hint{max-width:1200px;margin:0 auto;padding:2px 16px 0;font-size:12px;color:var(--muted)}body.filtered #hint{display:none}
 nav button.on{background:var(--accent-ink);color:var(--accent-t);border-color:var(--accent-ink)}
 main{max-width:1200px;margin:0 auto;padding:8px 16px 40px}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:8px 0 14px}
@@ -26,6 +29,7 @@ main{max-width:1200px;margin:0 auto;padding:8px 16px 40px}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px}
 .tab{display:none}.tab.on{display:block}
+[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 svg{width:100%;height:auto;display:block;overflow:visible}
 svg text{fill:var(--muted);font-size:11px}svg .lbl{fill:var(--text)}
 .gridline{stroke:var(--grid);stroke-width:1}
@@ -37,14 +41,14 @@ table.mx td.c{cursor:pointer}table.mx td.c:hover{outline:2px solid var(--accent)
 table.mx td.tot{font-weight:700;background:var(--grid)}
 .top10{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
 .t10{perspective:900px;cursor:pointer;outline-offset:2px}
-.t10 .fl{height:100%;display:grid;transition:transform .5s;transform-style:preserve-3d}
+.t10 .fl{height:100%;position:relative;transition:transform .5s;transform-style:preserve-3d}
 .t10.flip .fl{transform:rotateY(180deg)}
-.t10 .fr,.t10 .bk{grid-area:1/1;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:var(--card);border:1px solid var(--grid);border-radius:10px;overflow:hidden}
-.t10 .bk{transform:rotateY(180deg);padding:10px;font-size:11.5px;line-height:1.5}
-.t10 .bk b.ti{display:block;font-size:13px;margin-bottom:4px}
+.t10 .fr,.t10 .bk{backface-visibility:hidden;-webkit-backface-visibility:hidden;background:var(--card);border:1px solid var(--grid);border-radius:10px;overflow:hidden}
+.t10 .fr{height:100%}.t10 .bk{position:absolute;inset:0;overflow:auto;transform:rotateY(180deg);padding:8px;font-size:11px;line-height:1.35}
+.t10 .bk b.ti{display:block;font-size:12px;margin-bottom:3px}
 .t10 .bk table{width:100%;border-collapse:collapse}.t10 .bk td{padding:1px 0}.t10 .bk td:last-child{text-align:right;font-weight:600}
-.t10 .bk .sec{margin-top:5px;color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em}
-.t10 .bk button{margin-top:6px;font-size:11px;padding:2px 8px}
+.t10 .bk .sec{margin-top:4px;color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em}
+.t10 .bk button{margin-top:4px;font-size:11px;padding:2px 8px}
 @media (prefers-reduced-motion:reduce){.t10 .fl{transition:none}}
 .dis{width:100%;border-collapse:collapse;font-size:12.5px}.dis th{text-align:left;padding:4px 6px;border-bottom:2px solid var(--grid);color:var(--muted);font-weight:600}
 .dis td{padding:4px 6px;border-bottom:1px solid var(--grid)}.dis td.n,.dis th.n{text-align:right;white-space:nowrap}.dis td.up{color:#3a8a3a;font-weight:600}.dis td.dn{color:#c0392b;font-weight:600}
@@ -69,12 +73,12 @@ table.gt tr:hover td{background:var(--hl)}
 #mosaic .mz:hover{outline:2px solid var(--accent);position:relative;z-index:1}
 #mzleg{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);margin:6px 0 10px}
 #mzleg i{display:block;width:160px;height:10px;border-radius:5px;background:linear-gradient(90deg,var(--accent2),var(--accent))}
-#fbar{flex-basis:100%;display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--muted);min-height:26px}
+#fbar{display:flex;margin-top:4px;gap:6px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--muted);min-height:26px}
 #fbar .chip{display:inline-flex;align-items:center;gap:4px;padding:2px 4px 2px 9px;border-radius:12px;background:var(--soft);border:1px solid var(--accent);color:var(--text)}
 #fbar .chip button{border:0;background:none;padding:0 4px;color:var(--muted);line-height:1}
 #fbar .chip button:hover{color:var(--accent-ink)}
 #fbar .clr{padding:1px 8px;font-size:12px}
-#fbar .warn{color:var(--accent-ink)}
+#fbar .warn{color:var(--accent-ink)}#fbar:empty{display:none}
 .xf{cursor:pointer}svg .xf:hover{opacity:.8}
 a.xf,span.xf{color:inherit;text-decoration:underline dotted var(--muted);text-underline-offset:2px}a.xf:hover,span.xf:hover{color:var(--accent-ink)}
 table.mx th.xf:hover,table.mx td.sys.xf:hover{color:var(--accent-ink)}table.mx .xon{color:var(--accent-ink);text-decoration:underline}
@@ -89,7 +93,8 @@ table.mx th.xf:hover,table.mx td.sys.xf:hover{color:var(--accent-ink)}table.mx .
 </head>
 <body>
 <header><h1>Game List</h1><div class="sub" id="sub"></div><button id="theme" title="Toggle light/dark">◐ Theme</button></header>
-<nav id="nav"><div id="fbar"></div></nav>
+<nav id="nav"><div id="tabs"></div><div id="fbar"></div></nav>
+<div id="hint">Tip: click a bar, row, column header or game detail to filter every chart.</div>
 <main>
  <section class="tab" id="t-overview">
   <div class="kpis" id="kpis"></div>
@@ -226,6 +231,7 @@ const HOLIDAY_SET = new Set(HOLIDAYS||[]);
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const NS='http://www.w3.org/2000/svg';
 const fmt=(v,d=0)=>v==null||isNaN(v)?'–':(+v).toLocaleString(undefined,{maximumFractionDigits:d});
+const fix=(v,d)=>v==null||isNaN(v)?'–':(+v).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d});
 const fmtYear=(v,d=0)=>v==null||isNaN(v)?'–':(+v).toLocaleString(undefined,{maximumFractionDigits:d,useGrouping:false});
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const mean=a=>{a=a.filter(x=>x!=null&&!isNaN(x));return a.length?a.reduce((x,y)=>x+y,0)/a.length:null};
@@ -236,7 +242,10 @@ function mk(tag,attrs={},parent){const e=document.createElementNS(NS,tag);for(co
 function txt(parent,x,y,s,attrs={}){const t=mk('text',{x,y,...attrs},parent);t.textContent=s;return t}
 /* the viewBox width is the container's pixel width, so 11px text renders at 11px at any card width (w is the fallback
    for a container with no width yet). fixed:true keeps w and scales like an image (calendars, timeline, donuts). */
-function canvas(sel,w,h,m={t:10,r:14,b:30,l:44},{fixed=false}={}){const c=$(sel);c.innerHTML='';if(!fixed&&c.clientWidth>0)w=c.clientWidth;const s=mk('svg',{viewBox:`0 0 ${w} ${h}`},c);const g=mk('g',{transform:`translate(${m.l},${m.t})`},s);return {s,g,W:w-m.l-m.r,H:h-m.t-m.b,m}}
+// one-line chart summary: the card title, plus the sub heading above the chart when it has one
+function chartLabel(c){const card=c.closest('.card'),t=card?.querySelector('h2')?.textContent||'Chart';let p=c.previousElementSibling;
+  while(p&&!(p.tagName==='H2'))p=p.previousElementSibling;const sub=p&&p!==card?.querySelector('h2')?p.textContent:'';return sub?`${t}: ${sub}`:t}
+function canvas(sel,w,h,m={t:10,r:14,b:30,l:44},{fixed=false}={}){const c=$(sel);c.innerHTML='';if(!fixed&&c.clientWidth>0)w=c.clientWidth;const s=mk('svg',{viewBox:`0 0 ${w} ${h}`,'aria-label':chartLabel(c)},c);const g=mk('g',{transform:`translate(${m.l},${m.t})`},s);return {s,g,W:w-m.l-m.r,H:h-m.t-m.b,m}}
 // label every k-th category so labels about chars*6.5px wide do not overlap on a band of bw px
 const labelEvery=(labels,bw,min=1)=>Math.max(min,Math.ceil((Math.max(1,...labels.map(l=>String(l).length))*6.5+8)/bw));
 // a text label cut to fit maxW px, with the full text as a hover title
@@ -246,7 +255,15 @@ function lin(d0,d1,r0,r1){return v=>d1===d0?r0:r0+(v-d0)*(r1-r0)/(d1-d0)}
 function niceTicks(a,b,n=5,{ceil=false}={}){if(a===b){b=a+1}const step0=(b-a)/n,mag=Math.pow(10,Math.floor(Math.log10(step0))),f=step0/mag,step=(f<1.5?1:f<3?2:f<7?5:10)*mag;const out=[];for(let v=Math.ceil(a/step)*step;v<=b+1e-9;v+=step)out.push(+v.toPrecision(12));if(ceil&&out[out.length-1]<b-1e-9)out.push(+(out[out.length-1]+step).toPrecision(12));return out}
 function yAxis(c,y,ticks,f=v=>fmt(v)){ticks.forEach(t=>{mk('line',{class:'gridline',x1:0,x2:c.W,y1:y(t),y2:y(t)},c.g);txt(c.g,-6,y(t)+4,f(t),{'text-anchor':'end'})})}
 const tipEl=$('#tip');
-function tip(el,html){el.addEventListener('mousemove',e=>{tipEl.innerHTML=html;tipEl.style.display='block';tipEl.style.left=Math.min(e.clientX+12,innerWidth-270)+'px';tipEl.style.top=(e.clientY+14)+'px'});el.addEventListener('mouseleave',()=>tipEl.style.display='none')}
+/* tooltips follow the pointer (mouse, pen, and a touch tap) and show on keyboard focus; el._tip keeps the text for aria-label */
+function tip(el,html){el._tip=html;el.setAttribute('data-tip','1');
+  const show=(x,y)=>{tipEl.innerHTML=html;tipEl.style.display='block';tipEl.style.left=Math.max(4,Math.min(x+12,innerWidth-270))+'px';tipEl.style.top=Math.min(y+14,innerHeight-60)+'px'};
+  el.addEventListener('pointermove',e=>show(e.clientX,e.clientY));
+  el.addEventListener('pointerdown',e=>{if(e.pointerType==='touch')show(e.clientX,e.clientY)});
+  el.addEventListener('pointerleave',e=>{if(e.pointerType!=='touch')tipEl.style.display='none'});
+  el.addEventListener('focus',()=>{const r=el.getBoundingClientRect();show(r.left+r.width/2,r.bottom-12)});
+  el.addEventListener('blur',()=>tipEl.style.display='none')}
+addEventListener('pointerdown',e=>{if(e.pointerType==='touch'&&!e.target.closest?.('[data-tip]'))tipEl.style.display='none'});
 const css=v=>`var(--${v})`;
 
 /* vertical bars. items:[{x,label,v,tip}]. xLabels:false leaves the category labels to a linePanel stacked below */
@@ -371,7 +388,7 @@ function setFilter(d,v){
 const xf=(d,v)=>()=>setFilter(d,v);
 function drawFbar(warn){
   const el=$('#fbar');
-  if(!isFiltered()){el.innerHTML=warn?`<span class="warn">${esc(warn)}</span>`:'<span>Tip: click a bar, row, column header or game detail to filter every chart.</span>';return}
+  if(!isFiltered()){el.innerHTML=warn?`<span class="warn">${esc(warn)}</span>`:'';return}
   el.innerHTML='<span>Filter:</span>'+[...FILT].map(([d,v])=>`<span class="chip">${esc(DIMS[d].name)}: <b>${esc(v)}</b><button data-d="${d}" title="Remove">✕</button></span>`).join('')+
     `<span>${G.length} of ${ALL.G.length} games</span><button class="clr">Clear all</button>`+(warn?`<span class="warn">${esc(warn)}</span>`:'');
   $$('#fbar .chip button').forEach(b=>b.onclick=()=>{FILT.delete(b.dataset.d);applyFilter()});
@@ -411,12 +428,12 @@ const built={};let critSel=null,calTimer=null;
 let builtW=innerWidth,resizeT=null;
 addEventListener('resize',()=>{clearTimeout(resizeT);resizeT=setTimeout(()=>{if(innerWidth===builtW)return;builtW=innerWidth;
   const cur=TABS.find(([k])=>$('#t-'+k).classList.contains('on'))?.[0];Object.keys(built).forEach(k=>delete built[k]);if(cur){built[cur]=1;BUILD[cur]()}},200)});
-function show(id){$('#panel').classList.remove('open');TABS.forEach(([k])=>$('#t-'+k).classList.toggle('on',k===id));$$('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.k===id));location.hash=id;if(!built[id]){built[id]=1;BUILD[id]()}}
+function show(id){$('#panel').classList.remove('open');TABS.forEach(([k])=>$('#t-'+k).classList.toggle('on',k===id));$$('#tabs button').forEach(b=>{b.classList.toggle('on',b.dataset.k===id);if(b.dataset.k===id)b.scrollIntoView?.({block:'nearest',inline:'nearest'})});location.hash=id;if(!built[id]){built[id]=1;BUILD[id]()}}
 // a right-edge fade on a scrolling table says there is more to the right
 const scrollFade=el=>el.classList.toggle('more',el.scrollWidth-el.clientWidth-el.scrollLeft>2);
 const fadeRO=new ResizeObserver(es=>es.forEach(e=>{const m=e.target.closest('.mxscroll');m&&scrollFade(m)}));
 $$('.mxscroll').forEach(el=>{el.addEventListener('scroll',()=>scrollFade(el));fadeRO.observe(el);if(el.firstElementChild)fadeRO.observe(el.firstElementChild)});
-TABS.forEach(([k,n])=>{const b=document.createElement('button');b.textContent=n;b.dataset.k=k;b.onclick=()=>show(k);$('#nav').insertBefore(b,$('#fbar'))});
+TABS.forEach(([k,n])=>{const b=document.createElement('button');b.textContent=n;b.dataset.k=k;b.onclick=()=>show(k);$('#tabs').appendChild(b)});
 
 const BUILD={
 overview(){
@@ -425,8 +442,9 @@ overview(){
   if(isFiltered()){const playedRel=new Set(L.map(x=>x[1]+'\u0001'+x[2])),hrs=L.reduce((a,x)=>a+x[3],0),up=G.filter(g=>g.played).length;
     S={games:R.length,games_played:R.filter(r=>playedRel.has(r.t+'\u0001'+r.sys)).length,unique_games:G.length,unique_played:up,backlog:G.length-up,
        total_time:`${Math.floor(hrs/24)}d ${fmt(hrs%24,1)}h`}}
-  const K=[['Games',S.games],['Games played',S.games_played],['Unique games',S.unique_games],['Unique played',S.unique_played],['Backlog',S.backlog],['Total time',S.total_time]];
-  $('#kpis').innerHTML=K.map(([k,v])=>`<div class="kpi"><b>${v}</b><span>${k}</span></div>`).join('');
+  const totH=isFiltered()?L.reduce((a,x)=>a+x[3],0):SUMMARY.total_hours;
+  const K=[['Releases',S.games],['Games played',S.games_played],['Unique games',S.unique_games],['Unique played',S.unique_played],['Backlog',S.backlog],['Total time',S.total_time,`${fmt(totH)} h`]];
+  $('#kpis').innerHTML=K.map(([k,v,cap])=>`<div class="kpi"${k==='Releases'?' title="Game × system rows; a game on two systems counts twice"':''}><b>${v}</b><span>${k}</span>${cap?`<span style="display:block">${cap}</span>`:''}</div>`).join('');
   // filtered: the best-ranked games that pass the filter, still numbered by their overall rank
   const tops=isFiltered()?G.filter(g=>g.rank!=null).sort((a,b)=>a.rank-b.rank).slice(0,10).map(g=>[g.t,g.rank]):TOP.map((t,i)=>[t,i+1]);
   $('#top10').innerHTML=tops.length?tops.map(([t,rk])=>{const g=gByTitle.get(t)||{};
@@ -865,17 +883,17 @@ BUILD.stats=function(){
   const opts=HM_SRC.map(s=>`<option value="${s[1]}">${s[0]}</option>`).join('');
   const first=!$('#hmy').options.length;fillOpts('#hmy',opts,'gi');fillOpts('#hmx',opts,'ms');if(first)$('#hmyi').value='0.25';
   ['#hmy','#hmx','#hmyi','#hmxi'].forEach(s=>$(s).onchange=drawHeat);drawHeat();
-  const pct=v=>fmt(v*100,1)+'%',n0=v=>fmt(v,0);
-  statTable('StatTable',{idx:'Statistic'});
-  statTable('CorrelationMatrix',{tri:true,idx:'Correlation'});
+  const pct=v=>fix(v*100,1)+'%',n0=v=>fmt(v,0);
+  statTable('StatTable',{f:v=>fix(v,2),idx:'Statistic'});
+  statTable('CorrelationMatrix',{f:v=>fix(v,2),tri:true,idx:'Correlation'});
   statTable('ScoreDistributionTable',{f:pct,heat:true,idx:'Score'});
-  statTable('YearsPerScore',{f:v=>fmtYear(v,1),idx:'My score'});
-  statTable('SoundtrackStats',{f:(v,c,r)=>r==='Hours'||r==='Games'?fmt(v,0):fmt(v,1),idx:'Soundtrack'});
+  statTable('YearsPerScore',{f:v=>fix(v,1).replace(/,/g,''),idx:'My score'});
+  statTable('SoundtrackStats',{f:(v,c,r)=>r==='Games'?fmt(v,0):fix(v,1),idx:'Soundtrack'});
   statTable('SoundtrackDistributionTable',{f:pct,heat:true,idx:'Metacritic'});
-  statTable('ZeroPunctuationQualityBuckets',{f:(v,c)=>c.startsWith('Frequency')?pct(v):c==='Hours'?fmt(v,1):n0(v),idx:'Opinion'});
+  statTable('ZeroPunctuationQualityBuckets',{f:(v,c)=>c.startsWith('Frequency')?pct(v):c==='Hours'?fix(v,1):n0(v),idx:'Opinion'});
   statTable('ZeroPunctuationDistribution',{f:n0,heat:true,idx:'My score'});
-  statTable('SeriesRankStats',{f:(v,c)=>c==='Hours'?fmt(v,2):n0(v),left:['Series'],idx:'Rank'});
-  statTable('SeriesRankTotalStats',{f:(v,c)=>c==='Hours'?fmt(v,2):n0(v)});
+  statTable('SeriesRankStats',{f:(v,c)=>c==='Hours'?fix(v,1):n0(v),left:['Series'],idx:'Rank'});
+  statTable('SeriesRankTotalStats',{f:(v,c)=>c==='Hours'?fix(v,1):n0(v)});
   ['PlaythroughVsScoreBuckets','NormPlayVsScoreBuckets','ReleaseVsFirstBuckets','LastVsFirstBuckets'].forEach(id=>statTable(id,{f:n0,heat:true,bold:['Total'],idx:'Bucket'}))};
 
 function drawMatrix(){
@@ -898,6 +916,19 @@ function gameList(title,items){
   $('#pbody').innerHTML=`<h3>${esc(title)}</h3><ul>`+items.map(([t,extra])=>`<li><span class="xf" data-t="${esc(t)}">${esc(t)}</span>${extra?` <span style="color:var(--muted)">· ${extra}</span>`:''}</li>`).join('')+'</ul>';
   $$('#pbody [data-t]').forEach(e=>e.onclick=()=>gameCard(gByTitle.get(e.dataset.t)));$('#panel').classList.add('open')}
 
+/* keyboard + screen-reader pass after each tab is drawn: clickable marks become buttons that Enter/Space activate,
+   and every chart is a labelled group (or an image when nothing inside it is interactive) */
+function a11y(root){
+  // a chart or table with more than 120 clickable marks (scatter points, the games table, the mosaic) would be a wall of tab stops: leave it to the pointer
+  const cand=[...root.querySelectorAll('.xf,td.c,.mz')].filter(el=>!el.hasAttribute('tabindex')&&typeof el.onclick==='function'&&el.getAttribute('fill')!=='transparent'),per=new Map();
+  cand.forEach(el=>{const k=el.closest('svg,table,#mosaic')||root;per.set(k,(per.get(k)||0)+1)});
+  cand.forEach(el=>{
+    if(per.get(el.closest('svg,table,#mosaic')||root)>120)return;
+    el.setAttribute('tabindex','0');el.setAttribute('role','button');
+    const lab=el._tip?el._tip.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim():el.textContent.trim();if(lab&&!el.hasAttribute('aria-label'))el.setAttribute('aria-label',lab);
+    el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();el.click()}})});
+  root.querySelectorAll('svg[aria-label]').forEach(v=>v.setAttribute('role',v.querySelector('[tabindex]')?'group':'img'))}
+Object.keys(BUILD).forEach(k=>{const f=BUILD[k];BUILD[k]=function(){const r=f.apply(this,arguments);a11y($('#t-'+k));return r}});
 drawFbar();
 $('#sub').textContent=`${SUMMARY.unique_games} games · data through ${ASOF}`;
 addEventListener('keydown',e=>{if(e.key==='Escape')$('#panel').classList.remove('open')});
