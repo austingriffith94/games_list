@@ -1,5 +1,9 @@
 # Action plan: closing the gap with the old workbook PDF
 
+> **Archived Oct 12 2026.** Every phase below is built. The two leftovers (the dashboard half of 1.3
+> and the optional Phase 2b residuals) moved to the current [`ACTION_PLAN.md`](../../ACTION_PLAN.md).
+> Kept as the record of what was built and why.
+
 Derived from a page-by-page review of `old_excel/games_list.pdf` (30 pages, exported Aug 9 2026)
 against the current `build_pdf.py` (9 content pages + collage) and `dashboard.template.html`.
 

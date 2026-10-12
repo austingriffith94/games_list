@@ -5,22 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Game List Dashboard</title>
 <style>
-:root{--bg:#f6f4f1;--card:#fff;--text:#222;--muted:#757575;--grid:#e6e2dc;--accent:#c55a11;--accent2:#8e5bd0;--line:#222;--soft:#fbe5d6;--hl:#fff3e8}
-@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#17181a;--card:#222426;--text:#ececec;--muted:#9a9a9a;--grid:#383a3d;--accent:#ee8a45;--accent2:#b18cf0;--line:#ddd;--soft:#3a2a1f;--hl:#2e2823}}
-:root[data-theme=dark]{--bg:#17181a;--card:#222426;--text:#ececec;--muted:#9a9a9a;--grid:#383a3d;--accent:#ee8a45;--accent2:#b18cf0;--line:#ddd;--soft:#3a2a1f;--hl:#2e2823}
+:root{--bg:#f6f4f1;--card:#fff;--text:#222;--muted:#757575;--grid:#e6e2dc;--accent:#c55a11;--accent-ink:#b3500e;--accent-t:#fff;--accent2:#8e5bd0;--line:#222;--soft:#fbe5d6;--hl:#fff3e8}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#17181a;--card:#222426;--text:#ececec;--muted:#9a9a9a;--grid:#383a3d;--accent:#ee8a45;--accent-ink:#ee8a45;--accent-t:#1a1a1a;--accent2:#b18cf0;--line:#ddd;--soft:#3a2a1f;--hl:#2e2823}}
+:root[data-theme=dark]{--bg:#17181a;--card:#222426;--text:#ececec;--muted:#9a9a9a;--grid:#383a3d;--accent:#ee8a45;--accent-ink:#ee8a45;--accent-t:#1a1a1a;--accent2:#b18cf0;--line:#ddd;--soft:#3a2a1f;--hl:#2e2823}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 header{padding:20px 16px 8px;max-width:1200px;margin:0 auto;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
-h1{margin:0;font-size:22px;color:var(--accent)}
+h1{margin:0;font-size:22px;color:var(--accent-ink)}
 header .sub{color:var(--muted);font-size:12px;flex:1}
 button,select,input{font:inherit;color:var(--text);background:var(--card);border:1px solid var(--grid);border-radius:6px;padding:5px 9px}
 button{cursor:pointer}
 nav{max-width:1200px;margin:0 auto;padding:4px 16px;display:flex;gap:6px;flex-wrap:wrap;position:sticky;top:0;background:var(--bg);z-index:5}
-nav button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+nav button.on{background:var(--accent-ink);color:var(--accent-t);border-color:var(--accent-ink)}
 main{max-width:1200px;margin:0 auto;padding:8px 16px 40px}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:8px 0 14px}
 .kpi{background:var(--card);border:1px solid var(--grid);border-radius:10px;padding:10px 12px}
-.kpi b{display:block;font-size:22px;color:var(--accent)}.kpi span{font-size:12px;color:var(--muted)}
+.kpi b{display:block;font-size:22px;color:var(--accent-ink)}.kpi span{font-size:12px;color:var(--muted)}
 .card{background:var(--card);border:1px solid var(--grid);border-radius:10px;padding:14px;margin-bottom:14px}
 .card h2{margin:0 0 4px;font-size:15px}.card p.note{margin:0 0 8px;color:var(--muted);font-size:12px}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
@@ -49,14 +49,14 @@ table.mx td.tot{font-weight:700;background:var(--grid)}
 .dis{width:100%;border-collapse:collapse;font-size:12.5px}.dis th{text-align:left;padding:4px 6px;border-bottom:2px solid var(--grid);color:var(--muted);font-weight:600}
 .dis td{padding:4px 6px;border-bottom:1px solid var(--grid)}.dis td.n,.dis th.n{text-align:right;white-space:nowrap}.dis td.up{color:#3a8a3a;font-weight:600}.dis td.dn{color:#c0392b;font-weight:600}
 .scrub{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.scrub input[type=range]{width:200px;padding:0}.scrub output{min-width:3.2em;font-weight:600}
-.t10 .cv{aspect-ratio:3/4;background:linear-gradient(135deg,var(--soft),var(--grid));display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:34px;font-weight:700}
+.t10 .cv{aspect-ratio:3/4;background:linear-gradient(135deg,var(--soft),var(--grid));display:flex;align-items:center;justify-content:center;color:var(--accent-ink);font-size:34px;font-weight:700}
 .t10 .cv img{width:100%;height:100%;object-fit:cover}
 .t10 .in{padding:8px}.t10 .in b{display:block;font-size:13px}.t10 .in span{font-size:11px;color:var(--muted)}
 table.hm{width:auto;min-width:60%}table.hm td{min-width:30px;padding:2px 3px;font-size:11px;cursor:default}table.hm td.c{cursor:pointer}table.hm th.ax{font-weight:400;color:var(--muted);font-size:11px}
 table.mx td.l,table.mx th.l{text-align:left}table.mx td.dim{color:var(--muted)}table.mx td.bd{font-weight:700}
-.mxscroll{overflow:auto;max-width:100%}.hmstat{font-size:12px;color:var(--muted);margin:2px 0 8px}.hmstat b{color:var(--text)}
+.mxscroll{overflow:auto;max-width:100%}.mxscroll.more{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 32px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 32px),transparent)}.hmstat{font-size:12px;color:var(--muted);margin:2px 0 8px}.hmstat b{color:var(--text)}
 table.gt{border-collapse:collapse;width:100%;font-size:12.5px}
-table.gt th{cursor:pointer;text-align:left;padding:6px;border-bottom:2px solid var(--grid);position:sticky;top:34px;background:var(--card);white-space:nowrap}
+table.gt th{cursor:pointer;text-align:left;padding:6px;border-bottom:2px solid var(--grid);position:sticky;top:0;background:var(--card);white-space:nowrap}
 table.gt td{padding:5px 6px;border-bottom:1px solid var(--grid)}
 table.gt tr:hover td{background:var(--hl)}
 .tablewrap{max-height:70vh;overflow:auto}
@@ -72,19 +72,19 @@ table.gt tr:hover td{background:var(--hl)}
 #fbar{flex-basis:100%;display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--muted);min-height:26px}
 #fbar .chip{display:inline-flex;align-items:center;gap:4px;padding:2px 4px 2px 9px;border-radius:12px;background:var(--soft);border:1px solid var(--accent);color:var(--text)}
 #fbar .chip button{border:0;background:none;padding:0 4px;color:var(--muted);line-height:1}
-#fbar .chip button:hover{color:var(--accent)}
+#fbar .chip button:hover{color:var(--accent-ink)}
 #fbar .clr{padding:1px 8px;font-size:12px}
-#fbar .warn{color:var(--accent)}
+#fbar .warn{color:var(--accent-ink)}
 .xf{cursor:pointer}svg .xf:hover{opacity:.8}
-a.xf,span.xf{color:inherit;text-decoration:underline dotted var(--muted);text-underline-offset:2px}a.xf:hover,span.xf:hover{color:var(--accent)}
-table.mx th.xf:hover,table.mx td.sys.xf:hover{color:var(--accent)}table.mx .xon{color:var(--accent);text-decoration:underline}
+a.xf,span.xf{color:inherit;text-decoration:underline dotted var(--muted);text-underline-offset:2px}a.xf:hover,span.xf:hover{color:var(--accent-ink)}
+table.mx th.xf:hover,table.mx td.sys.xf:hover{color:var(--accent-ink)}table.mx .xon{color:var(--accent-ink);text-decoration:underline}
 .fnote{display:none;margin:0 0 12px;padding:8px 12px;border-radius:8px;background:var(--soft);font-size:12px}body.filtered .fnote{display:block}
 #tip{position:fixed;pointer-events:none;background:#000d;color:#fff;padding:6px 9px;border-radius:6px;font-size:12px;z-index:50;display:none;max-width:260px}
-.legend{display:flex;gap:12px;font-size:12px;color:var(--muted);margin-bottom:4px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--muted);margin-bottom:4px}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
 #panel{position:fixed;right:0;top:0;bottom:0;width:min(380px,100%);background:var(--card);border-left:1px solid var(--grid);box-shadow:-4px 0 16px #0003;transform:translateX(100%);transition:transform .2s;z-index:20;padding:14px;overflow:auto}
 #panel.open{transform:none}#panel h3{margin:0 0 8px;font-size:14px}#panel li{margin:3px 0}
-@media print{nav,#panel,.row button{display:none}.tab{display:block!important}body{background:#fff}}
+@media print{nav,#panel,.row button,.t10 .bk{display:none}body{background:#fff}*{print-color-adjust:exact;-webkit-print-color-adjust:exact}.card{break-inside:avoid}.tablewrap{max-height:none;overflow:visible}}
 </style>
 </head>
 <body>
@@ -179,8 +179,8 @@ table.mx th.xf:hover,table.mx td.sys.xf:hover{color:var(--accent)}table.mx .xon{
     <label>X step <select id="hmxi"><option value="0.25">0.25</option><option value="0.5">0.5</option><option value="1" selected>1</option></select></label></div>
    <div class="hmstat" id="hmstat"></div><div class="mxscroll"><table class="mx hm" id="hm"></table></div></div>
   <div class="grid2">
-   <div class="card"><h2>Distribution of each score source</h2><p class="note">Each outlet in its own units (Metacritic and PC Gamer 0–100, the rest 0–10).</p><div class="mxscroll"><table class="mx" id="s-StatTable"></table></div></div>
-   <div class="card"><h2>Correlation</h2><p class="note">Pairs where both outlets scored the game.</p><div class="mxscroll"><table class="mx" id="s-CorrelationMatrix"></table></div></div>
+   <div class="card" style="grid-column:1/-1"><h2>Distribution of each score source</h2><p class="note">Each outlet in its own units (Metacritic and PC Gamer 0–100, the rest 0–10).</p><div class="mxscroll"><table class="mx" id="s-StatTable"></table></div></div>
+   <div class="card" style="grid-column:1/-1"><h2>Correlation</h2><p class="note">Pairs where both outlets scored the game.</p><div class="mxscroll"><table class="mx" id="s-CorrelationMatrix"></table></div></div>
    <div class="card"><h2>Share of games per score band</h2><p class="note">Games with score in (s−1, s].</p><div class="mxscroll"><table class="mx" id="s-ScoreDistributionTable"></table></div></div>
    <div class="card"><h2>Average year per my score</h2><div class="mxscroll"><table class="mx" id="s-YearsPerScore"></table></div></div>
    <div class="card"><h2>Soundtrack ownership</h2><p class="note">Scores 0–100.</p><div class="mxscroll"><table class="mx" id="s-SoundtrackStats"></table></div>
@@ -191,7 +191,7 @@ table.mx th.xf:hover,table.mx td.sys.xf:hover{color:var(--accent)}table.mx .xon{
     <h2 style="font-size:13px;margin-top:12px">Top 10 vs. everything else</h2><div class="mxscroll"><table class="mx" id="s-SeriesRankTotalStats"></table></div></div>
   </div>
   <div class="card"><h2>My score × playthroughs and year gaps</h2><p class="note">Games per bucket (rows) by my score (columns). A gap of exactly 6 years is counted in “6-9”; the old workbook's buckets skipped it and silently dropped 5 games.</p>
-   <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(480px,1fr))"><div><h2 style="font-size:13px">Playthroughs</h2><div class="mxscroll"><table class="mx" id="s-PlaythroughVsScoreBuckets"></table></div></div>
+   <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(min(480px,100%),1fr))"><div><h2 style="font-size:13px">Playthroughs</h2><div class="mxscroll"><table class="mx" id="s-PlaythroughVsScoreBuckets"></table></div></div>
     <div><h2 style="font-size:13px">Normalized playthroughs</h2><div class="mxscroll"><table class="mx" id="s-NormPlayVsScoreBuckets"></table></div></div>
     <div><h2 style="font-size:13px">Release year → first played (years)</h2><div class="mxscroll"><table class="mx" id="s-ReleaseVsFirstBuckets"></table></div></div>
     <div><h2 style="font-size:13px">First played → last played (years)</h2><div class="mxscroll"><table class="mx" id="s-LastVsFirstBuckets"></table></div></div></div></div>
@@ -223,6 +223,7 @@ const HOLIDAY_SET = new Set(HOLIDAYS||[]);
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const NS='http://www.w3.org/2000/svg';
 const fmt=(v,d=0)=>v==null||isNaN(v)?'–':(+v).toLocaleString(undefined,{maximumFractionDigits:d});
+const fmtYear=(v,d=0)=>v==null||isNaN(v)?'–':(+v).toLocaleString(undefined,{maximumFractionDigits:d,useGrouping:false});
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const mean=a=>{a=a.filter(x=>x!=null&&!isNaN(x));return a.length?a.reduce((x,y)=>x+y,0)/a.length:null};
 const gByTitle=new Map(ALL.G.map(g=>[g.t,g]));
@@ -230,9 +231,16 @@ const gByTitle=new Map(ALL.G.map(g=>[g.t,g]));
 /* ---------- tiny SVG chart kit ---------- */
 function mk(tag,attrs={},parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e}
 function txt(parent,x,y,s,attrs={}){const t=mk('text',{x,y,...attrs},parent);t.textContent=s;return t}
-function canvas(sel,w,h,m={t:10,r:14,b:30,l:44}){const c=$(sel);c.innerHTML='';const s=mk('svg',{viewBox:`0 0 ${w} ${h}`},c);const g=mk('g',{transform:`translate(${m.l},${m.t})`},s);return {s,g,W:w-m.l-m.r,H:h-m.t-m.b,m}}
+/* the viewBox width is the container's pixel width, so 11px text renders at 11px at any card width (w is the fallback
+   for a container with no width yet). fixed:true keeps w and scales like an image (calendars, timeline, donuts). */
+function canvas(sel,w,h,m={t:10,r:14,b:30,l:44},{fixed=false}={}){const c=$(sel);c.innerHTML='';if(!fixed&&c.clientWidth>0)w=c.clientWidth;const s=mk('svg',{viewBox:`0 0 ${w} ${h}`},c);const g=mk('g',{transform:`translate(${m.l},${m.t})`},s);return {s,g,W:w-m.l-m.r,H:h-m.t-m.b,m}}
+// label every k-th category so labels about chars*6.5px wide do not overlap on a band of bw px
+const labelEvery=(labels,bw,min=1)=>Math.max(min,Math.ceil((Math.max(1,...labels.map(l=>String(l).length))*6.5+8)/bw));
+// a text label cut to fit maxW px, with the full text as a hover title
+function fitLabel(t,maxW){const s=String(t.textContent),n=Math.floor(maxW/6.2);if(s.length>n){t.textContent=s.slice(0,Math.max(1,n-1))+'…';mk('title',{},t).textContent=s}return t}
 function lin(d0,d1,r0,r1){return v=>d1===d0?r0:r0+(v-d0)*(r1-r0)/(d1-d0)}
-function niceTicks(a,b,n=5){if(a===b){b=a+1}const step0=(b-a)/n,mag=Math.pow(10,Math.floor(Math.log10(step0))),f=step0/mag,step=(f<1.5?1:f<3?2:f<7?5:10)*mag;const out=[];for(let v=Math.ceil(a/step)*step;v<=b+1e-9;v+=step)out.push(+v.toPrecision(12));return out}
+/* ceil:true extends the last tick to at or above b, for axes topped by the data max (not a fixed domain) */
+function niceTicks(a,b,n=5,{ceil=false}={}){if(a===b){b=a+1}const step0=(b-a)/n,mag=Math.pow(10,Math.floor(Math.log10(step0))),f=step0/mag,step=(f<1.5?1:f<3?2:f<7?5:10)*mag;const out=[];for(let v=Math.ceil(a/step)*step;v<=b+1e-9;v+=step)out.push(+v.toPrecision(12));if(ceil&&out[out.length-1]<b-1e-9)out.push(+(out[out.length-1]+step).toPrecision(12));return out}
 function yAxis(c,y,ticks,f=v=>fmt(v)){ticks.forEach(t=>{mk('line',{class:'gridline',x1:0,x2:c.W,y1:y(t),y2:y(t)},c.g);txt(c.g,-6,y(t)+4,f(t),{'text-anchor':'end'})})}
 const tipEl=$('#tip');
 function tip(el,html){el.addEventListener('mousemove',e=>{tipEl.innerHTML=html;tipEl.style.display='block';tipEl.style.left=Math.min(e.clientX+12,innerWidth-270)+'px';tipEl.style.top=(e.clientY+14)+'px'});el.addEventListener('mouseleave',()=>tipEl.style.display='none')}
@@ -241,9 +249,9 @@ const css=v=>`var(--${v})`;
 /* vertical bars with optional line series on right axis. items:[{x,label,v,tip}] */
 function vbars(sel,items,{w=1000,h=300,color=css('accent'),lines=[],lineRange=null,xEvery=1,yFmt,ymax=null}={}){
   const c=canvas(sel,w,h,{t:10,r:lines.length?36:14,b:36,l:44});
-  const mx=ymax||Math.max(1,...items.map(i=>i.v)),ticks=niceTicks(0,mx,5),top=ticks[ticks.length-1]||mx,y=lin(0,top,c.H,0);
+  const mx=ymax||Math.max(1,...items.map(i=>i.v)),ticks=niceTicks(0,mx,5,{ceil:true}),top=ticks[ticks.length-1]||mx,y=lin(0,top,c.H,0);
   yAxis(c,y,ticks,yFmt);
-  const bw=c.W/items.length,anyOn=items.some(it=>it.on);
+  const bw=c.W/items.length,anyOn=items.some(it=>it.on);xEvery=labelEvery(items.map(it=>it.label),bw,xEvery);
   items.forEach((it,i)=>{const x=i*bw,hh=c.H-y(it.v);const r=mk('rect',{x:x+bw*.12,y:y(it.v),width:Math.max(.5,bw*.76),height:Math.max(0,hh),fill:it.color||color,rx:Math.min(2,bw/6)},c.g);if(it.tip)tip(r,it.tip);
     if(anyOn&&!it.on)r.setAttribute('fill-opacity',.3);
     if(it.click){r.classList.add('xf');r.onclick=it.click;
@@ -262,13 +270,16 @@ function vbars(sel,items,{w=1000,h=300,color=css('accent'),lines=[],lineRange=nu
 
 /* horizontal bars + optional dot per row. rows:[{label,v,dot,tip}] */
 function hbars(sel,rows,{w=1000,rowH=24,xmax=null,xmin=0,color=css('accent'),dotColor=css('accent2'),labelW=190,bgColor=null,bgMax=null}={}){
+  // the label column takes at most 40% of the chart, and long labels are cut to fit
+  const cw=$(sel).clientWidth||w;labelW=Math.min(labelW,Math.max(90,Math.round(cw*.4)));
   const h=rows.length*rowH+34,c=canvas(sel,w,h,{t:4,r:20,b:26,l:labelW});
-  const m=xmax||Math.max(1,...rows.map(r=>Math.max(r.v||0,r.dot||0))),x=lin(xmin,m,0,c.W);
+  // with no fixed xmax, end on the next tick so the longest bar does not touch the right edge
+  const m=xmax||niceTicks(xmin,Math.max(1,...rows.map(r=>Math.max(r.v||0,r.dot||0))),6,{ceil:true}).at(-1),x=lin(xmin,m,0,c.W);
   const bgX=bgColor?lin(0,bgMax||Math.max(1,...rows.map(r=>r.bg||0)),0,c.W):null;
   niceTicks(xmin,m,6).forEach(t=>{mk('line',{class:'gridline',x1:x(t),x2:x(t),y1:0,y2:rows.length*rowH},c.g);txt(c.g,x(t),rows.length*rowH+16,fmt(t),{'text-anchor':'middle'})});
   const anyOn=rows.some(r=>r.on);
   rows.forEach((r,i)=>{const y=i*rowH,dim=anyOn&&!r.on,els=[];
-    els.push(txt(c.g,-8,y+rowH/2+4,r.label,{'text-anchor':'end',class:'lbl',...(r.on?{style:'font-weight:700'}:{})}));
+    els.push(fitLabel(txt(c.g,-8,y+rowH/2+4,r.label,{'text-anchor':'end',class:'lbl',...(r.on?{style:'font-weight:700'}:{})}),labelW-12));
     if(bgColor&&r.bg!=null){const bb=mk('rect',{x:0,y:y+2,width:Math.max(0,bgX(r.bg)),height:rowH-4,fill:bgColor,'fill-opacity':.3,rx:2},c.g);if(r.bgTip)tip(bb,r.bgTip);els.push(bb)}
     if(r.v!=null){const b=mk('rect',{x:0,y:y+5,width:Math.max(0,x(r.v)),height:rowH-10,fill:color,rx:2,...(dim?{'fill-opacity':.3}:{})},c.g);if(r.tip)tip(b,r.tip);els.push(b)}
     if(r.dot!=null){const d=mk('circle',{cx:x(r.dot),cy:y+rowH/2,r:4.5,fill:dotColor,...(dim?{'fill-opacity':.3}:{})},c.g);tip(d,r.tip||fmt(r.dot,1));els.push(d)}
@@ -281,13 +292,13 @@ const RG=['#C0392B','#D97642','#F4B183','#F7CF8F','#FFE699','#E3EBA9','#A9D18E',
 function scoreStack(sel,buckets,counts,{w=1000,h=300}={}){
   const c=canvas(sel,w,h,{t:10,r:14,b:30,l:44});
   const totals=counts.map(row=>row.reduce((a,b)=>a+b,0));
-  const mx=Math.max(1,...totals),ticks=niceTicks(0,mx,5),top=ticks[ticks.length-1]||mx,y=lin(0,top,c.H,0);
+  const mx=Math.max(1,...totals),ticks=niceTicks(0,mx,5,{ceil:true}),top=ticks[ticks.length-1]||mx,y=lin(0,top,c.H,0);
   yAxis(c,y,ticks);
-  const bw=c.W/buckets.length;
+  const bw=c.W/buckets.length,every=labelEvery(buckets,bw);
   buckets.forEach((b,i)=>{let bottom=0;const x=i*bw;
     counts[i].forEach((n,s)=>{if(!n)return;const r_=mk('rect',{x:x+bw*.12,y:y(bottom+n),width:Math.max(.5,bw*.76),height:y(bottom)-y(bottom+n),fill:RG[s]},c.g);
       tip(r_,`<b>${esc(b)}</b> · score ${s+1}<br>${n} games`);bottom+=n});
-    txt(c.g,x+bw/2,c.H+14,b,{'text-anchor':'middle'})});
+    if(i%every===0)txt(c.g,x+bw/2,c.H+14,b,{'text-anchor':'middle'})});
   return c}
 function scoreLegend(sel){
   const el=$(sel);el.innerHTML=Array.from({length:10},(_,i)=>`<span><i style="background:${RG[i]}"></i>${i+1}</span>`).join('');}
@@ -383,7 +394,15 @@ function gameCard(g){
 /* ---------- tabs ---------- */
 const TABS=[['overview','Overview'],['scores','Scores'],['years','Years'],['time','Time played'],['hours','Hours'],['stats','Statistics'],['mosaic','Mosaic'],['games','All games']];
 const built={};let critSel=null,calTimer=null;
+// charts are drawn at their container's pixel width, so redraw the open tab (and later the others) when that width changes
+let builtW=innerWidth,resizeT=null;
+addEventListener('resize',()=>{clearTimeout(resizeT);resizeT=setTimeout(()=>{if(innerWidth===builtW)return;builtW=innerWidth;
+  const cur=TABS.find(([k])=>$('#t-'+k).classList.contains('on'))?.[0];Object.keys(built).forEach(k=>delete built[k]);if(cur){built[cur]=1;BUILD[cur]()}},200)});
 function show(id){$('#panel').classList.remove('open');TABS.forEach(([k])=>$('#t-'+k).classList.toggle('on',k===id));$$('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.k===id));location.hash=id;if(!built[id]){built[id]=1;BUILD[id]()}}
+// a right-edge fade on a scrolling table says there is more to the right
+const scrollFade=el=>el.classList.toggle('more',el.scrollWidth-el.clientWidth-el.scrollLeft>2);
+const fadeRO=new ResizeObserver(es=>es.forEach(e=>{const m=e.target.closest('.mxscroll');m&&scrollFade(m)}));
+$$('.mxscroll').forEach(el=>{el.addEventListener('scroll',()=>scrollFade(el));fadeRO.observe(el);if(el.firstElementChild)fadeRO.observe(el.firstElementChild)});
 TABS.forEach(([k,n])=>{const b=document.createElement('button');b.textContent=n;b.dataset.k=k;b.onclick=()=>show(k);$('#nav').insertBefore(b,$('#fbar'))});
 
 const BUILD={
@@ -502,13 +521,13 @@ years(){
     return mean(grp.map(g=>key==='fp'||key==='lp'?yearOf(g[key]):g[key]))}));
   const allY=ypsVals.flat().filter(v=>v!=null);
   const yLo=Math.floor(Math.min(...allY)/2)*2,yHi=Math.ceil(Math.max(...allY)/2)*2,ypsY=lin(yLo,yHi,ypsC.H,0);
-  yAxis(ypsC,ypsY,niceTicks(yLo,yHi,6));
+  yAxis(ypsC,ypsY,niceTicks(yLo,yHi,6),fmtYear);
   const ypsX=i=>i*(ypsC.W/(ypsCats.length-1));
   ypsCats.forEach((cat,i)=>txt(ypsC.g,ypsX(i),ypsC.H+16,cat,{'text-anchor':'middle'}));
   ypsSeries.forEach(([name,,color],si)=>{const vals=ypsVals[si];
     let d='';vals.forEach((v,i)=>{if(v==null)return;d+=(d?'L':'M')+ypsX(i).toFixed(1)+','+ypsY(v).toFixed(1)});
     mk('path',{d,fill:'none',stroke:color,'stroke-width':2},ypsC.g);
-    vals.forEach((v,i)=>{if(v==null)return;const k_=mk('circle',{cx:ypsX(i),cy:ypsY(v),r:3,fill:color},ypsC.g);tip(k_,`<b>${esc(name)}</b> · score ${ypsCats[i]}<br>${fmt(v,1)}`)})});
+    vals.forEach((v,i)=>{if(v==null)return;const k_=mk('circle',{cx:ypsX(i),cy:ypsY(v),r:3,fill:color},ypsC.g);tip(k_,`<b>${esc(name)}</b> · score ${ypsCats[i]}<br>${fmtYear(v,1)}`)})});
   // games added per year, stacked by ownership x platform class
   const ays=[...new Set(R.map(r=>r.ay).filter(Boolean))].sort(),
         ownCols={Paid:'#C55A11',Free:'#8E5BD0','Friend/Family':'#8C8C8C'},
@@ -517,8 +536,8 @@ years(){
   const combos=[];OWN.forEach(o=>['PC','Console','Handheld'].forEach(p=>combos.push([o,p])));
   $('#addleg').innerHTML=combos.filter(([o,p])=>R.some(r=>r.own===o&&r.pt===p)).map(([o,p])=>`<span><i style="background:${shade(ownCols[o]||'#999',ptShade[p])}"></i>${o} · ${p}</span>`).join('');
   const full=[];for(let y=ays[0];y<=ays[ays.length-1];y++)full.push(y);
-  const c=canvas('#add',1000,300,{t:10,r:14,b:36,l:44});const tot=full.map(y=>R.filter(r=>r.ay===y).length),top=niceTicks(0,Math.max(...tot),5),mx=top[top.length-1],y=lin(0,mx,c.H,0);yAxis(c,y,top);
-  const bw=c.W/full.length;full.forEach((yr,i)=>{let acc=0;combos.forEach(([o,p])=>{const n=R.filter(r=>r.ay===yr&&r.own===o&&r.pt===p).length;if(!n)return;const col=shade(ownCols[o]||'#999',ptShade[p]);const r_=mk('rect',{x:i*bw+bw*.12,y:y(acc+n),width:bw*.76,height:y(acc)-y(acc+n),fill:col},c.g);tip(r_,`<b>${yr}</b> ${o} · ${p}: ${n}`);acc+=n});if(i%2===0)txt(c.g,i*bw+bw/2,c.H+14,yr,{'text-anchor':'middle'})});
+  const c=canvas('#add',1000,300,{t:10,r:14,b:36,l:44});const tot=full.map(y=>R.filter(r=>r.ay===y).length),top=niceTicks(0,Math.max(...tot),5,{ceil:true}),mx=top[top.length-1],y=lin(0,mx,c.H,0);yAxis(c,y,top);
+  const bw=c.W/full.length,every=labelEvery(full,bw,2);full.forEach((yr,i)=>{let acc=0;combos.forEach(([o,p])=>{const n=R.filter(r=>r.ay===yr&&r.own===o&&r.pt===p).length;if(!n)return;const col=shade(ownCols[o]||'#999',ptShade[p]);const r_=mk('rect',{x:i*bw+bw*.12,y:y(acc+n),width:bw*.76,height:y(acc)-y(acc+n),fill:col},c.g);tip(r_,`<b>${yr}</b> ${o} · ${p}: ${n}`);acc+=n});if(i%every===0)txt(c.g,i*bw+bw/2,c.H+14,yr,{'text-anchor':'middle'})});
   // year gaps: release -> first played, and first played -> last played, stacked by my score
   scoreLegend('#gapleg');
   {const {labels,counts}=bucketCounts(G.filter(g=>g.ms!=null).map(g=>[g.ms,g.rgap]),[0,1,2,3,4,6,10,20,100]);scoreStack('#relgap',labels,counts,{w:480,h:260})}
@@ -539,7 +558,7 @@ time(){
     const ma28=s.map((_,i)=>mean(s.slice(Math.max(0,i-27),i+1).map(x=>x[1])));
     const every=Math.ceil(s.length/12);
     const c=vbars('#daily',s.map((d,i)=>({label:d[0].slice(n&&n<=90?5:0,n&&n<=90?10:7),v:d[1],tip:`<b>${d[0]}</b><br>${fmt(d[1],2)} h`})),{h:300,xEvery:every});
-    const bw=c.W/s.length,mx=niceTicks(0,Math.max(1,...s.map(x=>x[1])),5),y=lin(0,mx[mx.length-1],c.H,0);
+    const bw=c.W/s.length,mx=niceTicks(0,Math.max(1,...s.map(x=>x[1])),5,{ceil:true}),y=lin(0,mx[mx.length-1],c.H,0);
     mk('path',{d:ma7.map((v,i)=>(i?'L':'M')+(i*bw+bw/2).toFixed(1)+','+y(v).toFixed(1)).join(''),fill:'none',stroke:css('line'),'stroke-width':1.4},c.g);
     mk('path',{d:ma28.map((v,i)=>(i?'L':'M')+(i*bw+bw/2).toFixed(1)+','+y(v).toFixed(1)).join(''),fill:'none',stroke:css('accent2'),'stroke-width':1.8},c.g);
     let cum=0;const cs=s.map(d=>(cum+=d[1])),cg=s.map(d=>cumGamesAt(d[0]));
@@ -551,7 +570,7 @@ time(){
       return {label:names[k],mean:m_,sd,lo:Math.max(0,m_-sd),hi:m_+sd}});
     rangeBand('#wdrange',wdStats,{w:560,h:260,color:css('accent2')})};
   function vbarsLine(sel,vals,labels,{vals2=null,color2=css('accent2')}={}){
-    const c=canvas(sel,560,260,{t:10,r:vals2?44:14,b:30,l:50}),ticks=niceTicks(0,Math.max(...vals),5),y=lin(0,ticks[ticks.length-1],c.H,0),x=lin(0,vals.length-1,0,c.W);yAxis(c,y,ticks);
+    const c=canvas(sel,560,260,{t:10,r:vals2?44:14,b:30,l:50}),ticks=niceTicks(0,Math.max(...vals),5,{ceil:true}),y=lin(0,ticks[ticks.length-1],c.H,0),x=lin(0,vals.length-1,0,c.W);yAxis(c,y,ticks);
     const p=mk('path',{d:vals.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+','+y(v).toFixed(1)).join(''),fill:'none',stroke:css('line'),'stroke-width':2},c.g);
     let y2=null;
     if(vals2){const ticks2=niceTicks(0,Math.max(1,...vals2),4);y2=lin(0,ticks2[ticks2.length-1],c.H,0);
@@ -562,7 +581,7 @@ time(){
   /* mean line with a +-1 SD filled band. items:[{label,mean,sd,lo,hi}] */
   function rangeBand(sel,items,{w=560,h=260,color=css('accent2')}={}){
     const c=canvas(sel,w,h,{t:10,r:14,b:30,l:44});
-    const mx_=Math.max(1,...items.map(i=>i.hi)),ticks=niceTicks(0,mx_,5),y=lin(0,ticks[ticks.length-1]||mx_,c.H,0);
+    const mx_=Math.max(1,...items.map(i=>i.hi)),ticks=niceTicks(0,mx_,5,{ceil:true}),y=lin(0,ticks[ticks.length-1]||mx_,c.H,0);
     yAxis(c,y,ticks,v=>fmt(v,1));
     const bw=c.W/items.length,cx=i=>i*bw+bw/2;
     const top=items.map((it,i)=>[cx(i),y(it.hi)]),bot=items.map((it,i)=>[cx(i),y(it.lo)]);
@@ -597,7 +616,7 @@ time(){
   /* weekday rows x week columns for one window {start,end,days,off}: weekday-average bars on the left, weekly-average bars
      below, month labels, month-boundary stair-step rules, dashed holidays. vmax / dowMax let several panels share a scale. */
   const calGrid=(sel,w,{vmax,dowMax,cell=17})=>{
-    const {start,end,days,off}=w,weeks=Math.ceil((off+days.length)/7),c=canvas(sel,weeks*cell+70,7*cell+40,{t:18,r:6,b:22,l:70});
+    const {start,end,days,off}=w,weeks=Math.ceil((off+days.length)/7),c=canvas(sel,weeks*cell+70,7*cell+40,{t:18,r:6,b:22,l:70},{fixed:true});
     const dowAvg=dowAvgOf(w),dm=dowMax||Math.max(1,...dowAvg);
     ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach((n,i)=>{txt(c.g,-60,i*cell+12,n,{'text-anchor':'start',style:'font-size:9px'});
       const bw_=36*dowAvg[i]/dm;mk('rect',{x:-20-bw_,y:i*cell+3,width:bw_,height:cell-7,fill:css('accent'),'fill-opacity':.5,rx:2},c.g)});
@@ -613,7 +632,7 @@ time(){
     $('#calstats').innerHTML=statsHtml(yrDays,zeroBoxes[0].checked);
     // 7-day rolling average sparkline across the year
     const roll=yrDays.map((_,i)=>mean(yrDays.slice(Math.max(0,i-6),i+1)));
-    const sc_=canvas('#calspark',weeks*17+70,70,{t:6,r:6,b:6,l:70});
+    const sc_=canvas('#calspark',weeks*17+70,70,{t:6,r:6,b:6,l:70},{fixed:true});
     const smx=Math.max(1,...roll),sy=lin(0,smx,sc_.H,0),sx=lin(0,roll.length-1,0,sc_.W);
     mk('path',{d:roll.map((v,i)=>(i?'L':'M')+sx(i).toFixed(1)+','+sy(v).toFixed(1)).join(''),fill:'none',stroke:css('accent2'),'stroke-width':1.3},sc_.g);
     mk('path',{d:`M0,${sc_.H}L`+roll.map((v,i)=>sx(i).toFixed(1)+','+sy(v).toFixed(1)).join('L')+`L${sc_.W},${sc_.H}Z`,fill:css('accent2'),'fill-opacity':.15},sc_.g);
@@ -655,7 +674,7 @@ time(){
     let gs=tlGames.slice().sort(cmp);if(cap)gs=gs.slice(0,cap);if(so!=='first'&&cap)gs.sort(cmp);
     $('#tlcnt').textContent=`${gs.length} of ${tlGames.length} games`;
     if(!gs.length){$('#tl').innerHTML='<p class="note">No logged play under this filter.</p>';return}
-    const RH=10,lw=190,c=canvas('#tl',1000,gs.length*RH+24,{t:18,r:10,b:6,l:lw}),x=lin(tlT0,tlT1+1,0,c.W),dw=Math.max(1.4,c.W/(tlT1-tlT0+1));
+    const RH=10,lw=190,c=canvas('#tl',1000,gs.length*RH+24,{t:18,r:10,b:6,l:lw},{fixed:true}),x=lin(tlT0,tlT1+1,0,c.W),dw=Math.max(1.4,c.W/(tlT1-tlT0+1));
     let lastLbl=-99;
     for(let y=+firstLog.slice(0,4);y<=+iso(last).slice(0,4);y++){const px=x(Math.max(tlT0,dnum(y+'-01-01')));
       mk('line',{class:'gridline',x1:px,x2:px,y1:-4,y2:gs.length*RH},c.g);if(px-lastLbl>=28){txt(c.g,px+2,-6,y,{style:'font-size:10px'});lastLbl=px}}
@@ -769,7 +788,7 @@ games(){
 
 /* two-slice donut with big numbers in the middle. colors default to accent/grey */
 function donut(sel,a,b,f,labels=['A','B'],colors=[css('accent'),'#8c8c8c']){
-  const cc=canvas(sel,240,170,{t:4,r:4,b:4,l:4}),cx=cc.W/2,cy=cc.H/2,R=70,r=42,t=a+b;let a0=-Math.PI/2;
+  const cc=canvas(sel,240,170,{t:4,r:4,b:4,l:4},{fixed:true}),cx=cc.W/2,cy=cc.H/2,R=70,r=42,t=a+b;let a0=-Math.PI/2;
   [[a,colors[0],labels[0]],[b,colors[1],labels[1]]].forEach(([v,col,nm])=>{const a1=a0+v/t*2*Math.PI,big=a1-a0>Math.PI?1:0,P=(rr,an)=>[cx+rr*Math.cos(an),cy+rr*Math.sin(an)];
     const [x0,y0]=P(R,a0),[x1,y1]=P(R,a1-1e-4),[x2,y2]=P(r,a1-1e-4),[x3,y3]=P(r,a0);
     const p=mk('path',{d:`M${x0},${y0}A${R},${R} 0 ${big} 1 ${x1},${y1}L${x2},${y2}A${r},${r} 0 ${big} 0 ${x3},${y3}Z`,fill:col},cc.g);tip(p,`<b>${nm}</b>: ${f(v)} (${fmt(v/t*100,1)}%)`);a0=a1});
@@ -782,12 +801,13 @@ function soundtrack(){
       mc_dist:Array.from({length:10},(_,k)=>mc.length?mc.filter(v=>v>10*k&&v<=10*(k+1)).length/mc.length:0)}};
   const O=isFiltered()?soundOf(1):SOUND['1'],N=isFiltered()?soundOf(0):SOUND['0'],GR='#8c8c8c';
   const bands=Array.from({length:10},(_,k)=>k?`${10*k+1}-${10*k+10}`:'0-10');
-  const c=canvas('#sdist',560,260,{t:10,r:14,b:30,l:44}),mx=Math.max(...O.mc_dist,...N.mc_dist)*100,tk=niceTicks(0,mx,5),y=lin(0,tk[tk.length-1],c.H,0),bw=c.W/10;
+  const c=canvas('#sdist',560,260,{t:10,r:14,b:30,l:44}),mx=Math.max(...O.mc_dist,...N.mc_dist)*100,tk=niceTicks(0,mx,5,{ceil:true}),y=lin(0,tk[tk.length-1],c.H,0),bw=c.W/10;
   yAxis(c,y,tk,v=>v+'%');
-  bands.forEach((b,i)=>{[[O.mc_dist[i],css('accent'),'Owned'],[N.mc_dist[i],GR,'Not owned']].forEach(([v,col,nm],j)=>{const r=mk('rect',{x:i*bw+bw*.1+j*bw*.4,y:y(v*100),width:bw*.4,height:c.H-y(v*100),fill:col},c.g);tip(r,`<b>${nm}</b> · Metacritic ${b}<br>${fmt(v*100,1)}% of games`)});txt(c.g,i*bw+bw/2,c.H+16,b,{'text-anchor':'middle'})});
+  const bEvery=labelEvery(bands,bw);bands.forEach((b,i)=>{[[O.mc_dist[i],css('accent'),'Owned'],[N.mc_dist[i],GR,'Not owned']].forEach(([v,col,nm],j)=>{const r=mk('rect',{x:i*bw+bw*.1+j*bw*.4,y:y(v*100),width:bw*.4,height:c.H-y(v*100),fill:col},c.g);tip(r,`<b>${nm}</b> · Metacritic ${b}<br>${fmt(v*100,1)}% of games`)});if(i%bEvery===0)txt(c.g,i*bw+bw/2,c.H+16,b,{'text-anchor':'middle'})});
   const names=Object.keys(O.scores),c2=canvas('#savg',560,260,{t:10,r:14,b:40,l:44}),y2=lin(0,100,c2.H,0),bw2=c2.W/names.length;
   yAxis(c2,y2,[0,20,40,60,80,100]);
-  names.forEach((n,i)=>{[[O.scores[n],css('accent'),'Owned'],[N.scores[n],GR,'Not owned']].forEach(([v,col,nm],j)=>{if(v==null)return;const r=mk('rect',{x:i*bw2+bw2*.1+j*bw2*.4,y:y2(v),width:bw2*.4,height:c2.H-y2(v),fill:col},c2.g);tip(r,`<b>${nm}</b> · ${n}: ${fmt(v,1)}`);txt(c2.g,i*bw2+bw2*.3+j*bw2*.4,y2(v)-3,fmt(v),{'text-anchor':'middle'})});txt(c2.g,i*bw2+bw2/2,c2.H+16,n,{'text-anchor':'middle'})});
+  const SHORT={'My Score':'Me','Metacritic':'MC','GameSpot':'GS','Game Informer':'GI','Destructoid':'Dest','PC Gamer':'PCG'},useShort=labelEvery(names,bw2)>1;
+  names.forEach((n,i)=>{[[O.scores[n],css('accent'),'Owned'],[N.scores[n],GR,'Not owned']].forEach(([v,col,nm],j)=>{if(v==null)return;const r=mk('rect',{x:i*bw2+bw2*.1+j*bw2*.4,y:y2(v),width:bw2*.4,height:c2.H-y2(v),fill:col},c2.g);tip(r,`<b>${nm}</b> · ${n}: ${fmt(v,1)}`);txt(c2.g,i*bw2+bw2*.3+j*bw2*.4,y2(v)-3,fmt(v),{'text-anchor':'middle'})});txt(c2.g,i*bw2+bw2/2,c2.H+16,useShort?SHORT[n]||n:n,{'text-anchor':'middle'})});
   donut('#sgames',O.games,N.games,v=>fmt(v),['Owned','Not owned']);donut('#shours',O.hours,N.hours,v=>fmt(v),['Owned','Not owned'])}
 
 /* ---------- Statistics tab ---------- */
@@ -831,7 +851,7 @@ BUILD.stats=function(){
   statTable('StatTable',{idx:'Statistic'});
   statTable('CorrelationMatrix',{tri:true,idx:'Correlation'});
   statTable('ScoreDistributionTable',{f:pct,heat:true,idx:'Score'});
-  statTable('YearsPerScore',{f:v=>fmt(v,1),idx:'My score'});
+  statTable('YearsPerScore',{f:v=>fmtYear(v,1),idx:'My score'});
   statTable('SoundtrackStats',{f:(v,c,r)=>r==='Hours'||r==='Games'?fmt(v,0):fmt(v,1),idx:'Soundtrack'});
   statTable('SoundtrackDistributionTable',{f:pct,heat:true,idx:'Metacritic'});
   statTable('ZeroPunctuationQualityBuckets',{f:(v,c)=>c.startsWith('Frequency')?pct(v):c==='Hours'?fmt(v,1):n0(v),idx:'Opinion'});
@@ -851,7 +871,7 @@ function drawMatrix(){
   $('#mx').innerHTML='<thead><tr><th class="sys">System</th>'+cols.map(c=>`<th class="xf${on(fd,c)}" data-d="${fd}" data-v="${esc(c)}" title="Filter to ${esc(c)}">${c}</th>`).join('')+'<th>Total</th></tr></thead><tbody>'+
    SYSTEMS.map(s=>`<tr><td class="sys xf${on('system',s)}" data-d="system" data-v="${esc(s)}" title="Filter to ${esc(s)}">${s}</td>`+cols.map(c=>{const v=cnt[s][c]||0,fade=(FILT.has(fd)&&!isOn(fd,c))||(FILT.has('system')&&!isOn('system',s));
      return `<td class="c" data-s="${s}" data-c="${c}" style="background:${col(v)}${fade?';opacity:.35':''}">${v||''}</td>`}).join('')+`<td class="tot">${tot[s]}</td></tr>`).join('')+
-   '<tr><td class="sys tot">Total</td>'+cols.map(c=>`<td class="tot">${ct[c]}</td>`).join('')+`<td class="tot" style="color:var(--accent)">${all}</td></tr></tbody>`;
+   '<tr><td class="sys tot">Total</td>'+cols.map(c=>`<td class="tot">${ct[c]}</td>`).join('')+`<td class="tot" style="color:var(--accent-ink)">${all}</td></tr></tbody>`;
   $$('#mx td.c').forEach(td=>td.onclick=()=>{const s=td.dataset.s,c=td.dataset.c;const rows=R.filter(r=>r.sys===s&&key(r)===c).sort((a,b)=>a.t.localeCompare(b.t));
     gameList(`${s} · ${c} (${rows.length})`,rows.map(r=>[r.t,r.hrs?`${fmt(r.hrs,1)} h`:'']))});
   wireXf($('#mx'))}

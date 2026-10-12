@@ -53,7 +53,7 @@ tr:hover td{background:color-mix(in srgb,var(--soft) 45%,transparent)}
 td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .chips{display:flex;gap:6px;flex-wrap:wrap}.chip{padding:3px 10px;border-radius:14px;border:1px solid var(--grid);background:var(--card);font-size:12px;cursor:pointer}.chip:hover{border-color:var(--accent)}
 .split{display:grid;grid-template-columns:320px minmax(0,1fr);gap:14px;align-items:start}
-@media(max-width:900px){.split{grid-template-columns:1fr}}
+@media(max-width:900px){.split{grid-template-columns:minmax(0,1fr)}}
 .gl{max-height:74vh;overflow:auto;border:1px solid var(--grid);border-radius:8px}
 .gl .it{padding:7px 10px;border-bottom:1px solid var(--grid);cursor:pointer;display:flex;gap:8px;align-items:center}
 .gl .it:hover{background:var(--soft)}.gl .it.on{background:var(--accent);color:var(--accent-t)}.gl .it.on .muted{color:inherit;opacity:.85}
@@ -86,7 +86,7 @@ dialog .btns{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
 .bars .row span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bars .bar{height:14px;background:var(--accent);border-radius:3px;min-width:2px}.bars .row span:last-child{text-align:right;font-variant-numeric:tabular-nums}
 .months{display:flex;align-items:flex-end;gap:2px;height:150px;overflow-x:auto}
-.months .m{flex:1 0 8px;background:var(--accent);border-radius:2px 2px 0 0;min-height:1px}.months .m:hover{background:var(--accent2)}
+.months.cap .m{max-width:14px}.months .m{flex:1 0 8px;background:var(--accent);border-radius:2px 2px 0 0;min-height:1px}.months .m:hover{background:var(--accent2)}
 .seg{display:inline-flex}.seg button{border-radius:0;margin-left:-1px}.seg button:first-child{border-radius:8px 0 0 8px;margin-left:0}.seg button:last-child{border-radius:0 8px 8px 0}.seg button.on{background:var(--accent);color:var(--accent-t);border-color:var(--accent)}
 .halohead{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}.halohead h2{margin:0 8px 0 0}
 .tierrow{display:grid;grid-template-columns:84px minmax(0,1fr);border:1px solid var(--grid);border-radius:10px;overflow:hidden;margin-bottom:6px;min-height:58px}
@@ -626,7 +626,7 @@ const openTile=async t=>{if(!t)return;const id=+t.dataset.id;
     <div class="stat"><div><b>${fmt(tl.total,1)}</b>hours</div><div><b>${tl.by_month.reduce((a,m)=>a+m.days,0)}</b>days played</div><div><b>${d.releases.length}</b>release${d.releases.length>1?'s':''}</div></div>
     <p class="muted" style="margin:8px 0 4px">${tl.first?`First played ${prettyDate(tl.first)} · last ${prettyDate(tl.last)}`:'Not played yet'}</p>
     ${d.releases.map(r=>`<span class="pill">${esc(r.system)} · ${esc(r.ownership)}</span> `).join('')}
-    ${tl.by_month.length?`<h3>Hours by month</h3><div class="months" style="height:70px">${tl.by_month.map(m=>`<div class="m" style="height:${Math.max(3,m.hours/mx*100)}%" title="${m.month}: ${fmt(m.hours,1)} h"></div>`).join('')}</div>`:''}
+    ${tl.by_month.length?`<h3>Hours by month</h3><div class="months cap" style="height:70px">${tl.by_month.map(m=>`<div class="m" style="height:${Math.max(3,m.hours/mx*100)}%" title="${m.month}: ${fmt(m.hours,1)} h"></div>`).join('')}</div><div class="muted" style="display:flex;justify-content:space-between;font-size:11px"><span>${tl.by_month[0].month}</span>${tl.by_month.length>1?`<span>${tl.by_month[tl.by_month.length-1].month}</span>`:''}</div>`:''}
     </div></div>`,{ok:'Edit game',cancel:'Close',wide:true});
   if(go)location.hash='#games/'+id};
 $('#gallery').addEventListener('click',e=>openTile(e.target.closest('.tile')));

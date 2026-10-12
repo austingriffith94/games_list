@@ -57,19 +57,21 @@ GameSpot) roughly tripled the standard deviation of GameSpot and IGN scores. The
 commit `eb381be`, so the Stats tables are built on clean inputs.
 
 `TimeHeatComp` is decoded and built too: it is the single-year heat map block repeated for four year
-windows (see `ACTION_PLAN.md` 3.4). Soundtrack stats were part of the Stats sheet.
+windows (see `docs/archive/ACTION_PLAN_workbook_parity.md` 3.4). Soundtrack stats were part of the Stats sheet.
 
 **Built and verified:** HaloRank (app tab, `halo.py`, `halo_levels` table), HeatMapScore
 (`data.heatmap()`) and all fourteen Stats tables (`data.stats_tables()`), plus the Phase 1 and 2
 charts. `tools/verify_rebuild.py` diffs them against the workbook's cached values (ALL MATCH).
-**What's left is in `ACTION_PLAN.md`:** the Phase 4 HTML-only ideas.
+The workbook-parity plan (including the Phase 4 HTML-only ideas) is finished and archived in
+`docs/archive/ACTION_PLAN_workbook_parity.md`. **What's next is in `ACTION_PLAN.md`:** UI and chart
+presentation fixes from the Oct 12 2026 rendered review.
 
 ## Open items
 1. **Data question for me, still open:** what the `Real` flag on log rows means. 361 of 2,717 rows
    have it set (15 of the 23 entries over 24 hours). The reports currently label it "Flagged Real".
    (The two out-of-range scores were corrected in `eb381be`.)
 2. ~~Reports not yet rebuilt from the workbook~~ — HaloRank, HeatMapScore, Stats and the Phase 1/2
-   charts and the 3.4 heat map comparison are rebuilt; Phase 4 is next (see `ACTION_PLAN.md`).
+   charts, the 3.4 heat map comparison and the Phase 4 HTML ideas are built (archived plan in `docs/archive/`).
 3. Possible dashboard cover collage/cover tab.
 4. **Windows testing — done, but test_e2e.py is unresolved.** See below.
 
@@ -113,7 +115,7 @@ Microsoft Store stubs on this machine).
 ## Suggested next step
 1. Tell the assistant what the `Real` flag means (item 1).
 2. Get one clean, uninterrupted `test_e2e.py` run on Windows to actually know if it passes.
-3. Build the Phase 4 HTML-only ideas from `ACTION_PLAN.md`,
+3. Work through the UI and chart presentation plan in `ACTION_PLAN.md`,
    re-running `tools/verify_*.py` after each change.
 4. I'll use the app for a week or two after that; tell the assistant which reports I actually
    use, and prioritize those for dashboard/PDF layout work.

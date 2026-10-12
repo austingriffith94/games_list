@@ -115,7 +115,7 @@ def draw_table(fig, rect, df, title, fmt='{:.2f}', heat=False, idx_w=1.7, fs=6.8
             if skip(i, j): continue
             v = df.iat[i, j]
             if heat and pd.notna(numeric.iat[i, j]) and numeric.iat[i, j] > 0 and c not in bold_cols:
-                ax.add_patch(plt.Rectangle((idx_w + j, i + 1), 1, 1, fc=HEAT(min(1, numeric.iat[i, j] / (hi * .55))), zorder=0))
+                ax.add_patch(plt.Rectangle((idx_w + j, i + 1), 1, 1, fc=HEAT(min(1.0, numeric.iat[i, j] / (hi * .55))), zorder=0))
             ax.text(idx_w + j + (.08 if isinstance(v, str) and c in left_cols else .5), i + 1.5, fmt_cell(c, v),
                     ha='left' if isinstance(v, str) and c in left_cols else 'center', va='center', fontsize=fs,
                     fontweight='bold' if c in bold_cols else 'normal')
