@@ -19,7 +19,7 @@ SQLite database + Python + generated reports + a local entry app.
 - `migrate.py` converted the xlsm to SQLite. `schema.py` holds the DDL and upgrade.
 - Tests: `test_parity.py` (numbers match the workbook) and `test_api.py` (68 checks) pass cleanly on Windows. `test_e2e.py` (39 Playwright UI checks) is unresolved on Windows — see **Windows test status** below before touching it.
 - `REPORT_LOGIC.md` is a verified spec decoding the workbook's HaloRank, HeatMapScore and Stats sheet formulas (see **Reports decoded** below) — read it before rebuilding any of those reports.
-- Run: `pip install -r requirements.txt`, then `python app.py --covers "D:\Pictures\Game List Covers"` (or `start_app.bat`).
+- Run: `pip install -r requirements.txt`, then `python app.py` (or `start_app.bat`).
 
 ## Data model notes
 - Tables: games, releases (title + system, FK to games), play_log (date, game, system, hours, real; unique on date+game+system), top_rank, audit (undo), `ref_*` lookup tables.
@@ -39,7 +39,7 @@ SQLite database + Python + generated reports + a local entry app.
   - `average_playthrough` — reference "how long to beat" for the game, not a mean of my own logged
     sessions (561 of 656 games have one; it's populated even where `playthroughs = 0` — see
     `Normalized Playthroughs` in `REPORT_LOGIC.md` §3.1, which depends on this distinction).
-- Cover images: filename = game title with `<>:"/\|?*` removed, `.jpg` or `.png`, 2:3 portrait. The covers live in `D:\Pictures\Game List Covers` on my PC.
+- Cover images: filename = game title with `<>:"/\|?*` removed, `.jpg` or `.png`, 2:3 portrait. The covers live in `covers/` in the repo folder (git-ignored local cache; moved there from `D:\Pictures\Game List Covers` in Oct 2026).
 - Safety: Undo on every save, History tab, daily backup (30 kept), CSV/zip export.
 
 ## Reports decoded (new)

@@ -1,5 +1,5 @@
 {
-  "covers": "D:\Pictures\Game List Covers",
+  "covers": "covers",
   "db": "gamelist.db",
   "port": 8765
 }

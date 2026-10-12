@@ -3,8 +3,8 @@
 ## Quick start
     pip install -r requirements.txt
     python app.py                 # opens http://127.0.0.1:8765
-Windows: double-click `start_app.bat` (edit the covers path inside if yours differs).
-Options: `--covers "D:\Pictures\Game List Covers"` `--db gamelist.db` `--port 8765`
+Windows: double-click `start_app.bat`.
+Options: `--covers covers` `--db gamelist.db` `--port 8765` (or set them in `config.json`; see `config.example.json`)
 
 ## What the app does  (replaces the Control / TimeControl sheets and all macros)
 | Tab | Use it to |
@@ -25,7 +25,7 @@ Every save also offers an **Undo** button in its confirmation.
 * `gamelist.db` is a normal SQLite file; the CSV export (History tab) is a plain-text copy you can keep in git.
 
 ## Cover art
-Put images in `covers/` (or point `--covers` at your existing folder). File name = title with characters Windows
+Images live in `covers/` next to `app.py`, which acts as the local cache (git-ignored, about 450 MB; the app writes new covers there). To keep them elsewhere, point `--covers` or `config.json` at that folder. File name = title with characters Windows
 can't use removed (colons etc.) - the same rule the workbook used, e.g. `Fallout New Vegas.png`.
 Covers are cropped to 2:3 and downscaled in the PDF, so large originals are fine and the PDF stays small.
 
