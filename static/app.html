@@ -57,6 +57,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .gl{max-height:74vh;overflow:auto;border:1px solid var(--grid);border-radius:8px}
 .gl .it{padding:7px 10px;border-bottom:1px solid var(--grid);cursor:pointer;display:flex;gap:8px;align-items:center}
 .gl .it:hover{background:var(--soft)}.gl .it.on{background:var(--accent);color:var(--accent-t)}.gl .it.on .muted{color:inherit;opacity:.85}
+.goat{display:inline-block;margin-left:6px;padding:0 4px;border:1px solid currentColor;border-radius:4px;font-size:10px;font-weight:700;line-height:14px;vertical-align:1px;letter-spacing:.03em}
 .gl .it .t{flex:1;min-width:0}.gl .it .t div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--grid);flex:none}.dot.has{background:var(--ok)}
 .coverbox{width:150px;aspect-ratio:2/3;border:2px dashed var(--grid);border-radius:10px;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);font-size:12px;overflow:hidden;cursor:pointer;flex:none;position:relative}
@@ -382,7 +383,7 @@ function renderGameList(){
   const q=$('#gsearch').value.toLowerCase(),f=$('#gfilter').value;
   const rows=GAMES.list.filter(g=>(!q||g.title.toLowerCase().includes(q)||g.series.toLowerCase().includes(q))&&(!f||(f==='nocover'&&!g.has_cover)||(f==='unplayed'&&!g.hours)||(f==='played'&&g.hours)));
   $('#gcount').textContent=rows.length+' games';
-  $('#glist').innerHTML=rows.map(g=>`<div class="it ${g.id===GAMES.sel?'on':''}" data-id="${g.id}"><span class="dot ${g.has_cover?'has':''}" title="${g.has_cover?'Has cover art':'No cover art'}"></span><div class="t"><div>${esc(g.title)}</div><div class="muted">${esc(g.genre)} · ${g.hours?fmt(g.hours,1)+' h':'not played'}</div></div></div>`).join('')}
+  $('#glist').innerHTML=rows.map(g=>`<div class="it ${g.id===GAMES.sel?'on':''}" data-id="${g.id}"><span class="dot ${g.has_cover?'has':''}" title="${g.has_cover?'Has cover art':'No cover art'}"></span><div class="t"><div>${esc(g.title)}${g.wikipedia_goat?'<span class="goat" title="On the Wikipedia GOAT list">GOAT</span>':''}</div><div class="muted">${esc(g.genre)} · ${g.hours?fmt(g.hours,1)+' h':'not played'}</div></div></div>`).join('')}
 $('#gsearch').addEventListener('input',renderGameList);$('#gfilter').addEventListener('change',renderGameList);
 $('#glist').addEventListener('click',e=>{const it=e.target.closest('.it');if(it)location.hash='#games/'+it.dataset.id});
 $('#gnew').onclick=()=>{if(location.hash==='#games/new')route();else location.hash='#games/new'};

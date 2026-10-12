@@ -65,6 +65,12 @@ table.gt td{padding:5px 6px;border-bottom:1px solid var(--grid)}
 table.gt tr:hover td{background:var(--hl)}
 .tablewrap{max-height:70vh;overflow:auto}
 .stack{display:grid;gap:10px}
+.goat{display:inline-block;padding:0 4px;border:1px solid currentColor;border-radius:4px;font-size:10px;font-weight:700;line-height:14px;vertical-align:1px;letter-spacing:.03em;color:var(--accent2);white-space:nowrap}
+#cwall{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
+#cwall .cw{cursor:pointer;min-width:0}#cwall .cw .im{aspect-ratio:2/3;border-radius:4px;overflow:hidden;background:linear-gradient(135deg,var(--soft),var(--grid));display:flex;align-items:center;justify-content:center;color:var(--accent-ink);font-size:28px;font-weight:700}
+#cwall .cw img{width:100%;height:100%;object-fit:cover;display:block}#cwall .cw.na .im{opacity:.4}
+#cwall .cw b{font-size:12px;line-height:1.25;margin-top:4px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}
+#cwall .cw span{display:block;font-size:11px;color:var(--muted);line-height:1.3}
 #mosaic{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:3px}
 #mosaic img{width:100%;aspect-ratio:2/3;object-fit:cover;display:block;border-radius:2px}
 #mosaic .mz{position:relative;border-radius:2px;cursor:pointer;background:var(--grid)}
@@ -205,6 +211,20 @@ table.mx th.xf:hover,table.mx td.sys.xf:hover{color:var(--accent-ink)}table.mx .
     <div><h2 style="font-size:13px">First played → last played (years)</h2><div class="mxscroll"><table class="mx" id="s-LastVsFirstBuckets"></table></div></div></div></div>
  </section>
 
+ <section class="tab" id="t-canon">
+  <p class="note" id="canonnote" style="margin:4px 0 10px"></p>
+  <div class="kpis" id="goatkpis"></div>
+  <div class="card"><h2>Hours against GOTY vote share</h2><p class="note">One dot per played game that got GOTY votes. Vote share is its votes as a percentage of all votes for its release year, so years compare. Click a dot for the game.</p>
+   <div class="row"><label>Axes <select id="gtsc"><option value="log">Log</option><option value="lin">Linear</option></select></label><span class="note" id="gtcnt" style="margin:0"></span></div>
+   <div class="legend"><span><i style="background:var(--accent2);border-radius:50%"></i>Wikipedia GOAT</span><span><i style="background:var(--accent);border-radius:50%"></i>Other games</span></div><div id="gtsct"></div></div>
+  <div class="card"><h2>Do I agree with the canon?</h2><p class="note">Left: my score for GOAT games against the rest, one dot per game, the bar marks the mean. Right: GOAT games only, my score against Metacritic on the same 0–100 scale; above the dashed line I rated it higher than the critics did.</p>
+   <div class="legend" id="goatleg"></div>
+   <div class="grid2"><div><h2 style="font-size:13px">My score</h2><div id="goatstrip"></div></div><div><h2 style="font-size:13px">Me against Metacritic (GOAT games)</h2><div id="goatmc"></div></div></div></div>
+  <div class="card"><h2>GOAT cover wall</h2><p class="note">Every game on the Wikipedia GOAT list in the collection. Faded covers are games I have not played yet.</p>
+   <div class="row"><label>Sort by <select id="cwsort"><option value="hrs">Hours</option><option value="ms">My score</option><option value="rel">Release year</option><option value="vs">GOTY vote share</option><option value="t">Title</option></select></label><span class="note" id="cwcnt" style="margin:0"></span></div>
+   <div id="cwall"></div></div>
+ </section>
+
  <section class="tab" id="t-mosaic">
   <div class="card"><h2>Collection mosaic</h2><p class="note">Small compressed thumbnails, embedded in this file. Pick an order and a tint: the covers rearrange and recolor by that metric. Hover for the title, click for details.</p>
    <div class="row"><label>Order <select id="mzo"><option value="series">By series</option><option value="score">My score</option><option value="crit">Critics average</option><option value="hours">Hours</option><option value="rel">Release year</option><option value="fp">First played</option><option value="genre">Genre</option><option value="system">System</option><option value="title">Title</option></select></label>
@@ -234,6 +254,7 @@ const fmt=(v,d=0)=>v==null||isNaN(v)?'–':(+v).toLocaleString(undefined,{maximu
 const fix=(v,d)=>v==null||isNaN(v)?'–':(+v).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d});
 const fmtYear=(v,d=0)=>v==null||isNaN(v)?'–':(+v).toLocaleString(undefined,{maximumFractionDigits:d,useGrouping:false});
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const goatBadge=g=>g.goat?' <span class="goat" title="On the Wikipedia GOAT list">GOAT</span>':'';
 const mean=a=>{a=a.filter(x=>x!=null&&!isNaN(x));return a.length?a.reduce((x,y)=>x+y,0)/a.length:null};
 const gByTitle=new Map(ALL.G.map(g=>[g.t,g]));
 
@@ -418,11 +439,11 @@ function flipBack(g,rk){
 // the game detail panel (mosaic click etc.); every attribute in it is a filter link
 function gameCard(g){
   $('#pbody').innerHTML=(THUMBS[g.t]?`<img src="data:image/jpeg;base64,${THUMBS[g.t]}" style="width:120px;float:right;margin:0 0 8px 8px;border-radius:4px">`:'')+
-    `<h3>${esc(g.t)}</h3><p>${xfLink('series',g.s)}<br>${xfLink('genre',g.genre)} · ${xfLink('view',g.view)} · ${xfLink('rel',g.rel)}<br>${(g.sys||[]).map(s=>xfLink('system',s)).join(', ')}<br>${g.played?fmt(g.hrs,1)+' h':'– h (not played)'} · My score ${g.ms!=null?xfLink('ms',g.ms):'–'}/10${g.zp&&g.zp!=='None'?` · ZP ${xfLink('zp',g.zp)}`:''}${g.so?'<br>Soundtrack owned':''}</p><p class="note" style="color:var(--muted);font-size:12px">Click any underlined value to filter the dashboard to it.</p>`;
+    `<h3>${esc(g.t)}${goatBadge(g)}</h3><p>${xfLink('series',g.s)}<br>${xfLink('genre',g.genre)} · ${xfLink('view',g.view)} · ${xfLink('rel',g.rel)}<br>${(g.sys||[]).map(s=>xfLink('system',s)).join(', ')}<br>${g.played?fmt(g.hrs,1)+' h':'– h (not played)'} · My score ${g.ms!=null?xfLink('ms',g.ms):'–'}/10${g.zp&&g.zp!=='None'?` · ZP ${xfLink('zp',g.zp)}`:''}${g.so?'<br>Soundtrack owned':''}${g.vs!=null?`<br>GOTY ${g.rel}: ${fmt(g.gv)} votes (${fmt(g.vs,1)}% of that year)`:''}</p><p class="note" style="color:var(--muted);font-size:12px">Click any underlined value to filter the dashboard to it.</p>`;
   wireXf($('#pbody'));$('#panel').classList.add('open')}
 
 /* ---------- tabs ---------- */
-const TABS=[['overview','Overview'],['scores','Scores'],['years','Years'],['time','Time played'],['hours','Hours'],['stats','Statistics'],['mosaic','Mosaic'],['games','All games']];
+const TABS=[['overview','Overview'],['scores','Scores'],['years','Years'],['time','Time played'],['hours','Hours'],['stats','Statistics'],['canon','Canon'],['mosaic','Mosaic'],['games','All games']];
 const built={};let critSel=null,calTimer=null;
 // charts are drawn at their container's pixel width, so redraw the open tab (and later the others) when that width changes
 let builtW=innerWidth,resizeT=null;
@@ -816,7 +837,7 @@ games(){
     let rows=G.filter(g=>(!q||g.t.toLowerCase().includes(q)||(g.s||'').toLowerCase().includes(q))&&(!gg||g.genre===gg)&&(!ss||g.sys.includes(ss))&&(pp===''||(pp==='1')===g.played));
     rows.sort((a,b)=>{const x=sk==='sys'?a.sys.join():a[sk],y=sk==='sys'?b.sys.join():b[sk];return (x==null)-(y==null)||(x>y?1:x<y?-1:0)*sd});
     $('#cnt').textContent=rows.length+' games';
-    $('#gt').innerHTML='<thead><tr>'+cols.map(([k,n])=>`<th data-k="${k}">${n}${k===sk?(sd>0?' ▲':' ▼'):''}</th>`).join('')+'</tr></thead><tbody>'+rows.map(g=>`<tr><td><span class="xf" data-t="${esc(g.t)}">${esc(g.t)}</span></td><td>${xfLink('series',g.s)}</td><td>${xfLink('genre',g.genre)}</td><td>${xfLink('view',g.view)}</td><td>${xfLink('rel',g.rel)}</td><td>${g.ms??''}</td><td>${g.mc??''}</td><td>${g.hrs?fmt(g.hrs,1):''}</td><td>${g.fp||''}</td><td>${g.lp||''}</td><td>${g.sys.map(x=>xfLink('system',x)).join(', ')}</td></tr>`).join('')+'</tbody>';
+    $('#gt').innerHTML='<thead><tr>'+cols.map(([k,n])=>`<th data-k="${k}">${n}${k===sk?(sd>0?' ▲':' ▼'):''}</th>`).join('')+'</tr></thead><tbody>'+rows.map(g=>`<tr><td><span class="xf" data-t="${esc(g.t)}">${esc(g.t)}</span>${goatBadge(g)}</td><td>${xfLink('series',g.s)}</td><td>${xfLink('genre',g.genre)}</td><td>${xfLink('view',g.view)}</td><td>${xfLink('rel',g.rel)}</td><td>${g.ms??''}</td><td>${g.mc??''}</td><td>${g.hrs?fmt(g.hrs,1):''}</td><td>${g.fp||''}</td><td>${g.lp||''}</td><td>${g.sys.map(x=>xfLink('system',x)).join(', ')}</td></tr>`).join('')+'</tbody>';
     wireXf($('#gt'));$$('#gt [data-t]').forEach(e=>e.onclick=()=>gameCard(gByTitle.get(e.dataset.t)));
     $$('#gt th').forEach(th=>th.onclick=()=>{const k=th.dataset.k;sd=k===sk?-sd:1;sk=k;draw()})};
   ['#q','#fg','#fs','#fp'].forEach(s=>$(s).oninput=draw);draw()}
@@ -895,6 +916,72 @@ BUILD.stats=function(){
   statTable('SeriesRankStats',{f:(v,c)=>c==='Hours'?fix(v,1):n0(v),left:['Series'],idx:'Rank'});
   statTable('SeriesRankTotalStats',{f:(v,c)=>c==='Hours'?fix(v,1):n0(v)});
   ['PlaythroughVsScoreBuckets','NormPlayVsScoreBuckets','ReleaseVsFirstBuckets','LastVsFirstBuckets'].forEach(id=>statTable(id,{f:n0,heat:true,bold:['Total'],idx:'Bucket'}))};
+
+/* ---------- Canon tab: Wikipedia GOAT flag and GOTY votes ---------- */
+BUILD.canon=function(){
+  const goat=G.filter(g=>g.goat),rest=G.filter(g=>!g.goat),playedOf=a=>a.filter(g=>g.hrs>0);
+  const gp=playedOf(goat),rp=playedOf(rest),sum=a=>a.reduce((t,g)=>t+(g.hrs||0),0),hAll=sum(G),hGoat=sum(goat);
+  const avg=a=>a.length?sum(a)/a.length:null,msAvg=a=>mean(a.map(g=>g.ms));
+  $('#canonnote').textContent=`${goat.length} of the ${G.length} games ${isFiltered()?'in this filter ':''}are on Wikipedia's GOAT list, and ${G.filter(g=>g.vs!=null).length} have GOTY votes on record. Only games on my list are counted, so there is no figure for the whole canon.`;
+  const K=[['GOAT games played',goat.length?`${gp.length} of ${goat.length}`:'–',goat.length?`${goat.length-gp.length} not played yet`:''],
+    ['Share of all hours',hAll&&goat.length?fmt(hGoat/hAll*100,0)+'%':'–',goat.length?`${fmt(hGoat)} of ${fmt(hAll)} h`:''],
+    ['Hours per played game',gp.length?fmt(avg(gp),1)+' h':'–',gp.length&&rp.length?`GOAT, against ${fmt(avg(rp),1)} h for the rest`:'GOAT'],
+    ['My score, played games',msAvg(gp)!=null?fix(msAvg(gp),1):'–',msAvg(rp)!=null?`GOAT, against ${fmt(msAvg(rp),1)} for the rest`:'GOAT']];
+  $('#goatkpis').innerHTML=K.map(([k,v,cap])=>`<div class="kpi"><b>${v}</b><span>${k}</span>${cap?`<span style="display:block">${cap}</span>`:''}</div>`).join('');
+
+  // hours against vote share
+  const drawSc=()=>{const log=$('#gtsc').value==='log',all=G.filter(g=>g.vs!=null),pts=all.filter(g=>g.hrs>0);
+    $('#gtcnt').textContent=all.length?`${pts.length} played shown; ${all.length-pts.length} voted games not played yet are left out.`:'';
+    if(pts.length<3){$('#gtsct').innerHTML='<p class="note">Too few played games with GOTY votes under this filter to plot.</p>';return}
+    const c=canvas('#gtsct',1000,420,{t:16,r:20,b:38,l:50}),xmax=Math.max(...pts.map(g=>g.vs)),xmin=Math.min(...pts.map(g=>g.vs)),ymax=Math.max(...pts.map(g=>g.hrs)),ymin=Math.min(...pts.map(g=>g.hrs));
+    const xr=log?[Math.log10(xmin*.8),Math.log10(xmax*1.25)]:[0,xmax*1.05],yr=log?[Math.log10(Math.min(.5,ymin)),Math.log10(ymax*1.25)]:[0,ymax*1.05];
+    const xs=lin(xr[0],xr[1],0,c.W),ys=lin(yr[0],yr[1],c.H,0),X=v=>xs(log?Math.log10(v):v),Y=v=>ys(log?Math.log10(v):v);
+    const yt=log?[.5,1,5,10,50,100,500,1000].filter(t=>t<=ymax*1.25&&t>=Math.min(.5,ymin)*.99):niceTicks(0,ymax,6),xt=log?[.1,.2,.5,1,2,5,10,20,50,100].filter(t=>t>=xmin*.8&&t<=xmax*1.25):niceTicks(0,xmax,6);
+    yt.forEach(t=>{mk('line',{class:'gridline',x1:0,x2:c.W,y1:Y(t),y2:Y(t)},c.g);txt(c.g,-6,Y(t)+4,fmt(t,t<1?1:0),{'text-anchor':'end'})});
+    xt.forEach(t=>{mk('line',{class:'gridline',x1:X(t),x2:X(t),y1:0,y2:c.H},c.g);txt(c.g,X(t),c.H+16,fmt(t,t<1?1:0)+'%',{'text-anchor':'middle'})});
+    txt(c.g,c.W/2,c.H+34,"Share of that year's GOTY votes",{'text-anchor':'middle'});txt(c.g,-6,-6,'Hours played',{'text-anchor':'start'});
+    // other games first so GOAT dots sit on top
+    [...pts].sort((a,b)=>a.goat-b.goat).forEach(g=>{const k=mk('circle',{cx:X(g.vs),cy:Y(g.hrs),r:4,fill:g.goat?css('accent2'):css('accent'),'fill-opacity':.75,stroke:css('card'),'stroke-width':.8},c.g);
+      tip(k,`<b>${esc(g.t)}</b>${g.goat?' · GOAT':''}<br>${g.rel} · ${fmt(g.hrs,1)} h<br>${fmt(g.vs,1)}% of votes (${fmt(g.gv)})<br>my score ${g.ms??'–'}/10`);k.classList.add('xf');k.onclick=()=>gameCard(g)});
+    // name the most voted and the most played, keeping labels off each other
+    const named=new Set([...[...pts].sort((a,b)=>b.vs-a.vs).slice(0,4),...[...pts].sort((a,b)=>b.hrs-a.hrs).slice(0,3)]),placed=[];
+    [...named].forEach(g=>{const px=X(g.vs),py=Y(g.hrs),right=px<c.W-150,lbl=g.t.length>26?g.t.slice(0,25)+'…':g.t,w=lbl.length*5.6,x0=right?px+7:px-7-w;
+      if(placed.some(b=>Math.abs(b[1]-py)<11&&x0<b[0]+b[2]&&x0+w>b[0]))return;placed.push([x0,py,w]);
+      txt(c.g,right?px+7:px-7,py+3,lbl,{'text-anchor':right?'start':'end',class:'lbl',style:'font-size:10px'})})};
+  $('#gtsc').onchange=drawSc;drawSc();
+
+  // rating split
+  $('#goatleg').innerHTML='<span>My score</span>'+SCORE_BANDS.map(([lo,hi],i)=>`<span><i style="background:${SB[i]}"></i>${lo}-${hi}</span>`).join('');
+  const sg=goat.filter(g=>g.ms!=null),sr=rest.filter(g=>g.ms!=null),band=v=>Math.min(4,Math.max(0,Math.ceil(v/2)-1));
+  if(!sg.length){$('#goatstrip').innerHTML=$('#goatmc').innerHTML='<p class="note">No scored GOAT games under this filter.</p>'}else{
+    const rowH=96,c=canvas('#goatstrip',500,2*rowH+40,{t:6,r:14,b:34,l:76}),xs=lin(.5,10.5,0,c.W);
+    for(let v=1;v<=10;v++){mk('line',{class:'gridline',x1:xs(v),x2:xs(v),y1:0,y2:2*rowH},c.g);txt(c.g,xs(v),2*rowH+16,v,{'text-anchor':'middle'})}
+    txt(c.g,c.W/2,2*rowH+32,'My score',{'text-anchor':'middle'});
+    [['GOAT',sg],['Not GOAT',sr]].forEach(([name,a],r)=>{const y0=r*rowH,m=mean(a.map(g=>g.ms));
+      txt(c.g,-8,y0+rowH/2-2,name,{'text-anchor':'end',class:'lbl'});txt(c.g,-8,y0+rowH/2+11,`n = ${a.length}`,{'text-anchor':'end',style:'font-size:10px'});
+      a.forEach((g,i)=>{const k=mk('circle',{cx:xs(g.ms)+(((i*7919)%100)/100-.5)*c.W/10*.7,cy:y0+10+(((i*104729)%1000)/1000)*(rowH-20),r:3,fill:SB[band(g.ms)],'fill-opacity':.85,stroke:css('line'),'stroke-opacity':.25,'stroke-width':.6},c.g);
+        tip(k,`<b>${esc(g.t)}</b><br>my score ${g.ms}/10`);k.classList.add('xf');k.onclick=()=>gameCard(g)});
+      if(m!=null){mk('line',{x1:xs(m),x2:xs(m),y1:y0+2,y2:y0+rowH-2,stroke:css('accent'),'stroke-width':3,'stroke-linecap':'round'},c.g);txt(c.g,xs(m)+6,y0+rowH-4,`mean ${fix(m,1)}`,{class:'lbl',style:'font-size:10px;font-weight:700'})}});
+    mk('line',{class:'gridline',x1:0,x2:c.W,y1:rowH,y2:rowH,'stroke-width':1.5},c.g);
+    const pm=sg.filter(g=>g.mc!=null);
+    if(pm.length<3){$('#goatmc').innerHTML='<p class="note">Too few GOAT games scored by both me and Metacritic.</p>'}else{
+      const lo=Math.max(0,Math.floor((Math.min(...pm.map(g=>Math.min(g.mc,g.ms*10)))-3)/10)*10),c2=canvas('#goatmc',500,2*rowH+40,{t:6,r:14,b:34,l:44}),
+        xs2=lin(lo,100,0,c2.W),ys2=lin(lo,100,c2.H,0);
+      niceTicks(lo,100,6).forEach(t=>{mk('line',{class:'gridline',x1:0,x2:c2.W,y1:ys2(t),y2:ys2(t)},c2.g);txt(c2.g,-6,ys2(t)+4,t,{'text-anchor':'end'});txt(c2.g,xs2(t),c2.H+16,t,{'text-anchor':'middle'})});
+      txt(c2.g,c2.W/2,c2.H+32,'Metacritic',{'text-anchor':'middle'});
+      mk('line',{x1:xs2(lo),y1:ys2(lo),x2:xs2(100),y2:ys2(100),stroke:css('muted'),'stroke-width':1.2,'stroke-dasharray':'5 4'},c2.g);
+      pm.forEach(g=>{const k=mk('circle',{cx:xs2(g.mc),cy:ys2(g.ms*10),r:4.2,fill:SB[band(g.ms)],'fill-opacity':.9,stroke:css('line'),'stroke-opacity':.4,'stroke-width':.7},c2.g);
+        tip(k,`<b>${esc(g.t)}</b><br>me ${g.ms*10} · Metacritic ${g.mc}`);k.classList.add('xf');k.onclick=()=>gameCard(g)});
+      const hi=pm.filter(g=>g.ms*10>g.mc).length,lw=pm.filter(g=>g.ms*10<g.mc).length;
+      txt(c2.g,6,12,`n = ${pm.length} · I rated higher ${hi}, lower ${lw}, same ${pm.length-hi-lw}`,{class:'lbl',style:'font-size:10px'})}}
+
+  // cover wall
+  const drawWall=()=>{const k=$('#cwsort').value,dir=k==='t'||k==='rel'?1:-1,a=[...goat].sort((x,y)=>(x[k]==null)-(y[k]==null)||(x[k]>y[k]?1:x[k]<y[k]?-1:0)*dir||x.t.localeCompare(y.t));
+    $('#cwcnt').textContent=`${a.length} games, ${a.filter(g=>g.hrs>0).length} played`;
+    $('#cwall').innerHTML=a.length?a.map(g=>`<div class="cw xf${g.hrs>0?'':' na'}" data-t="${esc(g.t)}" title="${esc(g.t)}"><div class="im">${THUMBS[g.t]?`<img alt="" src="data:image/jpeg;base64,${THUMBS[g.t]}">`:esc(g.t.trim().charAt(0).toUpperCase())}</div>
+      <b>${esc(g.t)}</b><span>${g.rel} · ${g.hrs>0?fmt(g.hrs,1)+' h':'not played'}</span><span>${g.ms!=null?`score ${g.ms}/10`:'no score'}</span>${g.vs!=null?`<span>GOTY ${fmt(g.vs,1)}%</span>`:''}</div>`).join(''):'<p class="note">No GOAT games under this filter.</p>';
+    $$('#cwall .cw').forEach(e=>e.onclick=()=>gameCard(gByTitle.get(e.dataset.t)))};
+  $('#cwsort').onchange=drawWall;drawWall()};
 
 function drawMatrix(){
   const dim=$('#mxdim').value;const cols=dim==='genre'?GENRES:dim==='view'?VIEWS:dim==='style'?STYLES:dim==='own'?OWN:RELT;

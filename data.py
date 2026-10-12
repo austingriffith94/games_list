@@ -74,6 +74,9 @@ def build(t):
                  g['hours'] / g['average_playthrough']))
     g['Release Year vs First Played'] = _datedif_years(g['release_date'], g['first_played']).fillna(0).where(g['played'])
     g['First Played vs Last Played'] = _datedif_years(g['first_played'], g['last_played'])
+    # GOTY votes as a percentage of that release year's total votes (lk_goty_yearlyvotes); blank without a vote or a year total
+    yv = dict(zip(t['lk_goty_yearlyvotes']['year'].astype(int), t['lk_goty_yearlyvotes']['total_goty_votes']))
+    g['goty_share'] = g['goty_votes'] / g['release_year'].map(yv) * 100
     # score columns on a common 0-100 scale, as the Summary sheet does (value*10/scale)
     for name, col in SCORE_COLS.items():
         g[col + '_100'] = g[col] * 10 / scale[name]

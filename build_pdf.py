@@ -216,7 +216,7 @@ with PdfPages(OUT) as pdf:
         fig.patches.append(plt.Rectangle((x, 0.855), 0.145, 0.055, transform=fig.transFigure, fc='#FBE5D6', ec=ORANGE, lw=.8))
         fig.text(x + .0725, 0.895, str(v), ha='center', va='center', fontsize=12, fontweight='bold', color=ORANGE)
         fig.text(x + .0725, 0.866, k, ha='center', va='center', fontsize=7, color=DARK)
-    top = D.top10(t).merge(g[['title', 'my_score', 'metacritic', 'hours', 'genre', 'release_year']], on='title', how='left')
+    top = D.top10(t).merge(g[['title', 'my_score', 'metacritic', 'hours', 'genre', 'release_year', 'wikipedia_goat']], on='title', how='left')
     ax = fig.add_axes([0.04, 0.605, 0.92, 0.235]); ax.axis('off')
     ax.set_xlim(0, 1); ax.set_ylim(0, 11)
     for j, (h, x) in enumerate(zip(['#', 'Title', 'Genre', 'Year', 'My score', 'Metacritic', 'Hours'], [0.0, .05, .52, .68, .77, .87, .97])):
@@ -227,6 +227,7 @@ with PdfPages(OUT) as pdf:
         if i % 2 == 0: ax.add_patch(plt.Rectangle((0, y - .5), 1, 1, fc='#F5F5F5', zorder=0))
         ax.text(0.01, y, str(i + 1), fontweight='bold', color=ORANGE, va='center')
         ax.text(.05, y, row['title'], va='center'); ax.text(.52, y, str(row['genre']), va='center')
+        if row['wikipedia_goat']: ax.text(.505, y, 'GOAT', ha='right', va='center', fontsize=5.5, fontweight='bold', color=GREY, bbox=dict(boxstyle='round,pad=.2', fc='white', ec=GREY, lw=.6))
         ax.text(.68, y, f"{row['release_year']:.0f}", ha='right', va='center')
         ax.text(.77, y, f"{row['my_score']:.0f}/10" if pd.notna(row['my_score']) else '–', ha='right', va='center')
         ax.text(.87, y, f"{row['metacritic']:.0f}" if pd.notna(row['metacritic']) else '–', ha='right', va='center')

@@ -41,6 +41,7 @@ G = [dict(t=x.title, s=clean(x.series), genre=clean(x.genre), view=clean(x.camer
           so=int(x.soundtrack_owned or 0), ms=num(x.my_score), mc=num(x.metacritic), pg=num(x.pc_gamer), gs=num(x.gamespot), ign=num(x.ign),
           des=num(x.destructoid), gi=num(x.game_informer), zp=clean(x.zero_punctuation), hrs=num(x.hours),
           rel=num(x.release_year), ay=num(x.added_year), fp=clean(x.first_played), lp=clean(x.last_played),
+          goat=int(x.wikipedia_goat or 0), gv=num(x.goty_votes), vs=num(x.goty_share),
           rank=rank_of.get(x.title), sys=sysmap.get(x.title, []),
           plt=num(x.playthroughs), npt=num(npt_of.get(x.title)), rgap=num(rgap_of.get(x.title)), lgap=num(lgap_of.get(x.title)))
      for x in g.itertuples()]

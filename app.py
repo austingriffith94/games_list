@@ -363,7 +363,7 @@ def add_ref(kind):
 # ----------------------------------------------------------------------------- games
 @app.get('/api/games')
 def list_games():
-    out = rows('''SELECT g.id, g.title, g.series, g.genre, g.sub_genre, g.camera_view, g.my_score, g.metacritic,
+    out = rows('''SELECT g.id, g.title, g.series, g.genre, g.sub_genre, g.camera_view, g.my_score, g.metacritic, g.wikipedia_goat,
         (SELECT group_concat(system, ', ') FROM releases r WHERE r.title=g.title) AS systems,
         (SELECT round(SUM(hours),2) FROM play_log l WHERE l.game=g.title) AS hours,
         (SELECT MAX(date) FROM play_log l WHERE l.game=g.title) AS last_played

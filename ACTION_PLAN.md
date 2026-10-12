@@ -17,6 +17,7 @@ The workbook-parity plan that came before this one is finished and archived in
 | Gate (G1-G3): finish the review before Phase 3 | Done (run after Phase 3; see findings below) |
 | Phase 3 (3.1-3.7): layout, polish, hygiene | Done |
 | Phase 4 (4.1-4.2): carried over from the parity plan | 4.1 done; 4.2 deferred (optional) |
+| Phase 5 (5.1-5.6): GOTY votes and Wikipedia GOAT | Done (5.5 PDF page skipped, optional); see results below |
 
 **Scope.** The entry app (`static/app.html`) is in good shape and only gets small items (3.4). Most
 of the work is in `dashboard.template.html`, plus a few real bugs in `build_pdf.py`.
@@ -415,6 +416,81 @@ annoying.
 
 ---
 
+## Phase 5: GOTY votes and Wikipedia GOAT
+
+Surfaces `games.goty_votes` and `games.wikipedia_goat`, which are stored but not shown anywhere. The
+dashboard work goes in a new **Canon** tab. Like the earlier phases, nothing here changes a stored value.
+
+**Not doing:**
+- A per-year GOTY timeline. The DB only has votes for games on the list, not every year's full vote
+  table, so the timeline would have gaps.
+- A "winner each year" checklist. Recent years in particular have few or no games played, so it
+  would mostly be empty rows.
+- Any "N of the full GOAT list played" figure. The DB only has games you logged, so it has no
+  denominator.
+
+### 5.1 Check the data first
+Count games with `goty_votes` set, games with `wikipedia_goat = 1`, how many of each have play time
+and a `my_score`, and confirm `lk_goty_yearlyvotes` covers every year that has a vote. That decides
+whether 5.3 has enough points to be worth a scatter and whether the 5.4 rating split is meaningful
+(a handful of GOAT games makes it a list, not a distribution).
+
+### 5.2 Normalize GOTY votes to vote share
+`goty_votes / lk_goty_yearlyvotes.total_goty_votes` for the game's original release year, as a
+percentage. Raw counts are not comparable because the yearly totals vary. Put this in `data.py` next to
+the other derived columns so the dashboard and the PDF use one definition. A game with no year total
+gets no share (blank, not 0).
+
+### 5.3 Scatter: hours against GOTY vote share
+One dot per game with a vote share. Hours played on one axis and vote share on the other. GOAT games
+get a distinct colour (one accent, with the rest in the single-series colour from 2.2) and a legend
+entry. Label the top few by vote share or hours. Hover shows title, year, hours, share and `my_score`.
+Hours are skewed, so try a log axis and keep it if it reads better.
+
+### 5.4 GOAT against non-GOAT
+- **Stat tiles:** share of total hours on GOAT games, GOAT games played, and average hours per game
+  for GOAT against non-GOAT. Use the tile style from 2.6.
+- **Rating split:** `my_score` for GOAT against non-GOAT as a dot or strip plot with the mean
+  marked, plus `my_score` against `metacritic` for the GOAT games only (does the canon land for you,
+  and do you agree with the critics on it). Use the 2.4 score colours.
+
+### 5.5 GOAT cover wall
+The GOAT games as a grid of covers, not a chart. Under each cover: title, release year, hours,
+`my_score` and GOTY vote share (when set). Sort by hours, score or year. If the flag is also set on
+unplayed games, dim those covers so the wall also shows what is left. Reuse the 80×120 thumbnails that
+`build_html.py` already embeds for the mosaic (`build_html.py:10`) rather than adding a second set. Check
+G1-G3 cases: long titles, missing covers (a plain placeholder tile), and 390 px width.
+
+A PDF version (one page of covers with the same data underneath) is optional. Decide after seeing the
+dashboard version.
+
+### 5.6 GOAT badge
+A small GOAT marker next to the title in the entry app's Games list, the dashboard's All games table
+and wherever the PDF lists titles. Text or a small icon with a tooltip, not a colour alone (3.7).
+
+### Phase 5 results (Oct 12 2026)
+- **5.1 data:** 142 games have votes (91 played), 83 are GOAT (61 played), 50 are both. Every voted game's
+  year is in `lk_goty_yearlyvotes` (2003-2023 voted; the table runs to 2024). Share ranges 0.17%-72.8%,
+  none over 100%.
+- **Conflicts found and how they were settled:**
+  - 51 of the 142 voted games are unplayed, so they cannot sit on a log hours axis. The scatter shows
+    played games only and says how many voted games are left out.
+  - The dashboard already uses `gs` for GameSpot, so the new payload keys are `goat`, `gv` (votes) and
+    `vs` (vote share).
+  - "Average hours per game" is per played game, since 22 GOAT games are unplayed and would drag the mean down.
+  - Purple is for critics/comparison, orange for mine: GOAT dots are purple (an external list), the rest
+    orange. The rating split uses the blue score bands.
+  - `/api/games` did not return `wikipedia_goat`; it now does (no test needed changing).
+  - The PDF lists titles only on p1 (Top 10), so the badge went there only. The PDF cover-wall page (5.5)
+    was skipped: the dashboard wall covers it.
+- **Where:** `data.goty_share` (+ a check in `test_data.py`), Canon tab in the dashboard, GOAT badge in
+  the app Games list, the All games table, the detail panel and PDF p1. `tools/screenshot.py` now
+  includes the `canon` tab.
+- **Not done:** the cover wall and Canon charts were checked at 1280 and 390 px, light and dark. 768/1024
+  and long-title cases (G1/G3) were not rerun for the new tab.
+
+---
+
 ## Suggested order
 
 1. **0.1** first, so every later step can be checked by eye.
@@ -429,6 +505,8 @@ annoying.
 6. After each step: rebuild both reports, screenshot, run `test_data.py` and `test_api.py`
    (use the `game1` env). `test_e2e.py` is still unresolved on Windows (see
    `PROJECT_CONTEXT.md`), so check the entry-app changes in 3.4 by hand until it is.
+7. **Phase 5:** 5.1 and 5.2 first (everything else reads the vote share), then 5.6 (small, touches
+   all three outputs), then the Canon tab: 5.5, 5.4, 5.3.
 
 ## Decisions for the owner
 
@@ -445,7 +523,7 @@ annoying.
 - **Resolved, printing (1.7):** the PDF is the printable output; the dashboard only prints the open tab.
 - **Overview labels (3.3):** relabel "Games" to "Releases" and keep "406d 3.5h" (recommended), or leave
   the labels as they are.
-- **Resolved (Oct 12 2026):** window end date is (a), ends today, PDF subtitle says so and gives the last log date. The `Real` flag (marked estimated time) is dropped from the app, PDF and dashboard but kept in the DB column. Multiplayer flags are for filtering only. `wikipedia_goat` and `goty_votes` are a possible future visualization.
+- **Resolved (Oct 12 2026):** window end date is (a), ends today, PDF subtitle says so and gives the last log date. The `Real` flag (marked estimated time) is dropped from the app, PDF and dashboard but kept in the DB column. Multiplayer flags are for filtering only. `wikipedia_goat` and `goty_votes` are planned in Phase 5.
 
 ## Review coverage
 

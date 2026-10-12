@@ -23,7 +23,7 @@ DASH_HTML = os.path.join(BASE, 'games_list_dashboard.html')
 PDF = os.path.join(BASE, 'games_list_report.pdf')
 
 # dashboard tabs (dashboard.template.html TABS) and app tabs (static/app.html NAMES), in nav order
-DASH_TABS = ['overview', 'scores', 'years', 'time', 'hours', 'stats', 'mosaic', 'games']
+DASH_TABS = ['overview', 'scores', 'years', 'time', 'hours', 'stats', 'canon', 'mosaic', 'games']
 APP_TABS = ['log', 'games', 'gallery', 'stats', 'top', 'halo', 'checks', 'history', 'reports']
 
 

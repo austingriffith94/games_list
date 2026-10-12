@@ -30,5 +30,12 @@ for dim in ('genre', 'camera_view'):
     assert (body.sum(axis=1) == m['Total'].iloc[:-1]).all() and (body.sum(axis=0) == m.loc['Total'].iloc[:-1]).all()
     assert m.loc['Total', 'Total'] == s['games'] == body.values.sum(), dim
 
+# GOTY vote share: a share exists exactly when the game has votes, and is a percentage. A vote for a year
+# missing from lk_goty_yearlyvotes fails here, which is the cue to add that year's total.
+v = g[g['goty_votes'].notna()]
+assert v['goty_share'].notna().all(), list(v.loc[v['goty_share'].isna(), 'title'])
+assert ((v['goty_share'] > 0) & (v['goty_share'] <= 100)).all()
+assert g.loc[g['goty_votes'].isna(), 'goty_share'].isna().all()
+
 print('ALL DATA TESTS PASSED')
 print(s)
