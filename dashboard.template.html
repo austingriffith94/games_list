@@ -40,6 +40,9 @@ table.mx td.tot{font-weight:700;background:var(--grid)}
 .t10 .cv{aspect-ratio:3/4;background:linear-gradient(135deg,var(--soft),var(--grid));display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:34px;font-weight:700}
 .t10 .cv img{width:100%;height:100%;object-fit:cover}
 .t10 .in{padding:8px}.t10 .in b{display:block;font-size:13px}.t10 .in span{font-size:11px;color:var(--muted)}
+table.hm{width:auto;min-width:60%}table.hm td{min-width:30px;padding:2px 3px;font-size:11px;cursor:default}table.hm td.c{cursor:pointer}table.hm th.ax{font-weight:400;color:var(--muted);font-size:11px}
+table.mx td.l,table.mx th.l{text-align:left}table.mx td.dim{color:var(--muted)}table.mx td.bd{font-weight:700}
+.mxscroll{overflow:auto;max-width:100%}.hmstat{font-size:12px;color:var(--muted);margin:2px 0 8px}.hmstat b{color:var(--text)}
 table.gt{border-collapse:collapse;width:100%;font-size:12.5px}
 table.gt th{cursor:pointer;text-align:left;padding:6px;border-bottom:2px solid var(--grid);position:sticky;top:34px;background:var(--card);white-space:nowrap}
 table.gt td{padding:5px 6px;border-bottom:1px solid var(--grid)}
@@ -93,6 +96,9 @@ table.gt tr:hover td{background:var(--hl)}
   <div class="card"><h2>Average year per score</h2><p class="note">Mean release / added / first played / last played year, by my score (plus Top 20).</p>
    <div class="legend" id="ypsleg"></div><div id="yps"></div></div>
   <div class="card"><h2>Games added per year</h2><p class="note">Stacked by ownership × platform class.</p><div class="legend" id="addleg"></div><div id="add"></div></div>
+  <div class="card"><h2>Year gaps</h2><p class="note">My score vs. release-to-first-played and first-to-last-played gaps, in years.</p>
+   <div class="legend" id="gapleg"></div>
+   <div class="grid2"><div><h2 style="font-size:13px">Release → first played</h2><div id="relgap"></div></div><div><h2 style="font-size:13px">First played → last played</h2><div id="lastgap"></div></div></div></div>
  </section>
 
  <section class="tab" id="t-time">
@@ -105,7 +111,8 @@ table.gt tr:hover td{background:var(--hl)}
   </div>
   <div class="card"><h2>Frequency of hours played</h2><p class="note">Cumulative % of days at or under X hours played.</p>
    <div class="legend"><span><i style="background:var(--accent)"></i>% of all days</span><span><i style="background:var(--accent2)"></i>% of days played</span></div><div id="freq"></div></div>
-  <div class="card"><h2>Calendar heat map</h2><div class="row"><label>Year <select id="calyr"></select></label></div><div id="cal"></div></div>
+  <div class="card"><h2>Calendar heat map</h2><div class="row"><label>Year <select id="calyr"></select></label></div>
+   <div class="legend" id="calstats"></div><div id="calspark"></div><div id="cal"></div></div>
  </section>
 
  <section class="tab" id="t-hours">
@@ -116,6 +123,35 @@ table.gt tr:hover td{background:var(--hl)}
   <div class="card"><h2>Top 10 series concentration</h2><p class="note" id="topnote"></p>
    <div class="grid2"><div><h2 style="font-size:13px">Games</h2><div id="topgames"></div></div><div><h2 style="font-size:13px">Hours</h2><div id="tophours"></div></div></div></div>
   <div class="card"><h2>Score vs hours played</h2><div class="row"><label>Score <select id="scx"></select></label><label>Y axis <select id="scy"><option value="log">Log</option><option value="lin">Linear</option></select></label></div><div id="sc"></div></div>
+  <div class="card"><h2>Playthroughs</h2><p class="note">How much of the game I played, raw and normalized by a full playthrough. Exponential fit on the scatter.</p>
+   <div id="ptscatter"></div>
+   <div class="legend" id="ptleg"></div>
+   <div class="grid2"><div><h2 style="font-size:13px">My score vs. playthroughs</h2><div id="ptbucket"></div></div><div><h2 style="font-size:13px">My score vs. normalized playthroughs</h2><div id="nptbucket"></div></div></div></div>
+ </section>
+
+ <section class="tab" id="t-stats">
+  <div class="card"><h2>Score heat map</h2><p class="note">How often a pair of scores occurs together: one source against another, with the least-squares fit of the Y score on the X score. Click a cell to list its games.</p>
+   <div class="row"><label>Y axis <select id="hmy"></select></label><label>X axis <select id="hmx"></select></label>
+    <label>Y step <select id="hmyi"><option value="0.25">0.25</option><option value="0.5">0.5</option><option value="1">1</option></select></label>
+    <label>X step <select id="hmxi"><option value="0.25">0.25</option><option value="0.5">0.5</option><option value="1" selected>1</option></select></label></div>
+   <div class="hmstat" id="hmstat"></div><div class="mxscroll"><table class="mx hm" id="hm"></table></div></div>
+  <div class="grid2">
+   <div class="card"><h2>Distribution of each score source</h2><p class="note">Each outlet in its own units (Metacritic and PC Gamer 0–100, the rest 0–10).</p><div class="mxscroll"><table class="mx" id="s-StatTable"></table></div></div>
+   <div class="card"><h2>Correlation</h2><p class="note">Pairs where both outlets scored the game.</p><div class="mxscroll"><table class="mx" id="s-CorrelationMatrix"></table></div></div>
+   <div class="card"><h2>Share of games per score band</h2><p class="note">Games with score in (s−1, s].</p><div class="mxscroll"><table class="mx" id="s-ScoreDistributionTable"></table></div></div>
+   <div class="card"><h2>Average year per my score</h2><div class="mxscroll"><table class="mx" id="s-YearsPerScore"></table></div></div>
+   <div class="card"><h2>Soundtrack ownership</h2><p class="note">Scores 0–100.</p><div class="mxscroll"><table class="mx" id="s-SoundtrackStats"></table></div>
+    <h2 style="font-size:13px;margin-top:12px">Metacritic band share</h2><div class="mxscroll"><table class="mx" id="s-SoundtrackDistributionTable"></table></div></div>
+   <div class="card"><h2>Zero Punctuation</h2><p class="note">Frequency uses all rated games; Frequency Played uses games actually played, so the two differ.</p><div class="mxscroll"><table class="mx" id="s-ZeroPunctuationQualityBuckets"></table></div>
+    <h2 style="font-size:13px;margin-top:12px">My score × opinion (games)</h2><div class="mxscroll"><table class="mx" id="s-ZeroPunctuationDistribution"></table></div></div>
+   <div class="card"><h2>Top 10 series by hours</h2><div class="mxscroll"><table class="mx" id="s-SeriesRankStats"></table></div>
+    <h2 style="font-size:13px;margin-top:12px">Top 10 vs. everything else</h2><div class="mxscroll"><table class="mx" id="s-SeriesRankTotalStats"></table></div></div>
+  </div>
+  <div class="card"><h2>My score × playthroughs and year gaps</h2><p class="note">Games per bucket (rows) by my score (columns). A gap of exactly 6 years is counted in “6-9”; the old workbook's buckets skipped it and silently dropped 5 games.</p>
+   <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(480px,1fr))"><div><h2 style="font-size:13px">Playthroughs</h2><div class="mxscroll"><table class="mx" id="s-PlaythroughVsScoreBuckets"></table></div></div>
+    <div><h2 style="font-size:13px">Normalized playthroughs</h2><div class="mxscroll"><table class="mx" id="s-NormPlayVsScoreBuckets"></table></div></div>
+    <div><h2 style="font-size:13px">Release year → first played (years)</h2><div class="mxscroll"><table class="mx" id="s-ReleaseVsFirstBuckets"></table></div></div>
+    <div><h2 style="font-size:13px">First played → last played (years)</h2><div class="mxscroll"><table class="mx" id="s-LastVsFirstBuckets"></table></div></div></div></div>
  </section>
 
  <section class="tab" id="t-mosaic">
@@ -134,7 +170,8 @@ table.gt tr:hover td{background:var(--hl)}
 <div id="tip"></div>
 <script>
 const DATA = /*DATA*/;
-const {G,R,L,SYSTEMS,GENRES,VIEWS,STYLES,OWN,RELT,TOP,SUMMARY,SCORES,ASOF,END,SOUND,THUMBS,SERIES_ORDER} = DATA;
+const {G,R,L,SYSTEMS,GENRES,VIEWS,STYLES,OWN,RELT,TOP,SUMMARY,SCORES,ASOF,END,SOUND,THUMBS,SERIES_ORDER,HOLIDAYS,STATS} = DATA;
+const HOLIDAY_SET = new Set(HOLIDAYS||[]);
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const NS='http://www.w3.org/2000/svg';
 const fmt=(v,d=0)=>v==null||isNaN(v)?'–':(+v).toLocaleString(undefined,{maximumFractionDigits:d});
@@ -182,6 +219,30 @@ function hbars(sel,rows,{w=1000,rowH=24,xmax=null,xmin=0,color=css('accent'),dot
     if(r.dot!=null){const d=mk('circle',{cx:x(r.dot),cy:y+rowH/2,r:4.5,fill:dotColor},c.g);tip(d,r.tip||fmt(r.dot,1))}});
   return c}
 
+/* stacked bars: one group per bucket, segments colored by my-score 1-10 on a red->green ramp.
+   buckets:[label], scoreOf:[[score1..10 counts] per bucket] (rows=bucket, cols=score-1..10) */
+const RG=['#C0392B','#D97642','#F4B183','#F7CF8F','#FFE699','#E3EBA9','#A9D18E','#7FBF6E','#538135','#3A6324'];
+function scoreStack(sel,buckets,counts,{w=1000,h=300}={}){
+  const c=canvas(sel,w,h,{t:10,r:14,b:30,l:44});
+  const totals=counts.map(row=>row.reduce((a,b)=>a+b,0));
+  const mx=Math.max(1,...totals),ticks=niceTicks(0,mx,5),top=ticks[ticks.length-1]||mx,y=lin(0,top,c.H,0);
+  yAxis(c,y,ticks);
+  const bw=c.W/buckets.length;
+  buckets.forEach((b,i)=>{let bottom=0;const x=i*bw;
+    counts[i].forEach((n,s)=>{if(!n)return;const r_=mk('rect',{x:x+bw*.12,y:y(bottom+n),width:Math.max(.5,bw*.76),height:y(bottom)-y(bottom+n),fill:RG[s]},c.g);
+      tip(r_,`<b>${esc(b)}</b> · score ${s+1}<br>${n} games`);bottom+=n});
+    txt(c.g,x+bw/2,c.H+14,b,{'text-anchor':'middle'})});
+  return c}
+function scoreLegend(sel){
+  const el=$(sel);el.innerHTML=Array.from({length:10},(_,i)=>`<span><i style="background:${RG[i]}"></i>${i+1}</span>`).join('');}
+/* cross-tab: my score 1-10 (rows) x bucketed value (cols), Start <= v < End */
+function bucketCounts(items,edges){
+  const labels=edges.slice(0,-1).map((lo,i)=>{const hi=edges[i+1];return hi-lo===1?String(lo):(hi>=100?lo+'<':lo+'-'+(hi-1))});
+  const counts=labels.map(()=>Array(10).fill(0));
+  items.forEach(([score,v])=>{if(score==null||v==null)return;
+    for(let i=0;i<edges.length-1;i++){if(v>=edges[i]&&v<edges[i+1]){counts[i][score-1]++;break}}});
+  return {labels,counts}}
+
 /* ---------- derived helpers ---------- */
 const CRIT=[['mc',1],['gs',10],['des',10],['gi',10],['pg',1],['ign',10]]; // [key, multiplier to reach 0-100]
 G.forEach(g=>{g.crit=mean(CRIT.map(([k,m])=>g[k]==null?null:g[k]*m));g.played=g.fp!=null});
@@ -189,7 +250,7 @@ const yearOf=d=>d?+d.slice(0,4):null;
 function valueFor(g,dim){return dim==='genre'?g.genre:dim==='view'?g.view:dim==='style'?g.style:null}
 
 /* ---------- tabs ---------- */
-const TABS=[['overview','Overview'],['scores','Scores'],['years','Years'],['time','Time played'],['hours','Hours'],['mosaic','Mosaic'],['games','All games']];
+const TABS=[['overview','Overview'],['scores','Scores'],['years','Years'],['time','Time played'],['hours','Hours'],['stats','Statistics'],['mosaic','Mosaic'],['games','All games']];
 const built={};
 function show(id){$('#panel').classList.remove('open');TABS.forEach(([k])=>$('#t-'+k).classList.toggle('on',k===id));$$('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.k===id));location.hash=id;if(!built[id]){built[id]=1;BUILD[id]()}}
 TABS.forEach(([k,n])=>{const b=document.createElement('button');b.textContent=n;b.dataset.k=k;b.onclick=()=>show(k);$('#nav').appendChild(b)});
@@ -293,7 +354,11 @@ years(){
   $('#addleg').innerHTML=combos.filter(([o,p])=>R.some(r=>r.own===o&&r.pt===p)).map(([o,p])=>`<span><i style="background:${shade(ownCols[o]||'#999',ptShade[p])}"></i>${o} · ${p}</span>`).join('');
   const full=[];for(let y=ays[0];y<=ays[ays.length-1];y++)full.push(y);
   const c=canvas('#add',1000,300,{t:10,r:14,b:36,l:44});const tot=full.map(y=>R.filter(r=>r.ay===y).length),top=niceTicks(0,Math.max(...tot),5),mx=top[top.length-1],y=lin(0,mx,c.H,0);yAxis(c,y,top);
-  const bw=c.W/full.length;full.forEach((yr,i)=>{let acc=0;combos.forEach(([o,p])=>{const n=R.filter(r=>r.ay===yr&&r.own===o&&r.pt===p).length;if(!n)return;const col=shade(ownCols[o]||'#999',ptShade[p]);const r_=mk('rect',{x:i*bw+bw*.12,y:y(acc+n),width:bw*.76,height:y(acc)-y(acc+n),fill:col},c.g);tip(r_,`<b>${yr}</b> ${o} · ${p}: ${n}`);acc+=n});if(i%2===0)txt(c.g,i*bw+bw/2,c.H+14,yr,{'text-anchor':'middle'})})},
+  const bw=c.W/full.length;full.forEach((yr,i)=>{let acc=0;combos.forEach(([o,p])=>{const n=R.filter(r=>r.ay===yr&&r.own===o&&r.pt===p).length;if(!n)return;const col=shade(ownCols[o]||'#999',ptShade[p]);const r_=mk('rect',{x:i*bw+bw*.12,y:y(acc+n),width:bw*.76,height:y(acc)-y(acc+n),fill:col},c.g);tip(r_,`<b>${yr}</b> ${o} · ${p}: ${n}`);acc+=n});if(i%2===0)txt(c.g,i*bw+bw/2,c.H+14,yr,{'text-anchor':'middle'})});
+  // year gaps: release -> first played, and first played -> last played, stacked by my score
+  scoreLegend('#gapleg');
+  {const {labels,counts}=bucketCounts(G.filter(g=>g.ms!=null).map(g=>[g.ms,g.rgap]),[0,1,2,3,4,6,10,20,100]);scoreStack('#relgap',labels,counts,{w:480,h:260})}
+  {const {labels,counts}=bucketCounts(G.filter(g=>g.ms!=null).map(g=>[g.ms,g.lgap]),[0,1,2,4,6,10,15,20,100]);scoreStack('#lastgap',labels,counts,{w:480,h:260})}},
 time(){
   const byDay=new Map();L.forEach(r=>{byDay.set(r[0],(byDay.get(r[0])||0)+r[3])});
   const lastLog=L.reduce((m,r)=>r[0]>m?r[0]:m,'0'),last=new Date((END>lastLog?END:lastLog)+'T00:00:00Z');
@@ -355,12 +420,36 @@ time(){
     vals.forEach((v,i)=>{const k_=mk('circle',{cx:fx(freqX[i]),cy:fy(v),r:3.5,fill:color},fc.g);tip(k_,`<b>${name}</b><br>up to ${freqX[i]} h: ${fmt(v,1)}%`)})});
   const yrs=[...new Set(L.map(r=>+r[0].slice(0,4)))].sort((a,b)=>b-a);$('#calyr').innerHTML=yrs.map(y=>`<option>${y}</option>`).join('');
   const cal=()=>{const yr=+$('#calyr').value,start=new Date(Date.UTC(yr,0,1)),end=new Date(Date.UTC(yr,11,31));const off=(start.getUTCDay()+6)%7,weeks=Math.ceil((off+365+(yr%4===0?1:0))/7);
-    const cell=17,c=canvas('#cal',weeks*cell+50,7*cell+30,{t:18,r:6,b:6,l:34});const mxv=Math.max(2,...[...byDay].filter(([d])=>d.startsWith(yr)).map(x=>x[1]));
-    ['Mon','','Wed','','Fri','','Sun'].forEach((n,i)=>txt(c.g,-6,i*cell+12,n,{'text-anchor':'end'}));
+    const yrDays=[];for(let d=start;d<=end;d=addD(d,1))yrDays.push(byDay.get(iso(d))||0);
+    const playedYr=yrDays.filter(v=>v>0).sort((a,b)=>a-b);
+    const pct=p=>playedYr.length?playedYr[Math.min(playedYr.length-1,Math.floor(p*playedYr.length))]:0;
+    const med=playedYr.length?(playedYr.length%2?playedYr[(playedYr.length-1)/2]:(playedYr[playedYr.length/2-1]+playedYr[playedYr.length/2])/2):0;
+    const calStats=[['Max',playedYr.length?playedYr[playedYr.length-1]:0],['75%',pct(.75)],['Avg',mean(yrDays.filter(v=>v>0))||0],['Median',med],['25%',pct(.25)],['Min',playedYr.length?playedYr[0]:0]];
+    $('#calstats').innerHTML=calStats.map(([k,v])=>`<span><b>${k}:</b> ${fmt(v,2)} h</span>`).join('');
+    // 7-day rolling average sparkline across the year
+    const roll=yrDays.map((_,i)=>mean(yrDays.slice(Math.max(0,i-6),i+1)));
+    const sc_=canvas('#calspark',weeks*17+70,70,{t:6,r:6,b:6,l:70});
+    const smx=Math.max(1,...roll),sy=lin(0,smx,sc_.H,0),sx=lin(0,roll.length-1,0,sc_.W);
+    mk('path',{d:roll.map((v,i)=>(i?'L':'M')+sx(i).toFixed(1)+','+sy(v).toFixed(1)).join(''),fill:'none',stroke:css('accent2'),'stroke-width':1.3},sc_.g);
+    const sfill=mk('path',{d:`M0,${sc_.H}L`+roll.map((v,i)=>sx(i).toFixed(1)+','+sy(v).toFixed(1)).join('L')+`L${sc_.W},${sc_.H}Z`,fill:css('accent2'),'fill-opacity':.15},sc_.g);
+    const cell=17,c=canvas('#cal',weeks*cell+70,7*cell+40,{t:18,r:6,b:22,l:70});const mxv=Math.max(2,...[...byDay].filter(([d])=>d.startsWith(yr)).map(x=>x[1]));
+    // day-of-week average mini bars, to the left of each row
+    const dowAvg=[0,1,2,3,4,5,6].map(r=>{const vals=[];for(let d=start,i=0;d<=end;d=addD(d,1),i++)if((off+i)%7===r)vals.push(byDay.get(iso(d))||0);return mean(vals)||0});
+    const dowMax=Math.max(1,...dowAvg);
+    ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach((n,i)=>{txt(c.g,-60,i*cell+12,n,{'text-anchor':'start',style:'font-size:9px'});
+      const bw_=36*dowAvg[i]/dowMax;mk('rect',{x:-20-bw_,y:i*cell+3,width:bw_,height:cell-7,fill:css('accent'),'fill-opacity':.5,rx:2},c.g)});
+    // weekly average bars, below the grid, one per week column
+    const weekAvg=Array.from({length:weeks},(_,k)=>{const vals=[];for(let d=start,i=0;d<=end;d=addD(d,1),i++)if(Math.floor((off+i)/7)===k)vals.push(byDay.get(iso(d))||0);return mean(vals)||0});
+    const weekMax=Math.max(1,...weekAvg);
+    weekAvg.forEach((v,k)=>{const bh=16*v/weekMax;mk('rect',{x:k*cell,y:7*cell+6+(16-bh),width:cell-2,height:bh,fill:css('accent'),'fill-opacity':.5,rx:1},c.g)});
     for(let d=start,i=0;d<=end;d=addD(d,1),i++){const k=Math.floor((off+i)/7),r=(off+i)%7,h=byDay.get(iso(d))||0;
       const col=h===0?'var(--grid)':`color-mix(in srgb, var(--accent) ${Math.round(25+75*Math.min(1,h/mxv))}%, var(--card))`;
       const rc=mk('rect',{x:k*cell,y:r*cell,width:cell-2,height:cell-2,rx:3,fill:col},c.g);tip(rc,`<b>${iso(d)}</b><br>${h?fmt(h,2)+' h':'no play'}`);
-      if(d.getUTCDate()===1)txt(c.g,k*cell,-6,d.toLocaleString('en',{month:'short',timeZone:'UTC'}))}};
+      if(HOLIDAY_SET.has(iso(d)))mk('rect',{x:k*cell,y:r*cell,width:cell-2,height:cell-2,rx:3,fill:'none',stroke:'var(--text)','stroke-width':1,'stroke-dasharray':'2,2'},c.g);
+      if(d.getUTCDate()===1)txt(c.g,k*cell,-6,d.toLocaleString('en',{month:'short',timeZone:'UTC'}))}
+    // month-boundary stair-step rule
+    for(let m=0;m<12;m++){const d=new Date(Date.UTC(yr,m,1));if(m===0)continue;const i=Math.round((d-start)/864e5),k=Math.floor((off+i)/7),r=(off+i)%7;
+      mk('path',{d:`M${k*cell-1},${-1}L${k*cell-1},${r*cell-1}L${k*cell+cell-1},${r*cell-1}L${k*cell+cell-1},${7*cell+1}`,fill:'none',stroke:'var(--text)','stroke-width':1}, c.g)}};
   $('#calyr').onchange=cal;cal()},
 mosaic(){
   const draw=()=>{const o=$('#mzo').value,all=$('#mzf').value==='all';
@@ -401,7 +490,23 @@ hours(){
     const b=sxy/sxx,a=my-b*mx,r2=sxy*sxy/(sxx*syy);const f1=x=>log?Math.exp(a+b*x):a+b*x;
     const xsPts=Array.from({length:51},(_,i)=>10+i*1.8);mk('path',{d:xsPts.map((x,i)=>(i?'L':'M')+xs(x).toFixed(1)+','+Math.max(0,Math.min(c.H,Y(Math.max(.01,f1(x))))).toFixed(1)).join(''),fill:'none',stroke:css('accent'),'stroke-width':2.5},c.g);
     txt(c.g,8,14,`${log?'Exponential':'Linear'} fit · R² = ${r2.toFixed(2)} · n = ${pts.length}`,{class:'lbl'})};
-  $('#scx').onchange=sc;$('#scy').onchange=sc;sc()},
+  $('#scx').onchange=sc;$('#scy').onchange=sc;sc();
+  // playthroughs: my score vs. normalized playthroughs, exponential fit
+  scoreLegend('#ptleg');
+  const ptPts=G.filter(g=>g.ms!=null&&g.npt>0).map(g=>({g,x:g.ms,y:g.npt}));
+  const pc=canvas('#ptscatter',1000,320,{t:10,r:14,b:38,l:50}),pxs=lin(1,10,0,pc.W);
+  const pymax=Math.max(...ptPts.map(p=>p.y)),pymin=Math.min(.05,...ptPts.map(p=>p.y));
+  const pys=lin(Math.log10(pymin),Math.log10(pymax*1.2),pc.H,0),PY=v=>pys(Math.log10(v));
+  [.1,.5,1,5,10,20].filter(v=>v<=pymax*1.2).forEach(v=>{mk('line',{class:'gridline',x1:0,x2:pc.W,y1:PY(v),y2:PY(v)},pc.g);txt(pc.g,-6,PY(v)+4,fmt(v,v<1?1:0),{'text-anchor':'end'})});
+  niceTicks(1,10,9).forEach(t_=>txt(pc.g,pxs(t_),pc.H+16,t_,{'text-anchor':'middle'}));txt(pc.g,pc.W/2,pc.H+34,'My score',{'text-anchor':'middle'});
+  ptPts.forEach((p,i)=>{const k_=mk('circle',{cx:pxs(p.x)+(((i*7919)%100)/100-.5)*6,cy:PY(p.y),r:3.2,fill:css('line'),'fill-opacity':.55},pc.g);tip(k_,`<b>${esc(p.g.t)}</b><br>score ${p.x} · ${fmt(p.y,2)} normalized playthroughs`)});
+  {const X=ptPts.map(p=>p.x),Yv=ptPts.map(p=>Math.log(p.y)),mx_=mean(X),my_=mean(Yv);let sxy=0,sxx=0,syy=0;X.forEach((x,i)=>{sxy+=(x-mx_)*(Yv[i]-my_);sxx+=(x-mx_)**2;syy+=(Yv[i]-my_)**2});
+   const b=sxy/sxx,a=my_-b*mx_,r2=sxy*sxy/(sxx*syy);
+   const xsPts=Array.from({length:41},(_,i)=>1+i*.225);mk('path',{d:xsPts.map((x,i)=>(i?'L':'M')+pxs(x).toFixed(1)+','+PY(Math.exp(a+b*x)).toFixed(1)).join(''),fill:'none',stroke:css('accent'),'stroke-width':2.5},pc.g);
+   txt(pc.g,8,14,`Exponential fit · R² = ${r2.toFixed(2)} · n = ${ptPts.length}`,{class:'lbl'})}
+  const PT_EDGES=[0,1,2,3,4,5,10,15,100];
+  {const {labels,counts}=bucketCounts(G.filter(g=>g.ms!=null).map(g=>[g.ms,g.plt]),PT_EDGES);scoreStack('#ptbucket',labels,counts,{w:480,h:260})}
+  {const {labels,counts}=bucketCounts(G.filter(g=>g.ms!=null).map(g=>[g.ms,g.npt]),PT_EDGES);scoreStack('#nptbucket',labels,counts,{w:480,h:260})}},
 games(){
   const fg=$('#fg'),fs=$('#fs');fg.innerHTML='<option value="">All genres</option>'+GENRES.map(g=>`<option>${g}</option>`).join('');fs.innerHTML='<option value="">All systems</option>'+SYSTEMS.map(g=>`<option>${g}</option>`).join('');
   const cols=[['t','Title'],['s','Series'],['genre','Genre'],['view','View'],['rel','Released'],['ms','My'],['mc','Meta'],['hrs','Hours'],['fp','First played'],['lp','Last played'],['sys','Systems']];
@@ -433,6 +538,56 @@ function soundtrack(){
   yAxis(c2,y2,[0,20,40,60,80,100]);
   names.forEach((n,i)=>{[[O.scores[n],css('accent'),'Owned'],[N.scores[n],GR,'Not owned']].forEach(([v,col,nm],j)=>{if(v==null)return;const r=mk('rect',{x:i*bw2+bw2*.1+j*bw2*.4,y:y2(v),width:bw2*.4,height:c2.H-y2(v),fill:col},c2.g);tip(r,`<b>${nm}</b> · ${n}: ${fmt(v,1)}`);txt(c2.g,i*bw2+bw2*.3+j*bw2*.4,y2(v)-3,fmt(v),{'text-anchor':'middle'})});txt(c2.g,i*bw2+bw2/2,c2.H+16,n,{'text-anchor':'middle'})});
   donut('#sgames',O.games,N.games,v=>fmt(v),['Owned','Not owned']);donut('#shours',O.hours,N.hours,v=>fmt(v),['Owned','Not owned'])}
+
+/* ---------- Statistics tab ---------- */
+const HM_SRC=[['My Score','ms',1],['Metacritic','mc',10],['PC Gamer','pg',10],['GameSpot','gs',1],['IGN','ign',1],['Game Informer','gi',1],['Destructoid','des',1]];
+const r9=v=>Math.round(v*1e9)/1e9;
+// Same bins as data.heatmap(): steps are in raw units (step x scale); the top bin on each axis is the exact maximum.
+function heatCompute(yk,xk,yi,xi){
+  const ys=HM_SRC.find(s=>s[1]===yk)[2],xs=HM_SRC.find(s=>s[1]===xk)[2],nx=Math.round(10/xi)+1,ny=Math.round(10/yi)+1;
+  const grid=Array.from({length:ny},()=>Array(nx).fill(0)),cells={};let n=0,sx=0,sy=0,sxx=0,syy=0,sxy=0;
+  G.forEach(g=>{const x=g[xk],y=g[yk];if(x==null||y==null)return;
+    n++;sx+=x;sy+=y;sxx+=x*x;syy+=y*y;sxy+=x*y;
+    const j=Math.min(nx-1,Math.floor(r9(x)/(xi*xs)+1e-9)),i=ny-1-Math.min(ny-1,Math.floor(r9(y)/(yi*ys)+1e-9));
+    if(j<0||i<0||i>ny-1)return;grid[i][j]++;(cells[i+','+j]??=[]).push(g)});
+  const den=n*sxx-sx*sx,slope=den?(n*sxy-sx*sy)/den:NaN,inter=(sy-slope*sx)/n,rsq=den?Math.pow(n*sxy-sx*sy,2)/(den*(n*syy-sy*sy)):NaN;
+  return {grid,cells,n,slope,inter,rsq,nx,ny,xs,ys,xi,yi}}
+function drawHeat(){
+  const yk=$('#hmy').value,xk=$('#hmx').value,yi=+$('#hmyi').value,xi=+$('#hmxi').value,H=heatCompute(yk,xk,yi,xi);
+  const yn=HM_SRC.find(s=>s[1]===yk)[0],xn=HM_SRC.find(s=>s[1]===xk)[0];
+  $('#hmstat').innerHTML=`<b>${H.n}</b> games with both scores · R² <b>${H.rsq.toFixed(2)}</b> · ${esc(yn)} = <b>${H.slope.toFixed(2)}</b> × ${esc(xn)} + <b>${H.inter.toFixed(2)}</b> <span>(raw units)</span>`;
+  let mx=1;H.grid.forEach(r=>r.forEach(v=>mx=Math.max(mx,v)));
+  const col=v=>v?`color-mix(in srgb, #e8584f ${Math.round(14+76*Math.min(1,v/(mx*.7)))}%, var(--card))`:'transparent';
+  const xlab=j=>{const v=r9(j*xi);return Number.isInteger(v)?String(v):''},ylab=i=>{const v=r9(10-i*yi);return Number.isInteger(v)?String(v):''};
+  $('#hm').innerHTML=`<thead><tr><th class="ax">${esc(yn)} ↓ / ${esc(xn)} →</th>`+Array.from({length:H.nx},(_,j)=>`<th class="ax">${xlab(j)}</th>`).join('')+'</tr></thead><tbody>'+
+   H.grid.map((r,i)=>`<tr><th class="ax">${ylab(i)}</th>`+r.map((v,j)=>`<td class="${v?'c':''}" data-i="${i}" data-j="${j}" style="background:${col(v)}" title="${v} game${v===1?'':'s'}">${v||''}</td>`).join('')+'</tr>').join('')+'</tbody>';
+  $$('#hm td.c').forEach(td=>td.onclick=()=>{const gs=(H.cells[td.dataset.i+','+td.dataset.j]||[]).slice().sort((a,b)=>a.t.localeCompare(b.t));
+    $('#pbody').innerHTML=`<h3>${esc(yn)} ${fmt(r9(10-td.dataset.i*yi),2)} · ${esc(xn)} ${fmt(r9(td.dataset.j*xi),2)} (${gs.length})</h3><ul>`+gs.map(g=>`<li>${esc(g.t)} <span style="color:var(--muted)">· ${fmt(g[yk]/H.ys,2)} / ${fmt(g[xk]/H.xs,2)}</span></li>`).join('')+'</ul>';$('#panel').classList.add('open')})}
+// one renderer for every Stats table: opts.f(v,col,rowLabel) formats a cell, heat shades numbers, tri hides the upper triangle
+function statTable(id,opts={}){
+  const T=STATS[id],{f=(v)=>fmt(v,2),heat=false,tri=false,left=[],bold=[]}=opts,idxHead=opts.idx??'';
+  const body=T.columns.map((c,j)=>bold.includes(c)?[]:T.values.map(r=>r[j]).filter(v=>typeof v==='number')).flat(),mx=Math.max(1e-9,...body);
+  $('#s-'+id).innerHTML=`<thead><tr><th class="l">${esc(idxHead)}</th>`+T.columns.map(c=>`<th class="${left.includes(c)?'l':''}">${esc(c)}</th>`).join('')+'</tr></thead><tbody>'+
+   T.values.map((r,i)=>`<tr><td class="sys">${esc(T.index[i])}</td>`+r.map((v,j)=>{const c=T.columns[j];
+     if(tri&&j>i)return '<td></td>';
+     const bg=heat&&typeof v==='number'&&v>0&&!bold.includes(c)?` style="background:color-mix(in srgb, #e8584f ${Math.round(12+78*Math.min(1,v/(mx*.55)))}%, var(--card))"`:'';
+     return `<td class="${left.includes(c)?'l':''}${bold.includes(c)?' bd':''}"${bg}>${v==null?'':typeof v==='string'?esc(v):f(v,c,T.index[i])}</td>`}).join('')+'</tr>').join('')+'</tbody>'}
+BUILD.stats=function(){
+  const opts=HM_SRC.map(s=>`<option value="${s[1]}">${s[0]}</option>`).join('');
+  $('#hmy').innerHTML=opts;$('#hmx').innerHTML=opts;$('#hmy').value='gi';$('#hmx').value='ms';$('#hmyi').value='0.25';
+  ['#hmy','#hmx','#hmyi','#hmxi'].forEach(s=>$(s).onchange=drawHeat);drawHeat();
+  const pct=v=>fmt(v*100,1)+'%',n0=v=>fmt(v,0);
+  statTable('StatTable',{idx:'Statistic'});
+  statTable('CorrelationMatrix',{tri:true,idx:'Correlation'});
+  statTable('ScoreDistributionTable',{f:pct,heat:true,idx:'Score'});
+  statTable('YearsPerScore',{f:v=>fmt(v,1),idx:'My score'});
+  statTable('SoundtrackStats',{f:(v,c,r)=>r==='Hours'||r==='Games'?fmt(v,0):fmt(v,1),idx:'Soundtrack'});
+  statTable('SoundtrackDistributionTable',{f:pct,heat:true,idx:'Metacritic'});
+  statTable('ZeroPunctuationQualityBuckets',{f:(v,c)=>c.startsWith('Frequency')?pct(v):c==='Hours'?fmt(v,1):n0(v),idx:'Opinion'});
+  statTable('ZeroPunctuationDistribution',{f:n0,heat:true,idx:'My score'});
+  statTable('SeriesRankStats',{f:(v,c)=>c==='Hours'?fmt(v,2):n0(v),left:['Series'],idx:'Rank'});
+  statTable('SeriesRankTotalStats',{f:(v,c)=>c==='Hours'?fmt(v,2):n0(v)});
+  ['PlaythroughVsScoreBuckets','NormPlayVsScoreBuckets','ReleaseVsFirstBuckets','LastVsFirstBuckets'].forEach(id=>statTable(id,{f:n0,heat:true,bold:['Total'],idx:'Bucket'}))};
 
 function drawMatrix(){
   const dim=$('#mxdim').value;const cols=dim==='genre'?GENRES:dim==='view'?VIEWS:dim==='style'?STYLES:dim==='own'?OWN:RELT;

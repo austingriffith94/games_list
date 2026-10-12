@@ -14,6 +14,7 @@ COVERS = _a[0] if len(_a) > 0 else os.path.join(os.path.dirname(os.path.abspath(
 OUT = _a[1] if len(_a) > 1 else 'games_list_report.pdf'
 ORANGE, PURPLE, GREY, DARK = '#C55A11', '#8E5BD0', '#8C8C8C', '#222222'
 HEAT = LinearSegmentedColormap.from_list('h', ['#FFFFFF', '#FFE699', '#F4B183', '#E8584F'])
+RG = LinearSegmentedColormap.from_list('rg', ['#C0392B', '#F4B183', '#FFE699', '#A9D18E', '#538135'])
 plt.rcParams.update({'font.family': 'DejaVu Sans', 'font.size': 8, 'axes.spines.top': False,
                      'axes.spines.right': False, 'axes.edgecolor': '#999', 'axes.titleweight': 'bold',
                      'axes.titlesize': 9.5, 'pdf.fonttype': 42})
@@ -78,6 +79,61 @@ def heat_matrix(ax, m, title):
     for i, v in enumerate(m.iloc[:-1, -1]): ax.text(body.shape[1] - .35, i, int(v), ha='left', va='center', fontsize=7, fontweight='bold', color=DARK)
     ax.text(body.shape[1] - .35, body.shape[0] + .15, int(m.iloc[-1, -1]), ha='left', va='top', fontsize=7.5, fontweight='bold', color=ORANGE)
     pass
+
+
+def score_legend(fig, y=0.055):
+    fig.text(0.04, y + .003, 'My score:', fontsize=7, color=DARK, fontweight='bold')
+    for score in range(1, 11):
+        x = 0.115 + (score - 1) * 0.022
+        fig.patches.append(plt.Rectangle((x, y - .006), 0.018, 0.018, transform=fig.transFigure, fc=RG((score - 1) / 9)))
+        fig.text(x + .009, y + .003, str(score), ha='center', va='center', fontsize=5.5)
+
+
+def draw_table(fig, rect, df, title, fmt='{:.2f}', heat=False, idx_w=1.7, fs=6.8, skip=lambda i, j: False, bold_cols=(), left_cols=()):
+    """Plain grid table drawn as text (reads better on paper than ax.table). `fmt` is a format string, a callable,
+    or a {column: format} dict. heat=True shades numeric cells by value on the report's orange ramp."""
+    ax = fig.add_axes(rect); ax.axis('off')
+    nr, nc = df.shape
+    ax.set_xlim(0, idx_w + nc); ax.set_ylim(nr + 1, 0)
+    numeric = df.apply(pd.to_numeric, errors='coerce')
+    body = numeric.drop(columns=[c for c in bold_cols if c in numeric.columns])
+    hi = float(np.nanmax(body.values)) if heat and np.isfinite(body.values).any() else 1.0
+
+    def fmt_cell(c, v):
+        f = fmt.get(c, '{:.2f}') if isinstance(fmt, dict) else fmt
+        if pd.isna(v): return ''
+        if isinstance(v, str): return v
+        return f(v) if callable(f) else f.format(v)
+    ax.add_patch(plt.Rectangle((0, 0), idx_w + nc, 1, fc=ORANGE, zorder=0))
+    ax.text(.1, .5, str(df.index.name or ''), color='white', fontweight='bold', va='center', fontsize=fs)
+    for j, c in enumerate(df.columns):
+        ax.text(idx_w + j + (.08 if c in left_cols else .5), .5, str(c), color='white', ha='left' if c in left_cols else 'center', fontweight='bold', va='center', fontsize=fs)
+    for i in range(nr):
+        if i % 2 == 1: ax.add_patch(plt.Rectangle((0, i + 1), idx_w + nc, 1, fc='#F5F5F5', zorder=0))
+        ax.text(.1, i + 1.5, str(df.index[i]), va='center', fontsize=fs, fontweight='bold')
+        for j, c in enumerate(df.columns):
+            if skip(i, j): continue
+            v = df.iat[i, j]
+            if heat and pd.notna(numeric.iat[i, j]) and numeric.iat[i, j] > 0 and c not in bold_cols:
+                ax.add_patch(plt.Rectangle((idx_w + j, i + 1), 1, 1, fc=HEAT(min(1, numeric.iat[i, j] / (hi * .55))), zorder=0))
+            ax.text(idx_w + j + (.08 if isinstance(v, str) and c in left_cols else .5), i + 1.5, fmt_cell(c, v),
+                    ha='left' if isinstance(v, str) and c in left_cols else 'center', va='center', fontsize=fs,
+                    fontweight='bold' if c in bold_cols else 'normal')
+    ax.set_title(title, loc='left', fontsize=9)
+    return ax
+
+
+def score_bucket_bars(ax, g, value_col, edges, title):
+    """Bucketed value (x) as stacked bars, segments = my score 1-10 on a red->green ramp."""
+    m = D.bucket_matrix(g['my_score'], g[value_col], edges)   # rows score 1-10, cols buckets
+    bottom = np.zeros(len(m.columns))
+    for score in range(1, 11):
+        vals = m.loc[score].values.astype(float)
+        ax.bar(range(len(m.columns)), vals, bottom=bottom, color=RG((score - 1) / 9), width=.7)
+        bottom += vals
+    ax.set_xticks(range(len(m.columns))); ax.set_xticklabels(m.columns, fontsize=7)
+    ax.set_ylabel('Games'); ax.set_title(title, loc='left')
+    return m
 
 
 with PdfPages(OUT) as pdf:
@@ -260,28 +316,80 @@ with PdfPages(OUT) as pdf:
     cum_games = np.searchsorted(fp_all, s365.index.values, side='right')
     ax2 = ax.twinx(); ax2.spines['right'].set_visible(True)
     ax2.plot(s365.index, cum_games, color=PURPLE, lw=1.2); ax2.set_ylabel('Games (cumulative)', color=PURPLE); ax2.tick_params(axis='y', colors=PURPLE)
-    # weekday box + range + calendar
+    # weekday box + range (the calendar heat map moves to its own page, below, with full furniture)
     wd = s365.groupby(s365.index.weekday)
-    ax = fig.add_axes([0.06, 0.07, 0.19, 0.22])
+    ax = fig.add_axes([0.06, 0.07, 0.42, 0.22])
     ax.boxplot([v.values for _, v in wd], tick_labels=['M', 'T', 'W', 'T', 'F', 'S', 'S'], showfliers=False, patch_artist=True,
                boxprops=dict(facecolor='#F4B183', color=ORANGE), medianprops=dict(color=DARK))
     ax.plot(range(1, 8), [v.mean() for _, v in wd], 'o', color=PURPLE, ms=4); ax.set_title('Hours by weekday (dot = mean)', loc='left')
-    ax = fig.add_axes([0.29, 0.07, 0.19, 0.22])
+    ax = fig.add_axes([0.54, 0.07, 0.42, 0.22])
     wmeans = np.array([v.mean() for _, v in wd]); wstds = np.array([v.std() for _, v in wd])
     xs_wd = range(1, 8)
     ax.plot(xs_wd, wmeans, color=PURPLE, marker='o', ms=4)
     ax.fill_between(xs_wd, np.maximum(0, wmeans - wstds), wmeans + wstds, color=PURPLE, alpha=.22)
     ax.set_xticks(xs_wd); ax.set_xticklabels(['M', 'T', 'W', 'T', 'F', 'S', 'S']); ax.set_title('Weekday range (±1 SD)', loc='left')
-    ax = fig.add_axes([0.52, 0.07, 0.44, 0.22])
+    footer(fig, n); pdf.savefig(fig); plt.close(fig)
+
+    # ---------------- Page 7c: calendar heat map, with the workbook's original furniture
+    fig = plt.figure(figsize=(11, 8.5)); n += 1
+    header(fig, 'Calendar heat map', f'{start:%b %d, %Y} – {s365.index[-1]:%b %d, %Y}')
     first_monday = start - pd.Timedelta(days=start.weekday())
-    grid = np.full((7, ((s365.index[-1] - first_monday).days // 7) + 1), np.nan)
+    n_weeks = (s365.index[-1] - first_monday).days // 7 + 1
+    grid = np.full((7, n_weeks), np.nan)
     for d_, v in s365.items(): grid[d_.weekday(), (d_ - first_monday).days // 7] = v
-    ax.imshow(grid, cmap=HEAT, aspect='auto', vmin=0, vmax=max(4, np.nanpercentile(grid, 95)))
-    ax.set_yticks(range(7)); ax.set_yticklabels(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], fontsize=6.5)
-    ticks = [i for i in range(grid.shape[1]) if (first_monday + pd.Timedelta(weeks=i)).day <= 7]
-    ax.set_xticks(ticks); ax.set_xticklabels([(first_monday + pd.Timedelta(weeks=i)).strftime('%b') for i in ticks], fontsize=6.5)
-    ax.set_title('Calendar heat map', loc='left'); ax.tick_params(length=0)
-    for s_ in ax.spines.values(): s_.set_visible(False)
+    played = s365[s365 > 0]
+    stats = [('Max', played.max()), ('75%', played.quantile(.75)), ('Avg', played.mean()),
+              ('Median', played.median()), ('25%', played.quantile(.25)), ('Min', played.min())]
+    for i, (lbl, v) in enumerate(stats):
+        x = 0.06 + i * 0.145
+        fig.patches.append(plt.Rectangle((x, 0.13), 0.13, 0.08, transform=fig.transFigure, fc='#FBE5D6', ec=ORANGE, lw=.8))
+        fig.text(x + .065, 0.185, f'{v:.2f} h', ha='center', va='center', fontsize=11, fontweight='bold', color=ORANGE)
+        fig.text(x + .065, 0.148, lbl, ha='center', va='center', fontsize=7, color=DARK)
+    fig.text(0.06, 0.24, 'Hours played per day, over the last 365 days', fontsize=9, fontweight='bold', color=ORANGE)
+    GX0, GX1, GY0, GY1 = 0.18, 0.95, 0.42, 0.72
+    # 7-day rolling average sparkline, full width above the grid
+    axs = fig.add_axes([GX0, 0.80, GX1 - GX0, 0.1])
+    roll7 = s365.rolling(7, min_periods=1).mean()
+    axs.plot(s365.index, roll7.values, color=PURPLE, lw=1)
+    axs.fill_between(s365.index, 0, roll7.values, color=PURPLE, alpha=.15)
+    axs.set_xlim(s365.index[0], s365.index[-1]); axs.set_title('7-day rolling average', loc='left', fontsize=8)
+    axs.set_xticks([]); [s_.set_visible(False) for s_ in axs.spines.values()]
+    # day-of-week average mini bars, to the left of each grid row
+    dow_avg = [s365[s365.index.weekday == d].mean() for d in range(7)]
+    axd = fig.add_axes([0.03, GY0, GX0 - 0.03 - 0.01, GY1 - GY0])
+    DOW_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    axd.barh(range(7), dow_avg, color=ORANGE, height=.6); axd.set_ylim(6.5, -.5); axd.invert_xaxis(); axd.axis('off')
+    for i, v in enumerate(dow_avg):
+        axd.text(axd.get_xlim()[1], i, f'{DOW_NAMES[i]} {v:.1f}h  ', ha='right', va='center', fontsize=6, color='white', fontweight='bold')
+    # main grid: weekdays (rows) x weeks (columns)
+    axg = fig.add_axes([GX0, GY0, GX1 - GX0, GY1 - GY0])
+    vmax = max(4, np.nanpercentile(grid, 95))
+    axg.imshow(grid, cmap=HEAT, aspect='auto', vmin=0, vmax=vmax)
+    axg.set_yticks([])
+    axg.set_xticks(np.arange(-.5, n_weeks), minor=True); axg.set_yticks(np.arange(-.5, 7), minor=True)
+    axg.grid(which='minor', color='white', lw=.6); axg.tick_params(which='minor', length=0)
+    axg.set_xticks([]); axg.tick_params(length=0)
+    for s_ in axg.spines.values(): s_.set_visible(False)
+    # holiday marking: dashed border on any cell whose date is in lk_holidaystable
+    for d_ in s365.index:
+        if d_.strftime('%Y-%m-%d') in t['holidays']:
+            wk = (d_ - first_monday).days // 7
+            axg.add_patch(plt.Rectangle((wk - .5, d_.weekday() - .5), 1, 1, fill=False, ec=DARK, ls='--', lw=.8, zorder=5))
+    # month-boundary stair-step rule: a step wherever a new month's 1st falls
+    for d_ in pd.date_range(start.replace(day=1), s365.index[-1], freq='MS'):
+        if d_ < start: continue
+        wk, dow = (d_ - first_monday).days // 7, d_.weekday()
+        axg.plot([wk - .5, wk - .5], [-.5, dow - .5], color=DARK, lw=1.2, zorder=4)
+        axg.plot([wk - .5, wk + .5], [dow - .5, dow - .5], color=DARK, lw=1.2, zorder=4)
+        axg.plot([wk + .5, wk + .5], [dow - .5, 6.5], color=DARK, lw=1.2, zorder=4)
+    # weekly-average bar column, below the grid, one bar per week column
+    weekly_avg = [np.nanmean(grid[:, w]) if not np.all(np.isnan(grid[:, w])) else 0 for w in range(n_weeks)]
+    axw = fig.add_axes([GX0, GY0 - 0.09, GX1 - GX0, 0.07])
+    axw.bar(range(n_weeks), weekly_avg, color=ORANGE, width=.7); axw.set_xlim(-.5, n_weeks - .5); axw.axis('off')
+    # month labels along the bottom, under the weekly-average bars
+    week_starts = [first_monday + pd.Timedelta(weeks=i) for i in range(n_weeks)]
+    for i, w in enumerate(week_starts):
+        if w.day <= 7: fig.text(GX0 + (i / n_weeks) * (GX1 - GX0), GY0 - 0.095, w.strftime('%b'), fontsize=6.5, color=DARK, ha='left', va='top')
     footer(fig, n); pdf.savefig(fig); plt.close(fig)
 
     # ---------------- Page 7b: frequency of hours played
@@ -347,7 +455,6 @@ with PdfPages(OUT) as pdf:
     header(fig, 'Zero Punctuation vs. my score', 'My score band, grouped by ZP opinion — do I agree with the reviewer?')
     zp_order = ['Worst', 'Bad', 'Bland', 'Neutral', 'Good', 'Best']
     bands = [(1, 2), (3, 4), (5, 6), (7, 8), (9, 10)]
-    zp_cmap = LinearSegmentedColormap.from_list('rg', ['#C0392B', '#F4B183', '#FFE699', '#A9D18E', '#538135'])
     ax = fig.add_axes([0.1, 0.14, 0.8, 0.66])
     bottom = np.zeros(len(zp_order))
     for i, (lo, hi) in enumerate(bands):
@@ -355,10 +462,40 @@ with PdfPages(OUT) as pdf:
         for zp in zp_order:
             sub = g.loc[g['zero_punctuation'] == zp, 'my_score'].dropna()
             vals.append(float(((sub >= lo) & (sub <= hi)).sum() / len(sub) * 100) if len(sub) else 0.0)
-        ax.bar(zp_order, vals, bottom=bottom, color=zp_cmap(i / (len(bands) - 1)), label=f'{lo}-{hi}')
+        ax.bar(zp_order, vals, bottom=bottom, color=RG(i / (len(bands) - 1)), label=f'{lo}-{hi}')
         bottom += np.array(vals)
     ax.set_ylabel('% of games'); ax.legend(title='My score', frameon=False, fontsize=7, ncol=5, loc='upper center', bbox_to_anchor=(0.5, 1.14))
     footer(fig, n); pdf.savefig(fig); plt.close(fig)
+
+    # ---------------- Page 8d: playthroughs
+    fig = plt.figure(figsize=(11, 8.5)); n += 1
+    header(fig, 'Playthroughs', 'My score vs. how much of the game I played, raw and normalized by a full playthrough')
+    ax = fig.add_subplot(2, 1, 1)
+    p = g[g['Normalized Playthroughs'] > 0]
+    a, b, r2, xs, ys = D.regression(p['my_score'], p['Normalized Playthroughs'], log_y=True)
+    ax.scatter(xs + np.random.default_rng(2).uniform(-.18, .18, len(xs)), ys, s=9, color=DARK, alpha=.6)
+    xx = np.linspace(1, 10, 50); ax.plot(xx, np.exp(a + b * xx), color=ORANGE, lw=2)
+    ax.set_yscale('log'); ax.set_xlabel('My score'); ax.set_ylabel('Normalized playthroughs (log)')
+    ax.set_title(f'My score vs. normalized playthroughs · exponential fit R² = {r2:.2f}', loc='left')
+    PT_EDGES = D.PT_EDGES
+    ax = fig.add_subplot(2, 2, 3); score_bucket_bars(ax, g, 'playthroughs', PT_EDGES, 'My score vs. playthroughs')
+    ax.set_xlabel('Playthroughs')
+    ax = fig.add_subplot(2, 2, 4); score_bucket_bars(ax, g, 'Normalized Playthroughs', PT_EDGES, 'My score vs. normalized playthroughs')
+    ax.set_xlabel('Normalized playthroughs')
+    fig.tight_layout(rect=[0.02, 0.1, 0.98, 0.91]); score_legend(fig); footer(fig, n); pdf.savefig(fig); plt.close(fig)
+
+    # ---------------- Page 8e: year gaps
+    fig = plt.figure(figsize=(11, 8.5)); n += 1
+    header(fig, 'Year gaps', 'My score vs. release-to-first-played and first-to-last-played gaps, in years (stacked by my score)')
+    ax = fig.add_subplot(1, 2, 1)
+    score_bucket_bars(ax, g, 'Release Year vs First Played', D.REL_EDGES, 'Release → first played')
+    ax.set_xlabel('Years')
+    ax = fig.add_subplot(1, 2, 2)
+    # LastVsFirstBuckets: the workbook's own edges have a gap between 6 and 7 that silently drops 5 games -
+    # reproduced here with the gap closed (6 -> 6) rather than carrying the bug forward
+    score_bucket_bars(ax, g, 'First Played vs Last Played', D.LAST_EDGES, 'First played → last played')
+    ax.set_xlabel('Years')
+    fig.tight_layout(rect=[0.02, 0.1, 0.98, 0.91]); score_legend(fig); footer(fig, n); pdf.savefig(fig); plt.close(fig)
 
     # ---------------- Page 9: soundtrack ownership (the old workbook's "Game Statistics by Soundtrack Ownership")
     ST = D.soundtrack(g); OWN_C, NOT_C = ORANGE, GREY
@@ -384,6 +521,70 @@ with PdfPages(OUT) as pdf:
         ax.set_title(title, loc='center', fontsize=9)
     fig.text(0.5, 0.06, 'Orange = soundtrack owned   ·   Grey = not owned', ha='center', fontsize=8, color=GREY)
     fig.tight_layout(rect=[0.02, 0.08, 0.98, 0.91]); footer(fig, n); pdf.savefig(fig); plt.close(fig)
+
+    # ---------------- Page 10: HeatMapScore (REPORT_LOGIC.md section 2) - two of the workbook's dropdown pairings
+    fig = plt.figure(figsize=(11, 8.5)); n += 1
+    header(fig, 'Score heat map', 'How often each pair of scores occurs together; line = least-squares fit of the critic score on my score')
+    for k, (yn, yi, rect) in enumerate([('Game Informer', 0.25, [0.06, 0.1, 0.36, 0.76]), ('Metacritic', 0.5, [0.57, 0.1, 0.36, 0.76])]):
+        hm = D.heatmap(g, yn, 'My Score', yi, 1.0)
+        ax = fig.add_axes(rect); grid = hm['grid']
+        ax.imshow(grid, cmap=HEAT, vmin=0, vmax=max(1, grid.max() * .7), aspect='auto')
+        for (i, j), v in np.ndenumerate(grid):
+            if v: ax.text(j, i, int(v), ha='center', va='center', fontsize=6.5 if grid.shape[0] > 30 else 7.5)
+        ax.set_xticks(range(grid.shape[1])); ax.set_xticklabels(hm['x_labels'], fontsize=7)
+        yt = [i for i, l in enumerate(hm['y_labels']) if l]
+        ax.set_yticks(yt); ax.set_yticklabels([hm['y_labels'][i] for i in yt], fontsize=7)
+        ax.set_xticks(np.arange(-.5, grid.shape[1]), minor=True); ax.set_yticks(np.arange(-.5, grid.shape[0]), minor=True)
+        ax.grid(which='minor', color='white', lw=.6); ax.tick_params(which='minor', length=0)
+        for s_ in ax.spines.values(): s_.set_visible(False)
+        xs_line = np.array([hm['x_lows'][0], hm['x_lows'][-1]])
+        ys_line = hm['intercept'] + hm['slope'] * xs_line
+        ax.plot((xs_line - hm['x_lows'][0]) / (hm['x_int'] * hm['x_scale']),
+                (hm['y_lows'][0] - ys_line) / (hm['y_int'] * hm['y_scale']) + .5, color=PURPLE, lw=1.8)
+        ax.set_xlim(-.5, grid.shape[1] - .5); ax.set_ylim(grid.shape[0] - .5, -.5)
+        ax.set_xlabel('My score'); ax.set_ylabel(yn)
+        ax.set_title(f"{yn} vs. my score · n={hm['n']} · R² = {hm['rsq']:.2f} · y = {hm['slope']:.2f}x + {hm['intercept']:.2f}", loc='left', fontsize=8.5)
+    footer(fig, n); pdf.savefig(fig); plt.close(fig)
+
+    # ---------------- Pages 11-13: the Stats sheet tables (REPORT_LOGIC.md section 3.2), all from data.stats_tables()
+    ST_T = D.stats_tables(t, g, scale)
+    pct = '{:.1%}'.format
+    fig = plt.figure(figsize=(11, 8.5)); n += 1
+    header(fig, 'Statistics: scores', 'Each outlet in its own units (Metacritic and PC Gamer 0–100, the rest 0–10)')
+    draw_table(fig, [0.04, 0.68, 0.53, 0.2], ST_T['StatTable'].rename_axis('Statistic'), 'Distribution of each score source', fmt='{:.2f}', idx_w=1.5)
+    SHORT = {'My Score': 'Me', 'Metacritic': 'MC', 'GameSpot': 'GS', 'Game Informer': 'GI', 'IGN': 'IGN', 'Destructoid': 'Dest', 'PC Gamer': 'PCG'}
+    cm = ST_T['CorrelationMatrix'].rename_axis('Correlation'); cm.columns = [SHORT[c] for c in cm.columns]
+    draw_table(fig, [0.6, 0.68, 0.37, 0.2], cm, 'Correlation (lower triangle)', fmt='{:.2f}', fs=6.5, idx_w=2.4, skip=lambda i, j: j > i)
+    draw_table(fig, [0.04, 0.37, 0.42, 0.26], ST_T['ScoreDistributionTable'].rename_axis('Score'), 'Share of games per score band, (s-1, s]', fmt=pct, heat=True, idx_w=1.0, fs=6.5)
+    draw_table(fig, [0.48, 0.37, 0.48, 0.26], ST_T['YearsPerScore'].rename_axis('My score'), 'Average year per my score', fmt='{:.1f}')
+    sst = ST_T['SoundtrackStats'].astype(object).rename_axis('Soundtrack')
+    for lab in sst.columns:
+        sst[lab] = [f'{v:,.0f}' if k in ('Hours', 'Games') else f'{v:.1f}' for k, v in sst[lab].items()]
+    draw_table(fig, [0.04, 0.08, 0.3, 0.22], sst, 'Soundtrack ownership (scores 0–100)')
+    draw_table(fig, [0.42, 0.08, 0.2, 0.22], ST_T['SoundtrackDistributionTable'].rename_axis('Metacritic'), 'Metacritic band share', fmt=pct, heat=True)
+    footer(fig, n); pdf.savefig(fig); plt.close(fig)
+
+    fig = plt.figure(figsize=(11, 8.5)); n += 1
+    header(fig, 'Statistics: Zero Punctuation and series', 'Zero Punctuation opinion vs. my score and hours; the ten series with the most hours')
+    zq = ST_T['ZeroPunctuationQualityBuckets'].rename_axis('Opinion')
+    draw_table(fig, [0.04, 0.67, 0.56, 0.2], zq, 'Quality buckets (frequency uses different denominators)',
+               fmt={'Games': '{:.0f}', 'Games Played': '{:.0f}', 'Frequency': pct, 'Frequency Played': pct, 'Hours': '{:,.1f}'}, idx_w=1.0)
+    draw_table(fig, [0.68, 0.67, 0.29, 0.2], ST_T['ZeroPunctuationDistribution'].rename_axis('My score'), 'My score × opinion (games)', fmt='{:.0f}', heat=True)
+    sr_ = ST_T['SeriesRankStats'].rename_axis('Rank')
+    draw_table(fig, [0.04, 0.32, 0.6, 0.27], sr_, 'Top 10 series by hours',
+               fmt={'Series': '{}', 'Rank Equivalent': '{:.0f}', 'Games Owned': '{:.0f}', 'Games Played': '{:.0f}', 'Hours': '{:,.2f}'}, idx_w=0.8, left_cols=('Series',))
+    draw_table(fig, [0.04, 0.14, 0.4, 0.1], ST_T['SeriesRankTotalStats'].rename_axis(''), 'Top 10 vs. everything else',
+               fmt={'Games Owned': '{:.0f}', 'Games Played': '{:.0f}', 'Hours': '{:,.2f}'}, idx_w=2.2)
+    footer(fig, n); pdf.savefig(fig); plt.close(fig)
+
+    fig = plt.figure(figsize=(11, 8.5)); n += 1
+    header(fig, 'Statistics: score × playthroughs and year gaps', 'Games per bucket (rows) by my score (columns); the last column is the row total')
+    for (name, ttl, x0, y0) in [('PlaythroughVsScoreBuckets', 'Playthroughs', 0.04, 0.5), ('NormPlayVsScoreBuckets', 'Normalized playthroughs', 0.52, 0.5),
+                                ('ReleaseVsFirstBuckets', 'Release year → first played (years)', 0.04, 0.09),
+                                ('LastVsFirstBuckets', 'First played → last played (years)', 0.52, 0.09)]:
+        draw_table(fig, [x0, y0, 0.44, 0.33], ST_T[name].rename_axis('Bucket'), ttl, fmt='{:.0f}', heat=True, idx_w=1.5, bold_cols=('Total',))
+    fig.text(0.04, 0.045, 'A gap of exactly 6 years is counted in "6-9": the workbook\'s own buckets skipped it, silently dropping 5 games.', fontsize=7, color=GREY)
+    footer(fig, n); pdf.savefig(fig); plt.close(fig)
 
     # ---------------- Collage pages (only if covers present): landscape, 20 x 9 per page like the workbook.
     # Each page is composited into ONE small image first (PIL) - far smaller/faster than 180 separate figure images.

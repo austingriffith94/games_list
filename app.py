@@ -7,6 +7,7 @@ import argparse, csv, datetime as dt, glob, io, json, os, re, shutil, sqlite3, s
 from urllib.parse import quote
 from flask import Flask, g as G, jsonify, request, send_file, send_from_directory
 from PIL import Image
+import halo
 import schema
 
 BASE = os.path.dirname(os.path.abspath(__file__))
@@ -627,6 +628,76 @@ def put_top():
     return jsonify(ok=True)
 
 
+# ----------------------------------------------------------------------------- HaloRank
+def halo_levels():
+    return rows('SELECT * FROM halo_levels ORDER BY series_order, level_order, id')
+
+
+def clean_halo(d, old=None):
+    """Validate a HaloRank level. Ratings are all nine (0-5) or none at all (= unrated)."""
+    errs, out = {}, {}
+    level = str(d.get('level') or '').strip()
+    if not level: errs['level'] = 'Level name is required'
+    out['level'] = level
+    game = str(d.get('game') or '').strip()
+    if not game: errs['game'] = 'Game is required'
+    known = rows('SELECT game, MIN(series_order) AS so FROM halo_levels GROUP BY game')
+    hit = next((k for k in known if k['game'].lower() == game.lower()), None)
+    if hit:
+        out['game'], out['series_order'] = hit['game'], hit['so']
+    else:
+        out['game'] = game
+        out['series_order'] = (scalar('SELECT MAX(series_order) FROM halo_levels') or 0) + 1
+    if d.get('level_order') in (None, ''):
+        out['level_order'] = old['level_order'] if old and old['game'] == out['game'] else             (scalar('SELECT MAX(level_order) FROM halo_levels WHERE game=?', (out['game'],)) or 0) + 1
+    else:
+        out['level_order'] = _num(d.get('level_order'), 'level_order', errs, 1, 999, True)
+    vals = {c: _num(d.get(c), c, errs, halo.RATING_LO, halo.RATING_HI, True) for c in halo.RATING_COLS}
+    if not errs and 0 < sum(v is not None for v in vals.values()) < len(vals):
+        errs['ratings'] = 'Rate all nine categories, or leave them all blank for an unrated level'
+    out.update(vals)
+    note = d.get('notes')
+    out['notes'] = str(note).strip() or None if note is not None else None
+    if not errs and scalar('SELECT 1 FROM halo_levels WHERE game=? AND level=? AND id IS NOT ?', (out['game'], level, old['id'] if old else None)):
+        errs['level'] = f'{out["game"]} already has a level called {level}'
+    return out, errs
+
+
+@app.get('/api/halo')
+def get_halo():
+    weights, tiers = halo.load_scoring(con())
+    scored = halo.score_rows(halo_levels(), weights, tiers)
+    return jsonify(levels=scored, games=halo.game_summary(scored, tiers), weights=weights, labels=halo.RATING_LABELS,
+                   cols=halo.RATING_COLS, tiers=[{'tier': t[0], 'score': t[1], 'upper': t[2]} for t in tiers],
+                   range=[halo.RATING_LO, halo.RATING_HI])
+
+
+@app.post('/api/halo')
+def create_halo():
+    lvl, errs = clean_halo(request.get_json(force=True))
+    raise_if(errs)
+    lid = insert_row('halo_levels', lvl, f'Added HaloRank level {lvl["game"]}: {lvl["level"]}')
+    return jsonify(id=lid), 201
+
+
+@app.put('/api/halo/<int:lid>')
+def update_halo(lid):
+    old = get_row('halo_levels', lid)
+    if not old: raise ApiError('Level not found', 404)
+    lvl, errs = clean_halo({**old, **request.get_json(force=True)}, old)
+    raise_if(errs)
+    update_row('halo_levels', lid, lvl, f'Edited HaloRank level {lvl["game"]}: {lvl["level"]}')
+    return jsonify(id=lid)
+
+
+@app.delete('/api/halo/<int:lid>')
+def delete_halo(lid):
+    old = get_row('halo_levels', lid)
+    if not old: raise ApiError('Level not found', 404)
+    delete_row('halo_levels', lid, f'Deleted HaloRank level {old["game"]}: {old["level"]}')
+    return jsonify(ok=True)
+
+
 # ----------------------------------------------------------------------------- audit / undo
 @app.get('/api/audit')
 def get_audit():
@@ -744,7 +815,7 @@ def backup():
 def export():
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as z:
-        for t in ('games', 'releases', 'play_log', 'top_rank'):
+        for t in ('games', 'releases', 'play_log', 'top_rank', 'halo_levels'):
             cur = con().execute(f'SELECT * FROM {t} ORDER BY 1')
             s = io.StringIO(); w = csv.writer(s); w.writerow([c[0] for c in cur.description]); w.writerows(cur.fetchall())
             z.writestr(f'{t}.csv', s.getvalue())

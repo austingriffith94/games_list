@@ -72,5 +72,7 @@ for ws in wb.worksheets:
         print(name, len(data)); n += 1
 db.commit(); db.close()
 import schema
-schema.upgrade(dbp)   # constraints, reference tables, audit log
+schema.upgrade(dbp)   # constraints, reference tables, audit log, halo_levels
 print('schema v%d ready' % schema.VERSION)
+import import_halo
+print('halo_levels: %d imported, %d unrated' % import_halo.import_halo(src, dbp))

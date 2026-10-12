@@ -197,7 +197,7 @@ tab for the sake of 3 rows.
 
 ## Phase 3 — Blocked or larger
 
-### 3.1 HaloRank — build as an editable app tab, not a generated report
+### 3.1 HaloRank — DONE (HaloRank tab in app.py; `halo.py`, `halo_levels` table, schema v3; all-zero rows imported as unrated)
 **Scope decision (owner, Oct 2026):** HaloRank is a personal write-up the owner maintains by hand,
 not an analytical report. Build it as an **editable tab in `app.py` with a tier-list visualisation**,
 rather than a static page in `build_pdf.py`.
@@ -227,10 +227,10 @@ and land in tier F, indistinguishable from "rated terrible". An editable tab mak
 properly: treat all-zero as **unrated**, render it as an empty/"—" tier, and exclude it from the
 per-game averages. That also turns the tab into the thing that lets the owner fill them in.
 
-### 3.2 HeatMapScore
+### 3.2 HeatMapScore — DONE (`data.heatmap()`, PDF p19, interactive Statistics tab in the dashboard)
 `REPORT_LOGIC.md` §2 (parameters, bin edges, counts and fit). All inputs already in the DB.
 
-### 3.3 Stats sheet — fourteen tables
+### 3.3 Stats sheet — fourteen tables — DONE (`data.stats_tables()`, PDF p20-22, dashboard Statistics tab; checked by `tools/verify_rebuild.py`)
 `REPORT_LOGIC.md` §3.2. Needs the §3.1 derived columns from Phase 2. Note §4: the two out-of-range
 scores that distorted `StatTable` are already fixed, so these can now be built against clean inputs.
 

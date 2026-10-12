@@ -5,10 +5,11 @@
   renames it everywhere, and deleting something that is still referenced is refused
 * dropdown values live in ref_* tables (add a genre/system without touching code)
 * audit records every change made through the app so it can be undone
+* halo_levels (v3) holds the HaloRank level ratings; the score/tier columns are derived (halo.py), never stored
 """
 import sqlite3
 
-VERSION = 2
+VERSION = 3
 STYLE_ORDER = ['2D', '2.5D', '3D']
 SYSTEM_ORDER = ['PS1', 'PS2', 'PCSX2', 'PS4', 'PS5', 'Xbox', 'Xbox 360', 'Xbox One', 'Nintendo 64', 'Nintendo Gamecube',
                 'Nintendo Switch', 'Wii', 'Steam', 'GOG', 'Origin', 'EPIC', 'Battle.net', 'Prime Gaming', 'Windows',
@@ -86,6 +87,32 @@ CREATE TABLE audit(
 CREATE INDEX ix_audit_batch ON audit(batch);
 """
 
+HALO_DDL = """
+CREATE TABLE halo_levels(
+  id INTEGER PRIMARY KEY,
+  series_order INTEGER NOT NULL,
+  game TEXT NOT NULL COLLATE NOCASE,
+  level_order INTEGER NOT NULL,
+  level TEXT NOT NULL COLLATE NOCASE CHECK(length(trim(level)) > 0),
+  enemy INTEGER CHECK(enemy BETWEEN 0 AND 5),
+  weapon_vehicle INTEGER CHECK(weapon_vehicle BETWEEN 0 AND 5),
+  design_set_piece INTEGER CHECK(design_set_piece BETWEEN 0 AND 5),
+  replayability_pacing INTEGER CHECK(replayability_pacing BETWEEN 0 AND 5),
+  difficulty INTEGER CHECK(difficulty BETWEEN 0 AND 5),
+  visual INTEGER CHECK(visual BETWEEN 0 AND 5),
+  music INTEGER CHECK(music BETWEEN 0 AND 5),
+  story INTEGER CHECK(story BETWEEN 0 AND 5),
+  enjoyment INTEGER CHECK(enjoyment BETWEEN 0 AND 5),
+  notes TEXT,
+  UNIQUE(game, level),
+  CHECK((enemy IS NULL) = (weapon_vehicle IS NULL) AND (enemy IS NULL) = (design_set_piece IS NULL)
+    AND (enemy IS NULL) = (replayability_pacing IS NULL) AND (enemy IS NULL) = (difficulty IS NULL)
+    AND (enemy IS NULL) = (visual IS NULL) AND (enemy IS NULL) = (music IS NULL)
+    AND (enemy IS NULL) = (story IS NULL) AND (enemy IS NULL) = (enjoyment IS NULL))
+);
+CREATE INDEX ix_halo_game ON halo_levels(series_order, level_order);
+"""
+
 GAME_COLS = ['title', 'series', 'graphic_style', 'camera_view', 'genre', 'sub_genre', 'singleplayer', 'local_co_op',
              'online_co_op', 'local_multiplayer', 'online_multiplayer', 'my_score', 'metacritic', 'pc_gamer', 'gamespot',
              'ign', 'destructoid', 'game_informer', 'zero_punctuation', 'goty_votes', 'wikipedia_goat',
@@ -110,16 +137,29 @@ def _col(con, table):
 
 
 def upgrade(path):
-    """Upgrade a v1 database (plain tables copied from the workbook) to v2 in one transaction."""
+    """Upgrade a v1 (workbook copy) or v2 database to the current schema, each in one transaction."""
     con = sqlite3.connect(path, isolation_level=None)
-    if con.execute('PRAGMA user_version').fetchone()[0] >= VERSION:
+    ver = con.execute('PRAGMA user_version').fetchone()[0]
+    if ver >= VERSION:
         con.close(); return False
+    if ver == 2:                                     # v2 -> v3: add the HaloRank level table
+        try:
+            con.execute('BEGIN')
+            for stmt in HALO_DDL.split(';\n'):
+                if stmt.strip(): con.execute(stmt)
+            con.execute(f'PRAGMA user_version={VERSION}')
+            con.execute('COMMIT')
+        except Exception:
+            con.execute('ROLLBACK'); raise
+        finally:
+            con.close()
+        return True
     con.execute('PRAGMA foreign_keys=OFF')
     con.execute('BEGIN')
     try:
         for t in ('games', 'releases', 'play_log'):
             con.execute(f'ALTER TABLE {t} RENAME TO {t}_v1')
-        for stmt in DDL.split(';\n'):
+        for stmt in (DDL + HALO_DDL).split(';\n'):
             if stmt.strip(): con.execute(stmt)
         one = lambda t: [r[0] for r in con.execute(f'SELECT * FROM {t}')]
         ins = lambda t, rows: con.executemany(f'INSERT OR IGNORE INTO {t} VALUES ({",".join("?" * len(rows[0]))})', rows) if rows else None

@@ -87,6 +87,17 @@ dialog .btns{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
 .bars .bar{height:14px;background:var(--accent);border-radius:3px;min-width:2px}.bars .row span:last-child{text-align:right;font-variant-numeric:tabular-nums}
 .months{display:flex;align-items:flex-end;gap:2px;height:150px;overflow-x:auto}
 .months .m{flex:1 0 8px;background:var(--accent);border-radius:2px 2px 0 0;min-height:1px}.months .m:hover{background:var(--accent2)}
+.seg{display:inline-flex}.seg button{border-radius:0;margin-left:-1px}.seg button:first-child{border-radius:8px 0 0 8px;margin-left:0}.seg button:last-child{border-radius:0 8px 8px 0}.seg button.on{background:var(--accent);color:var(--accent-t);border-color:var(--accent)}
+.halohead{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}.halohead h2{margin:0 8px 0 0}
+.tierrow{display:grid;grid-template-columns:84px minmax(0,1fr);border:1px solid var(--grid);border-radius:10px;overflow:hidden;margin-bottom:6px;min-height:58px}
+.tierrow .tl{display:flex;flex-direction:column;align-items:center;justify-content:center;color:#222;font-weight:800;font-size:26px;line-height:1}.tierrow .tl small{font-size:10px;font-weight:600;opacity:.75;margin-top:3px}
+.tierrow .tc{display:flex;flex-wrap:wrap;gap:6px;padding:8px;align-content:flex-start;background:var(--bg)}
+.lv{--g:#999;border:1px solid var(--grid);border-left:5px solid var(--g);background:var(--card);border-radius:6px;padding:4px 9px;font-size:12.5px;cursor:pointer;display:inline-flex;gap:6px;align-items:baseline}
+.lv:hover,.lv:focus{border-color:var(--accent);border-left-color:var(--g);outline:none}.lv small{color:var(--muted);font-size:10.5px}
+.gkey{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin:2px 0 10px}.gkey i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+table.hg input.rt{width:46px;padding:3px 4px;text-align:center}table.hg input.nm{min-width:170px;padding:3px 6px}table.hg input.nt{min-width:150px;padding:3px 6px}
+table.hg td,table.hg th{padding:4px 4px}table.hg tr.inc input.rt:placeholder-shown{border-color:var(--warn)}table.hg td.sc{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.tp{display:inline-block;min-width:24px;text-align:center;border-radius:5px;padding:0 6px;font-weight:700;color:#222}
 .detail{display:flex;gap:16px;flex-wrap:wrap}.detail img{width:150px;aspect-ratio:2/3;object-fit:cover;border-radius:8px;flex:none}
 .detail .info{flex:1;min-width:220px}.detail .scs{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.detail .scs span{background:var(--bg);border-radius:8px;padding:2px 8px;font-size:12px}
 </style>
@@ -164,6 +175,22 @@ dialog .btns{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
   <div style="display:flex;gap:8px;margin-bottom:10px"><input id="topadd" list="gamelist" placeholder="Add a game…" style="flex:1;max-width:360px"><button id="topaddbtn">Add</button><button class="primary" id="topsave" disabled>Save order</button></div>
   <div id="toplist"></div>
  </div>
+</section>
+
+<!-- ======================= HALORANK ======================= -->
+<section class="tab" id="tab-halo">
+ <div class="card">
+  <div class="halohead"><h2>HaloRank</h2>
+   <select id="halogame"></select>
+   <span class="seg"><button type="button" id="halov-tier" class="on">Tier list</button><button type="button" id="halov-grid">Edit grid</button></span>
+   <button class="primary sm" id="haloadd">+ Level</button><span class="muted" id="halocount"></span></div>
+  <p class="muted" style="margin:0 0 8px" id="halonote"></p>
+  <div class="gkey" id="halokey"></div>
+  <div id="halotier"></div>
+  <div id="halogrid" hidden style="overflow:auto"><table class="hg" id="halotable"></table></div>
+ </div>
+ <div class="card"><h2>By game</h2><p class="muted" style="margin-top:0">Averages use rated levels only. Tier counts are how many levels landed in each tier.</p>
+  <div style="overflow:auto"><table id="halosum"></table></div></div>
 </section>
 
 <!-- ======================= GALLERY ======================= -->
@@ -260,7 +287,7 @@ async function refreshMeta(){META=await api('GET','/api/meta');$('#gamelist').in
 async function afterChange(){await refreshMeta();refreshBadge();const t=currentTab();if(TABS[t])TABS[t].show(true)}
 
 /* ---------- tabs / routing ---------- */
-const NAMES={log:'Log time',games:'Games',gallery:'Gallery',stats:'Stats',top:'Top list',checks:'Checks',history:'History',reports:'Reports'};
+const NAMES={log:'Log time',games:'Games',gallery:'Gallery',stats:'Stats',top:'Top list',halo:'HaloRank',checks:'Checks',history:'History',reports:'Reports'};
 const TABS={};
 $('#nav').innerHTML=Object.entries(NAMES).map(([k,n])=>`<a data-k="${k}" href="#${k}">${n}${k==='checks'?'<span class="badge" id="chkbadge" hidden></span>':''}</a>`).join('');
 const currentTab=()=>(location.hash.slice(1).split('/')[0]||'log');
@@ -472,6 +499,87 @@ $('#toplist').addEventListener('click',e=>{const d=e.target.dataset;const mv=(i,
   if(d.up!==undefined)mv(+d.up,+d.up-1);else if(d.dn!==undefined)mv(+d.dn,+d.dn+1);else if(d.rm!==undefined)TOP.list.splice(+d.rm,1);else return;TOP.dirty=true;renderTop()});
 $('#topaddbtn').onclick=()=>{const t=titleMatch($('#topadd').value);if(!t)return toast('Pick a game from the list',{err:1});if(TOP.list.includes(t.title))return toast('Already in the list',{err:1});TOP.list.push(t.title);$('#topadd').value='';TOP.dirty=true;renderTop()};
 $('#topsave').onclick=async()=>{try{const r=await api('PUT','/api/top',{titles:TOP.list});toast('Top list saved',{undo:r._batch});TOP.dirty=false;renderTop()}catch(e){toast(e.message,{err:1})}};
+
+/* ======================= HALORANK ======================= */
+const HALO={data:null,game:'',view:'tier'};
+const TIERCOL={S:'#ff7f7f',A:'#ffbf7f',B:'#ffdf7f',C:'#bfff7f',D:'#7fbfff',F:'#c9a0ff'};
+const RSHORT=['Enemy','Weapon','Set piece','Replay','Diff.','Visual','Music','Story','Enjoy'];
+const haloColor=so=>`hsl(${(so*47+10)%360} 62% 52%)`;
+const haloShort=g=>g.replace(/^Halo:? ?/,'')||g;
+// same arithmetic as halo.py: weights pair to columns by position; bands are upper-inclusive
+function haloVS(r){const D=HALO.data,v=D.cols.map(c=>r[c]);if(v.some(x=>x==null||x===''))return null;
+  return v.reduce((a,x,i)=>a+x*D.weights[i],0)/D.weights.reduce((a,b)=>a+b,0)}
+function haloTier(vs){if(vs==null)return null;const c=HALO.data.tiers.filter(t=>t.upper>=vs-1e-12);return c.length?c.reduce((a,b)=>a.upper<=b.upper?a:b).tier:null}
+const haloPill=t=>t?`<span class="tp" style="background:${TIERCOL[t]||'#ccc'}">${t}</span>`:'<span class="muted">—</span>';
+const haloRows=()=>HALO.data.levels.filter(r=>!HALO.game||r.game===HALO.game);
+TABS.halo={async show(){HALO.data=await api('GET','/api/halo');haloRender()}};
+function haloRender(){
+  const D=HALO.data,games=D.games.map(g=>g.game);if(HALO.game&&!games.includes(HALO.game))HALO.game='';
+  $('#halogame').innerHTML=`<option value="">All games</option>`+games.map(g=>`<option ${g===HALO.game?'selected':''}>${esc(g)}</option>`).join('');
+  const rows=haloRows(),unrated=rows.filter(r=>r.variable_score==null).length;
+  $('#halocount').textContent=`${rows.length} levels`+(unrated?` · ${unrated} unrated`:'');
+  $('#halonote').textContent=unrated?`${unrated} level${unrated>1?'s have':' has'} no ratings yet. Unrated levels have no tier and are left out of every average — fill in all nine ratings to place them.`:'Every level is rated.';
+  $('#halokey').innerHTML=HALO.game?'':D.games.map(g=>`<span><i style="background:${haloColor(g.series_order)}"></i>${esc(g.game)}</span>`).join('');
+  $('#halov-tier').classList.toggle('on',HALO.view==='tier');$('#halov-grid').classList.toggle('on',HALO.view==='grid');
+  $('#halotier').hidden=HALO.view!=='tier';$('#halogrid').hidden=HALO.view!=='grid';
+  HALO.view==='tier'?haloTierView():haloGridView();haloSummary()}
+function haloTierView(){
+  const D=HALO.data,rows=haloRows(),all=!HALO.game;
+  const chip=r=>`<span class="lv" tabindex="0" data-id="${r.id}" style="--g:${haloColor(r.series_order)}" title="${esc(r.game)} · ${esc(r.level)}${r.variable_score!=null?' · score '+fmt(r.variable_score,2):''}${r.notes?'\n'+esc(r.notes):''}">${esc(r.level)}${all?`<small>${esc(haloShort(r.game))}</small>`:''}</span>`;
+  const byScore=(a,b)=>(b.variable_score??0)-(a.variable_score??0)||a.series_order-b.series_order||a.level_order-b.level_order;
+  const out=D.tiers.map((t,i)=>{const lo=D.tiers[i+1]?.upper,items=rows.filter(r=>r.tier===t.tier).sort(byScore);
+    return `<div class="tierrow"><div class="tl" style="background:${TIERCOL[t.tier]||'#ccc'}">${t.tier}<small>${lo==null?'≤ '+t.upper:'> '+lo+' – '+t.upper}</small></div><div class="tc">${items.map(chip).join('')||'<span class="muted">nothing here</span>'}</div></div>`});
+  const un=rows.filter(r=>r.variable_score==null);
+  if(un.length)out.push(`<div class="tierrow"><div class="tl" style="background:var(--grid);color:var(--text)">—<small>unrated</small></div><div class="tc">${un.map(chip).join('')}</div></div>`);
+  $('#halotier').innerHTML=out.join('')}
+function haloGridView(){
+  const D=HALO.data,rows=haloRows();
+  $('#halotable').innerHTML=`<thead><tr><th>#</th><th>Game</th><th>Level</th>${RSHORT.map((n,i)=>`<th title="${esc(D.labels[i])} · weight ${D.weights[i]}">${n}</th>`).join('')}<th class="num">Score</th><th>Tier</th><th>Notes</th><th></th></tr></thead><tbody>`+
+   rows.map(r=>`<tr data-id="${r.id}"><td class="muted">${r.level_order}</td><td style="white-space:nowrap">${esc(r.game)}</td><td><input class="nm" data-k="level" value="${esc(r.level)}"></td>${D.cols.map(c=>`<td><input class="rt" type="number" min="${D.range[0]}" max="${D.range[1]}" step="1" data-k="${c}" value="${r[c]??''}"></td>`).join('')}<td class="sc" data-vs>${r.variable_score==null?'—':fmt(r.variable_score,2)}</td><td data-tier>${haloPill(r.tier)}</td><td><input class="nt" data-k="notes" value="${esc(r.notes||'')}"></td><td><button class="sm danger" data-del="${r.id}" title="Delete level">✕</button></td></tr>`).join('')+'</tbody>'}
+function haloSummary(){
+  const D=HALO.data,L=D.tiers.map(t=>t.tier);
+  $('#halosum').innerHTML=`<thead><tr><th>Game</th><th class="num">Levels</th><th class="num">Rated</th><th class="num">Avg score</th><th>Avg tier</th>${L.map(t=>`<th class="num" style="background:${TIERCOL[t]};color:#222">${t}</th>`).join('')}${RSHORT.map((n,i)=>`<th class="num" title="${esc(D.labels[i])}">${n}</th>`).join('')}</tr></thead><tbody>`+
+   D.games.map(g=>`<tr><td>${esc(g.game)}</td><td class="num">${g.levels}</td><td class="num">${g.rated}</td><td class="num">${g.avg_score==null?'—':fmt(g.avg_score,2)}</td><td>${haloPill(haloTier(g.avg_score))}</td>${L.map(t=>`<td class="num">${g.rated?g.tiers[t]||'·':''}</td>`).join('')}${D.cols.map(c=>`<td class="num">${g.ratings[c]==null?'—':fmt(g.ratings[c],2)}</td>`).join('')}</tr>`).join('')+'</tbody>'}
+async function haloReload(){HALO.data=await api('GET','/api/halo');
+  for(const r of HALO.data.levels){const tr=$(`#halotable tr[data-id="${r.id}"]`);if(!tr)continue;
+    $('[data-vs]',tr).textContent=r.variable_score==null?'—':fmt(r.variable_score,2);$('[data-tier]',tr).innerHTML=haloPill(r.tier)}
+  haloSummary()}
+async function haloSave(id,body){
+  try{const r=await api('PUT','/api/halo/'+id,body);toast('Saved',{undo:r._batch});await haloReload()}
+  catch(e){toast(e.message,{err:1});await haloReload();haloRender()}}
+const haloRowDraft=tr=>{const o={};$$('input.rt',tr).forEach(i=>o[i.dataset.k]=i.value.trim()===''?null:+i.value);return o};
+$('#halotable').addEventListener('input',e=>{const i=e.target;if(!i.classList.contains('rt'))return;
+  const tr=i.closest('tr'),d=haloRowDraft(tr),vals=Object.values(d),part=vals.some(v=>v==null)&&vals.some(v=>v!=null);
+  tr.classList.toggle('inc',part);const vs=haloVS(d);$('[data-vs]',tr).textContent=vs==null?'—':fmt(vs,2);$('[data-tier]',tr).innerHTML=haloPill(haloTier(vs))});
+$('#halotable').addEventListener('change',e=>{const i=e.target,tr=i.closest('tr'),id=+tr.dataset.id,k=i.dataset.k;if(!k)return;
+  if(k==='level'||k==='notes')return haloSave(id,{[k]:i.value});
+  const d=haloRowDraft(tr),vals=Object.values(d);
+  if(vals.some(v=>v!=null&&(!Number.isInteger(v)||v<0||v>5)))return toast('Ratings are whole numbers from 0 to 5',{err:1});
+  if(vals.some(v=>v==null)&&vals.some(v=>v!=null))return;           // half-filled row: wait until all nine are in
+  haloSave(id,d)});
+$('#halotable').addEventListener('click',async e=>{const id=e.target.dataset.del;if(!id)return;const r=HALO.data.levels.find(x=>x.id==id);
+  if(!await confirmBox('Delete level',`Delete <b>${esc(r.level)}</b> (${esc(r.game)})? You can undo this from History.`))return;
+  try{const x=await api('DELETE','/api/halo/'+id);toast('Level deleted',{undo:x._batch});await afterChange()}catch(x){toast(x.message,{err:1})}});
+function haloDialog(r){const D=HALO.data,games=D.games.map(g=>g.game),v=k=>esc(r?r[k]??'':'');
+  dialog(`<h2>${r?'Edit level':'Add level'}</h2><datalist id="halogames">${games.map(g=>`<option value="${esc(g)}">`).join('')}</datalist>
+   <div class="grid"><label data-f="game">Game<input name="game" list="halogames" value="${r?esc(r.game):esc(HALO.game)}" autocomplete="off"><span class="err"></span></label>
+   <label data-f="level" class="wide">Level<input name="level" value="${v('level')}" autocomplete="off"><span class="err"></span></label></div>
+   <h3>Ratings, 0–5 <span class="muted" style="text-transform:none">(all nine, or leave blank for unrated)</span></h3>
+   <div data-f="ratings"><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(105px,1fr))">${D.cols.map((c,i)=>`<label>${esc(D.labels[i])}<input type="number" min="${D.range[0]}" max="${D.range[1]}" step="1" name="${c}" value="${v(c)}"></label>`).join('')}</div><span class="err"></span></div>
+   <label data-f="notes" style="margin-top:8px">Notes<input name="notes" value="${v('notes')}"><span class="err"></span></label>
+   ${r?'<div style="margin-top:10px"><button type="button" class="link danger" id="halodel">Delete this level…</button></div>':''}`,
+   {ok:r?'Save changes':'Add level',wide:true,
+    onOpen:d=>{$('#halodel',d)?.addEventListener('click',async()=>{d.close();
+      if(!await confirmBox('Delete level',`Delete <b>${esc(r.level)}</b> (${esc(r.game)})? You can undo this from History.`))return;
+      try{const x=await api('DELETE','/api/halo/'+r.id);toast('Level deleted',{undo:x._batch});await afterChange()}catch(x){toast(x.message,{err:1})}})},
+    onOk:async d=>{const f=$('form',d).elements,body={game:f.game.value,level:f.level.value,notes:f.notes.value};D.cols.forEach(c=>body[c]=f[c].value);
+      const x=r?await api('PUT','/api/halo/'+r.id,body):await api('POST','/api/halo',body);
+      toast(r?'Level saved':'Level added',{undo:x._batch});await afterChange()}})}
+$('#halotier').addEventListener('click',e=>{const c=e.target.closest('.lv');if(c)haloDialog(HALO.data.levels.find(x=>x.id==c.dataset.id))});
+$('#halotier').addEventListener('keydown',e=>{const c=e.target.closest('.lv');if(c&&e.key==='Enter')haloDialog(HALO.data.levels.find(x=>x.id==c.dataset.id))});
+$('#haloadd').onclick=()=>haloDialog(null);
+$('#halogame').onchange=e=>{HALO.game=e.target.value;haloRender()};
+$('#halov-tier').onclick=()=>{HALO.view='tier';haloRender()};$('#halov-grid').onclick=()=>{HALO.view='grid';haloRender()};
 
 /* ======================= CHECKS ======================= */
 TABS.checks={async show(){const c=await api('GET','/api/checks');

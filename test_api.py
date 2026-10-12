@@ -111,11 +111,32 @@ print('   checks summary:', ck['summary'], {k: sum(1 for i in ck['items'] if i['
 wrc = [g for g in get('/api/games').get_json() if g['title'] == 'WRC 8'][0]; full = get(f'/api/games/{wrc["id"]}').get_json()['game']
 check(put(f'/api/games/{wrc["id"]}', full).status_code == 400, 'saving WRC 8 with IGN=84 is refused')
 check(put(f'/api/games/{wrc["id"]}', {**full, 'ign': 8.4}).status_code == 200, 'IGN corrected to 8.4')
+# --- HaloRank
+hr = get('/api/halo').get_json()
+check(len(hr['levels']) == 85 and len(hr['games']) == 8 and hr['weights'] == [5, 5, 5, 5, 2, 3, 2, 2, 5], 'halo levels, games, weights')
+lv = {x['level']: x for x in hr['levels'] if x['game'] == 'Halo: Combat Evolved'}
+check(abs(lv['The Pillar of Autumn']['variable_score'] - 4.088235294117647) < 1e-12 and lv['The Pillar of Autumn']['tier'] == 'A', 'halo score + tier match the workbook')
+check(lv['Halo']['tier'] == 'S' and abs(lv['Halo']['variable_score'] - 4.529411764705882) < 1e-12, 'upper-inclusive S band')
+check(sum(1 for x in hr['levels'] if x['variable_score'] is None) == 26 and all(x['tier'] is None for x in hr['levels'] if x['variable_score'] is None), '26 unrated levels have no tier')
+g5 = [g for g in hr['games'] if g['game'] == 'Halo 5: Guardians'][0]
+check(g5['rated'] == 0 and g5['avg_score'] is None and g5['levels'] == 12, 'unrated levels are excluded from averages')
+rated = {k: 5 for k in hr['cols']}
+check(post('/api/halo', {'game': 'Halo 5: Guardians', 'level': 'Test Level', 'enemy': 3}).status_code == 400, 'partly rated level refused')
+check(post('/api/halo', {'game': 'Halo 5: Guardians', 'level': 'Test Level', **{**rated, 'enemy': 6}}).status_code == 400, 'rating above 5 refused')
+r = post('/api/halo', {'game': 'halo 5: guardians', 'level': 'Test Level', **rated}); check(r.status_code == 201, 'add a halo level (game name any case)')
+new = [x for x in get('/api/halo').get_json()['levels'] if x['level'] == 'Test Level'][0]
+check(new['game'] == 'Halo 5: Guardians' and new['series_order'] == 7 and new['level_order'] == 13 and new['tier'] == 'S' and new['variable_score'] == 5, 'new level joins its game, scores S')
+check(post('/api/halo', {'game': 'Halo 5: Guardians', 'level': 'test level'}).status_code == 400, 'duplicate level name refused')
+check(put(f'/api/halo/{new["id"]}', {'enemy': 0, 'weapon_vehicle': 0, 'design_set_piece': 0, 'replayability_pacing': 0, 'difficulty': 0, 'visual': 0, 'music': 0, 'story': 0, 'enjoyment': 0}).status_code == 200, 'all-zero ratings are a real (F) rating')
+check([x for x in get('/api/halo').get_json()['levels'] if x['id'] == new['id']][0]['tier'] == 'F', 'rated 0 lands in F')
+check(put(f'/api/halo/{new["id"]}', {k: None for k in hr['cols']}).status_code == 200 and [x for x in get('/api/halo').get_json()['levels'] if x['id'] == new['id']][0]['tier'] is None, 'clearing ratings makes it unrated')
+r = delete(f'/api/halo/{new["id"]}'); check(r.status_code == 200 and len(get('/api/halo').get_json()['levels']) == 85, 'delete a halo level')
+check(post(f'/api/undo/{r.headers["X-Batch"]}').status_code == 200 and len(get('/api/halo').get_json()['levels']) == 86, 'undo restores the deleted halo level')
 # --- refs, backup, export
 check(post('/api/ref/system', {'name': 'Steam Deck', 'type': 'Handheld'}).status_code == 200 and 'Steam Deck' in [s['name'] for s in get('/api/meta').get_json()['systems']], 'add a new system')
 check(post('/api/ref/system', {'name': 'steam deck', 'type': 'PC'}).status_code == 409, 'duplicate system (any case) rejected')
 check(os.path.exists(post('/api/backup').get_json()['path']), 'backup created')
-z = zipfile.ZipFile(io.BytesIO(get('/api/export.zip').data)); check(set(z.namelist()) == {'games.csv', 'releases.csv', 'play_log.csv', 'top_rank.csv'}, 'export zip')
+z = zipfile.ZipFile(io.BytesIO(get('/api/export.zip').data)); check(set(z.namelist()) == {'games.csv', 'releases.csv', 'play_log.csv', 'top_rank.csv', 'halo_levels.csv'}, 'export zip')
 check(len(z.read('play_log.csv').decode().splitlines()) == counts()['play_log'] + 1, 'export has every log row plus header')
 print(f'ALL {ok} API CHECKS PASSED')
 shutil.rmtree(tmp)
