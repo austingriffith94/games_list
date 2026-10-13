@@ -83,6 +83,7 @@ dialog .btns{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
 .tile:hover,.tile:focus{transform:translateY(-3px);border-color:var(--accent);outline:none}
 .tile img,.tile .ph{width:100%;aspect-ratio:2/3;object-fit:cover;display:flex;align-items:center;justify-content:center;background:var(--grid);color:var(--muted);text-align:center;padding:8px;font-size:12px}
 .tile .meta{padding:6px 8px;font-size:12px}.tile .meta b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}
+.tile .tg{position:absolute;top:6px;left:6px;margin:0;background:#000b;color:#fff;border-color:#fff;line-height:16px}
 .tile .sc{position:absolute;top:6px;right:6px;background:#000b;color:#fff;border-radius:10px;padding:1px 7px;font-size:12px;font-weight:700}
 .bars .row{display:grid;grid-template-columns:minmax(80px,170px) minmax(0,1fr) 64px;gap:8px;align-items:center;padding:2px 0;font-size:13px}
 .bars .row span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -210,6 +211,7 @@ table.hg td,table.hg th{padding:4px 4px}table.hg tr.inc input.rt:placeholder-sho
    <select id="galgenre"></select><select id="galsystem"></select>
    <select id="galscore"><option value="">Any score</option><option value="9">My score 9+</option><option value="8">My score 8+</option><option value="7">My score 7+</option></select>
    <select id="galstatus"><option value="">All games</option><option value="played">Played</option><option value="unplayed">Not played yet</option></select>
+   <select id="galgoat"><option value="">GOAT or not</option><option value="1">Wikipedia GOAT only</option><option value="0">Not GOAT</option></select>
    <select id="galsort"><option value="title">Sort: Title</option><option value="my_score">My score</option><option value="metacritic">Metacritic</option><option value="hours">Hours played</option><option value="last_played">Last played</option><option value="year">Release year</option></select>
    <button class="sm" id="galdir" title="Reverse order">↑</button><span class="muted" id="galcount"></span>
   </div>
@@ -611,17 +613,17 @@ TABS.gallery={async show(force){
   renderGallery()}};
 function renderGallery(reset){
   if(reset)GAL.shown=60;
-  const q=$('#galsearch').value.toLowerCase(),gn=$('#galgenre').value,sy=$('#galsystem').value,sc=+$('#galscore').value,st=$('#galstatus').value,key=$('#galsort').value;
+  const q=$('#galsearch').value.toLowerCase(),gn=$('#galgenre').value,sy=$('#galsystem').value,sc=+$('#galscore').value,st=$('#galstatus').value,gt=$('#galgoat').value,key=$('#galsort').value;
   const rows=GAMES.list.filter(g=>(!q||g.title.toLowerCase().includes(q)||g.series.toLowerCase().includes(q))&&(!gn||g.genre===gn)
-    &&(!sy||(g.systems||'').split(', ').includes(sy))&&(!sc||g.my_score>=sc)&&(!st||(st==='played')===!!g.hours));
+    &&(!sy||(g.systems||'').split(', ').includes(sy))&&(!sc||g.my_score>=sc)&&(!st||(st==='played')===!!g.hours)&&(!gt||(gt==='1')===!!g.wikipedia_goat));
   const dir=GAL.desc?-1:1,desc=key!=='title'?-1:1;                  // numeric sorts default to highest first
   rows.sort((a,b)=>{const x=a[key],y=b[key];if(x==null&&y==null)return a.title.localeCompare(b.title);if(x==null)return 1;if(y==null)return -1;
     return (typeof x==='string'?x.localeCompare(y):x-y)*desc*dir||a.title.localeCompare(b.title)});
   $('#galcount').textContent=rows.length+' games';
-  $('#gallery').innerHTML=rows.slice(0,GAL.shown).map(g=>`<div class="tile" tabindex="0" data-id="${g.id}" title="${esc(g.title)}">${g.cover?`<img src="${g.cover}" loading="lazy" alt="">`:`<div class="ph">${esc(g.title)}</div>`}${g.my_score?`<span class="sc">${g.my_score}</span>`:''}
+  $('#gallery').innerHTML=rows.slice(0,GAL.shown).map(g=>`<div class="tile" tabindex="0" data-id="${g.id}" title="${esc(g.title)}">${g.cover?`<img src="${g.cover}" loading="lazy" alt="">`:`<div class="ph">${esc(g.title)}</div>`}${g.my_score?`<span class="sc">${g.my_score}</span>`:''}${g.wikipedia_goat?'<span class="goat tg" title="On the Wikipedia GOAT list">GOAT</span>':''}
     <div class="meta"><b>${esc(g.title)}</b><span class="muted">${g.year||''}${g.hours?' · '+fmt(g.hours,1)+' h':''}</span></div></div>`).join('');
   $('#galmore').hidden=rows.length<=GAL.shown;$('#galmore').textContent=`Show more (${rows.length-GAL.shown} left)`}
-['#galsearch','#galgenre','#galsystem','#galscore','#galstatus','#galsort'].forEach(s=>$(s).addEventListener(s==='#galsearch'?'input':'change',()=>renderGallery(true)));
+['#galsearch','#galgenre','#galsystem','#galscore','#galstatus','#galgoat','#galsort'].forEach(s=>$(s).addEventListener(s==='#galsearch'?'input':'change',()=>renderGallery(true)));
 $('#galdir').onclick=()=>{GAL.desc=!GAL.desc;$('#galdir').textContent=GAL.desc?'↓':'↑';renderGallery(true)};
 $('#galmore').onclick=()=>{GAL.shown+=60;renderGallery()};
 const openTile=async t=>{if(!t)return;const id=+t.dataset.id;
