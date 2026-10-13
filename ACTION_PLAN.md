@@ -7,17 +7,21 @@ Read with `PROJECT_CONTEXT.md` (project state) and `REPORT_LOGIC.md` (decoded wo
 The workbook-parity plan that came before this one is finished and archived in
 [`docs/archive/ACTION_PLAN_workbook_parity.md`](docs/archive/ACTION_PLAN_workbook_parity.md).
 
-## Status (Oct 12 2026)
+## Status (Oct 12 2026): all planned work done
+
+Everything in this plan is finished. Three optional items were left out on purpose and are not
+counted as open: 4.2 (Date Check false positives), the PDF cover-wall page under 5.5, and the
+Browser zoom / large font pass under "Still not reviewed".
 
 | Item | State |
 |---|---|
 | Phase 0: render-and-screenshot tool | Done |
-| Phase 1 (1.1-1.10): rendering, layout and contrast bugs | Done (1.1-1.10) |
-| Phase 2 (2.1-2.8): chart form and encoding | Done (2.1-2.8) |
+| Phase 1 (1.1-1.10): rendering, layout and contrast bugs | Done |
+| Phase 2 (2.1-2.8): chart form and encoding | Done |
 | Gate (G1-G3): finish the review before Phase 3 | Done (run after Phase 3; see findings below) |
 | Phase 3 (3.1-3.7): layout, polish, hygiene | Done |
-| Phase 4 (4.1-4.2): carried over from the parity plan | 4.1 done; 4.2 deferred (optional) |
-| Phase 5 (5.1-5.6): GOTY votes and Wikipedia GOAT | Done (5.5 PDF page skipped, optional); see results below |
+| Phase 4 (4.1-4.2): carried over from the parity plan | 4.1 done; 4.2 skipped (optional, not needed yet) |
+| Phase 5 (5.1-5.6): GOTY votes and Wikipedia GOAT | Done (5.5 PDF cover page skipped, optional); see results below |
 
 **Scope.** The entry app (`static/app.html`) is in good shape and only gets small items (3.4). Most
 of the work is in `dashboard.template.html`, plus a few real bugs in `build_pdf.py`.
@@ -316,7 +320,7 @@ values.
   buttons wrap cleanly. Dashboard at 390 px on Time played, Mosaic and All games: no overflow.
 - **G3:** the 5 longest titles (worst: *Dr. Langeskov, The Tiger, and The Terribly Cursed Emerald: A
   Whirlwind Heist*, 76 chars) render fully in the All games table and the detail panel (the panel's
-  `<h3>` wraps); the Gallery still truncates to "…" with no tooltip, as already known (not fixed here).
+  `<h3>` wraps); the Gallery tiles carry the full title as a `title` tooltip (checked Oct 12 2026, after Phase 5).
   Checked a backlog game (*A Plague Tale: Innocence*, no score/no playtime) in All games, the detail
   panel, Gallery and the Log time picker: All games and the Log time picker already show blanks
   correctly, but the **detail panel showed "0 h" for an unplayed game instead of a dash** — fixed
@@ -486,8 +490,8 @@ and wherever the PDF lists titles. Text or a small icon with a tooltip, not a co
 - **Where:** `data.goty_share` (+ a check in `test_data.py`), Canon tab in the dashboard, GOAT badge in
   the app Games list, the All games table, the detail panel and PDF p1. `tools/screenshot.py` now
   includes the `canon` tab.
-- **Not done:** the cover wall and Canon charts were checked at 1280 and 390 px, light and dark. 768/1024
-  and long-title cases (G1/G3) were not rerun for the new tab.
+- **Checked after:** the Canon tab at 768 px (no overflow, wall reflows, titles clamp to two lines); the app
+  badge no longer clips on long titles (title ellipsizes, badge stays); scatter labels nudge instead of dropping.
 
 ---
 

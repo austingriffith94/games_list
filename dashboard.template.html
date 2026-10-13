@@ -946,8 +946,10 @@ BUILD.canon=function(){
     // name the most voted and the most played, keeping labels off each other
     const named=new Set([...[...pts].sort((a,b)=>b.vs-a.vs).slice(0,4),...[...pts].sort((a,b)=>b.hrs-a.hrs).slice(0,3)]),placed=[];
     [...named].forEach(g=>{const px=X(g.vs),py=Y(g.hrs),right=px<c.W-150,lbl=g.t.length>26?g.t.slice(0,25)+'…':g.t,w=lbl.length*5.6,x0=right?px+7:px-7-w;
-      if(placed.some(b=>Math.abs(b[1]-py)<11&&x0<b[0]+b[2]&&x0+w>b[0]))return;placed.push([x0,py,w]);
-      txt(c.g,right?px+7:px-7,py+3,lbl,{'text-anchor':right?'start':'end',class:'lbl',style:'font-size:10px'})})};
+      // nudge a label up or down to clear its neighbours; give up (the dot still has a tooltip) only if every nudge collides
+      const ly=[0,-11,11,-22,22].map(d=>py+d).find(y=>!placed.some(b=>Math.abs(b[1]-y)<11&&x0<b[0]+b[2]&&x0+w>b[0]));
+      if(ly==null)return;placed.push([x0,ly,w]);
+      txt(c.g,right?px+7:px-7,ly+3,lbl,{'text-anchor':right?'start':'end',class:'lbl',style:'font-size:10px'})})};
   $('#gtsc').onchange=drawSc;drawSc();
 
   // rating split
