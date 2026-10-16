@@ -1,6 +1,6 @@
 # Games List Modernization: Context Handoff
 
-Paste this into a new chat (or attach it with `games_list_project.zip`) to continue the work.
+Project state and history for picking the work up again (e.g. pasted into a new chat). Architecture and file layout are in `README.md`.
 
 ## Goal
 Replace my Excel workbook `games_list.xlsm` (personal video-game tracking list with a time log, many charts and a macro-driven PDF export) so Excel is no longer required. I want two outputs:
@@ -11,14 +11,14 @@ They don't need to look identical. The HTML can be more interactive. A reliable 
 
 ## Architecture (approved)
 SQLite database + Python + generated reports + a local entry app.
-- `gamelist.db` is the source of truth (schema v3). Counts: 656 games, 783 releases (game x system), 2,717 play-log rows, 9,747.5 hours.
+- `gamelist.db` is the source of truth (schema v4). Counts: 656 games, 783 releases (game x system), 2,717 play-log rows, 9,747.5 hours.
 - `app.py` is a Flask app on 127.0.0.1. Tabs: Log time, Games, Top list, HaloRank, Gallery, Stats, Checks, History (undo), Reports.
-- `build_pdf.py` makes the PDF (matplotlib, Letter, 24 pages plus a cover collage).
+- `build_pdf.py` makes the PDF (matplotlib, Letter, 26 pages including the cover collage).
 - `build_html.py` + `dashboard.template.html` make a self-contained dashboard (vanilla JS, inline SVG, no CDN).
 - `data.py` replaces about 90K workbook formulas with pandas.
 - `gamelist.db` is now the master copy (the one-time workbook import was removed). `schema.py` documents the structure and holds upgrades (v4 dropped `play_log.real`).
-- Tests: `test_data.py` (derived numbers are internally consistent) and `test_api.py` (68 checks) pass cleanly on Windows. `test_e2e.py` (39 Playwright UI checks) is unresolved on Windows — see **Windows test status** below before touching it.
-- `REPORT_LOGIC.md` is a verified spec decoding the workbook's HaloRank, HeatMapScore and Stats sheet formulas (see **Reports decoded** below) — read it before rebuilding any of those reports.
+- Tests: `tests/test_data.py` (derived numbers are internally consistent) and `tests/test_api.py` pass cleanly on Windows. `tests/test_e2e.py` (39 Playwright UI checks) is unresolved on Windows — see **Windows test status** below before touching it.
+- `docs/REPORT_LOGIC.md` is a verified spec decoding the workbook's HaloRank, HeatMapScore and Stats sheet formulas (see **Reports decoded** below) — read it before rebuilding any of those reports.
 - Run: `pip install -r requirements.txt`, then `python app.py` (or `start_app.bat`).
 
 ## Data model notes
@@ -38,7 +38,7 @@ SQLite database + Python + generated reports + a local entry app.
     bucket. 209 of 656 games have one; the other 447 were never covered by Zero Punctuation.
   - `average_playthrough` — reference "how long to beat" for the game, not a mean of my own logged
     sessions (561 of 656 games have one; it's populated even where `playthroughs = 0` — see
-    `Normalized Playthroughs` in `REPORT_LOGIC.md` §3.1, which depends on this distinction).
+    `Normalized Playthroughs` in `docs/REPORT_LOGIC.md` §3.1, which depends on this distinction).
 - Cover images: filename = game title with `<>:"/\|?*` removed, `.jpg` or `.png`, 2:3 portrait. The covers live in `covers/` in the repo folder (git-ignored local cache; moved there from `D:\Pictures\Game List Covers` in Oct 2026).
 - Safety: Undo on every save, History tab, daily backup (30 kept), CSV/zip export.
 
@@ -49,7 +49,7 @@ against the values Excel itself had cached in the file — **~2,900 cells, zero 
 Full spec, including the exact tier bands, bin edges, bucket definitions, and several
 non-obvious gotchas (upper-inclusive tier bands, a real off-by-one gap in
 `LastVsFirstBuckets`, Excel's sample-corrected `SKEW`/`KURT`, `DATEDIF`'s `IFERROR(...,0)`
-swallowing data errors) is in **`REPORT_LOGIC.md`**. Re-runnable, dependency-free verification
+swallowing data errors) is in **`docs/REPORT_LOGIC.md`**. Re-runnable, dependency-free verification
 scripts are archived in `docs/archive/verify/`.
 
 **This also surfaced a real data problem:** the two out-of-range scores (WRC 8 IGN, Overwatch 2
@@ -63,8 +63,8 @@ windows (see `docs/archive/ACTION_PLAN_workbook_parity.md` 3.4). Soundtrack stat
 (`data.heatmap()`) and all fourteen Stats tables (`data.stats_tables()`), plus the Phase 1 and 2
 charts. `docs/archive/verify/verify_rebuild.py` diffed them against the workbook's cached values (ALL MATCH).
 The workbook-parity plan (including the Phase 4 HTML-only ideas) is finished and archived in
-`docs/archive/ACTION_PLAN_workbook_parity.md`. **What's next is in `ACTION_PLAN.md`:** UI and chart
-presentation fixes from the Oct 12 2026 rendered review.
+`docs/archive/ACTION_PLAN_workbook_parity.md`. The UI and chart plan that followed is finished and archived in `docs/archive/ACTION_PLAN_ui_charts.md`; its
+optional leftovers are listed there.
 
 ## Chart colour roles
 
@@ -98,11 +98,11 @@ The app now runs on Windows in a real conda env (`game1`, has pandas/numpy/matpl
 openpyxl/pillow/playwright — use this env, not bare `python`/`python3`, which are empty
 Microsoft Store stubs on this machine).
 
-- `test_data.py` — **passes.**
-- `test_api.py` — **passes, 53/53**, after one fix already applied: `counts()` left a sqlite
+- `tests/test_data.py` — **passes.**
+- `tests/test_api.py` — **passes**, after one fix already applied: `counts()` left a sqlite
   connection open, which only breaks cleanup on Windows (Windows keeps the file locked for
   `rmtree`; Linux doesn't care). Already fixed in the repo.
-- `test_e2e.py` — **unresolved.** Also had three hardcoded cloud-sandbox paths (now fixed: temp
+- `tests/test_e2e.py` — **unresolved.** Also had three hardcoded cloud-sandbox paths (now fixed: temp
   screenshots dir, `covers/` as upload fixtures, default Playwright chromium instead of
   `/opt/pw-browsers/chromium`), and one genuinely wrong assertion (also fixed: the "recent game"
   chip deterministically re-selects the game you just logged, so that step always produces an
@@ -132,8 +132,8 @@ Microsoft Store stubs on this machine).
 
 ## Suggested next step
 1. (done) the `Real` flag was removed.
-2. Get one clean, uninterrupted `test_e2e.py` run on Windows to actually know if it passes.
-3. Work through the UI and chart presentation plan in `ACTION_PLAN.md`,
-   re-running `test_data.py` and `test_api.py` after each change.
+2. Get one clean, uninterrupted `tests/test_e2e.py` run on Windows to actually know if it passes.
+3. (done) the UI and chart plan, archived in `docs/archive/ACTION_PLAN_ui_charts.md`;
+   keep re-running `tests/test_data.py` and `tests/test_api.py` after each change.
 4. I'll use the app for a week or two after that; tell the assistant which reports I actually
    use, and prioritize those for dashboard/PDF layout work.

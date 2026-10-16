@@ -39,12 +39,13 @@ Covers are cropped to 2:3 and downscaled in the PDF, so large originals are fine
 * The old workbook's time-log "Real" flag (estimated vs save-file time) was dropped in schema v4.
 
 ## Tests
-    python test_data.py     # internal consistency of the derived numbers
-    python test_api.py      # 68 checks on a scratch copy of the data
-    python test_e2e.py      # 39 checks driving the real UI in a headless browser (needs playwright)
+    python tests/test_data.py     # internal consistency of the derived numbers
+    python tests/test_api.py      # API checks on a scratch copy of the data
+    python tests/test_e2e.py      # browser-driven UI checks in a headless browser (needs playwright)
 
 (Excel ignores letter case in lookups; log rows that differed only by case, e.g. "Dirt Rally" vs "DiRT Rally", are corrected and listed in `data_fixes`.)
 
 ## Files
 app.py (server + API) · static/app.html (UI) · schema.py (constraints, upgrades) · data.py (derived metrics) ·
-build_html.py / build_pdf.py (reports) · dashboard.template.html · test_*.py
+halo.py (HaloRank scoring) · build_html.py / build_pdf.py (reports) · dashboard.template.html · tests/ · tools/screenshot.py (review screenshots) ·
+docs/ (REPORT_LOGIC.md = formula spec; archive/ = finished plans and one-time verify scripts) · PROJECT_CONTEXT.md (project state)

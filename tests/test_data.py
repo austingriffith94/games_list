@@ -1,5 +1,8 @@
 """Data sanity tests: internal consistency of the derived numbers. These hold however the data grows, so they
 do not break when you add games or log time (the old workbook-parity snapshot lives in docs/archive/verify)."""
+import os, sys
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, ROOT); os.chdir(ROOT)   # tests use root-relative paths (gamelist.db, app.py, covers/)
 import data as D
 
 t = D.load()

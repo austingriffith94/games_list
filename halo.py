@@ -1,4 +1,4 @@
-"""HaloRank scoring (REPORT_LOGIC.md section 1). Stdlib only, so app.py can use it without pandas.
+"""HaloRank scoring (docs/REPORT_LOGIC.md section 1). Stdlib only, so app.py can use it without pandas.
 
 A level has nine ratings (0-5). All nine NULL means the level is *unrated*: it has no score and no
 tier, and is left out of every average (the workbook scored these 0.0 and filed them under F).

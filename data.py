@@ -102,7 +102,7 @@ def summary(g, r, log, scale):
 
 
 def soundtrack(g):
-    """Stats split by Soundtrack Owned (REPORT_LOGIC.md SoundtrackStats / SoundtrackDistributionTable).
+    """Stats split by Soundtrack Owned (docs/REPORT_LOGIC.md SoundtrackStats / SoundtrackDistributionTable).
     Returns {1: {...}, 0: {...}}: games, hours, mean of each score source on 0-100, and the share of
     Metacritic scores in each 10-point band (lo < v <= hi, upper-inclusive)."""
     out = {}
@@ -170,7 +170,7 @@ def bucket_label(lo, hi, open_end=100):
 
 def bucket_matrix(score, value, edges):
     """Cross-tab: My Score 1-10 (rows) x bucketed value (cols), counted Start <= v < End
-    (REPORT_LOGIC.md §3.4). `edges` is a list of n+1 boundaries for n buckets."""
+    (docs/REPORT_LOGIC.md §3.4). `edges` is a list of n+1 boundaries for n buckets."""
     iv = pd.IntervalIndex.from_breaks(edges, closed='left')
     bins = pd.cut(value, edges, right=False)
     m = pd.crosstab(score, bins).reindex(index=range(1, 11), columns=iv, fill_value=0)
@@ -191,7 +191,7 @@ def regression(x, y, log_y=False):
     return a, b, r2, xs, ys
 
 
-# ----------------------------------------------------------------------------- HeatMapScore (REPORT_LOGIC.md section 2)
+# ----------------------------------------------------------------------------- HeatMapScore (docs/REPORT_LOGIC.md section 2)
 def heatmap(g, y_name='Game Informer', x_name='My Score', y_int=0.25, x_int=1.0, scale=None, vmax=10.0, vmin=0.0, display=1.0):
     """2-D binned count of one score source (Y) against another (X) plus the least-squares line of Y on X.
     Bins step in *raw* units (interval x scale) so a 0-100 source rescales automatically; a cell counts
@@ -223,7 +223,7 @@ def heatmap(g, y_name='Game Informer', x_name='My Score', y_int=0.25, x_int=1.0,
                 placed=int(grid.sum()))
 
 
-# ----------------------------------------------------------------------------- Stats sheet tables (REPORT_LOGIC.md section 3)
+# ----------------------------------------------------------------------------- Stats sheet tables (docs/REPORT_LOGIC.md section 3)
 PT_EDGES = [0, 1, 2, 3, 4, 5, 10, 15, 100]                 # Playthroughs and Normalized Playthroughs
 REL_EDGES = [0, 1, 2, 3, 4, 6, 10, 20, 100]                # Release Year vs First Played
 # The workbook's own last bucket edges are [.. 4,6) [7,10), which drops a gap of exactly 6 (5 games). Closed here.

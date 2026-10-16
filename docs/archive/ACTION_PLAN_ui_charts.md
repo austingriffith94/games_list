@@ -1,11 +1,13 @@
 # Action plan: UI and chart presentation
 
+> **Archived Oct 15 2026.** All planned work is done (see Status below). Kept as the record of what was built and why.
+
 Derived from a rendered review on Oct 12 2026: every dashboard tab in light, dark and phone width
 (390 px), all 26 PDF pages, and every entry-app tab. Line numbers are as of commit `c19376f`.
 
-Read with `PROJECT_CONTEXT.md` (project state) and `REPORT_LOGIC.md` (decoded workbook formulas).
+Read with [`PROJECT_CONTEXT.md`](../../PROJECT_CONTEXT.md) (project state) and `../REPORT_LOGIC.md` (decoded workbook formulas).
 The workbook-parity plan that came before this one is finished and archived in
-[`docs/archive/ACTION_PLAN_workbook_parity.md`](docs/archive/ACTION_PLAN_workbook_parity.md).
+[`ACTION_PLAN_workbook_parity.md`](ACTION_PLAN_workbook_parity.md).
 
 ## Status (Oct 12 2026): all planned work done
 
@@ -27,7 +29,7 @@ Browser zoom / large font pass under "Still not reviewed".
 of the work is in `dashboard.template.html`, plus a few real bugs in `build_pdf.py`.
 
 **Guard rails.** No item changes a value in the database or a number in a Statistics table, so
-`test_data.py` and `test_api.py` should keep passing unchanged. (The archived workbook verifiers no longer apply.) One thing can still
+`tests/test_data.py` and `tests/test_api.py` should keep passing unchanged. (The archived workbook verifiers no longer apply.) One thing can still
 trip them: `data.ZP_ORDER`, which the verifier uses to line up workbook rows (see 2.3), so leave it
 alone. The report window end date (see Decisions) does not affect the verifier, which feeds the
 workbook's own From/To dates into the same code (`docs/archive/verify/verify_rebuild.py:157`), but it does change
@@ -49,7 +51,7 @@ Use it after every item below.
 - Add `screenshots/` to `.gitignore` (it is not there yet).
 - Dependencies: PyMuPDF and Playwright are installed in the `game1` env but are not in
   `requirements.txt` (and the dashboard and PDF do not need them). Add a `requirements-dev.txt`
-  (`pymupdf`, `playwright`, then `playwright install chromium`) so the tool, and `test_e2e.py`, can
+  (`pymupdf`, `playwright`, then `playwright install chromium`) so the tool, and `tests/test_e2e.py`, can
   be set up on a fresh machine.
 - Run it from the `game1` env, not bare `python` (see `PROJECT_CONTEXT.md`).
 
@@ -359,7 +361,7 @@ front face (cover + caption) and let the back face scroll or use smaller type.
 ### 3.4 Entry app (small)
 - **Log time → Recent entries:** every row has a red-outlined Delete button, so the table reads as a
   column of warnings. Make Delete a neutral (grey) button that turns red on hover and focus. Do not
-  hide it until row hover: touch screens have no hover, and `test_e2e.py:61` clicks
+  hide it until row hover: touch screens have no hover, and `tests/test_e2e.py:61` clicks
   `#logtable button[data-del]` directly. Keep the `data-del` attribute and the confirm dialog.
 - **Phone width (390 px):** in *Recent entries* the Delete button is clipped at the right edge ("Delet")
   and dates wrap onto two lines. Let the table scroll inside its card, or stack each row, and keep the
@@ -387,7 +389,7 @@ After 1.4, re-check 390 px:
   out of the sticky area unless a filter is active.
 
 ### 3.6 Repo hygiene
-- Three screenshots from the unresolved `test_e2e.py` debugging are tracked in the repo root:
+- Three screenshots from the unresolved `tests/test_e2e.py` debugging are tracked in the repo root:
   `debug_after_click.png`, `debug_before_click.png`, `debug_timeout.png`. Delete them (`git rm`); the
   test already writes new screenshots to a temp folder.
 - Add `screenshots/` to `.gitignore` (see 0.1).
@@ -487,7 +489,7 @@ and wherever the PDF lists titles. Text or a small icon with a tooltip, not a co
   - `/api/games` did not return `wikipedia_goat`; it now does (no test needed changing).
   - The PDF lists titles only on p1 (Top 10), so the badge went there only. The PDF cover-wall page (5.5)
     was skipped: the dashboard wall covers it.
-- **Where:** `data.goty_share` (+ a check in `test_data.py`), Canon tab in the dashboard, GOAT badge in
+- **Where:** `data.goty_share` (+ a check in `tests/test_data.py`), Canon tab in the dashboard, GOAT badge in
   the app Games list, the All games table, the detail panel and PDF p1. `tools/screenshot.py` now
   includes the `canon` tab.
 - **Checked after:** the Canon tab at 768 px (no overflow, wall reflows, titles clamp to two lines); the app
@@ -506,8 +508,8 @@ and wherever the PDF lists titles. Text or a small icon with a tooltip, not a co
 4. **2.1, 2.2, 2.5 together for each page**, taking p15 as one change, then 2.3 and 2.4 (2.4 also fixes
    the heat ramp, so decide the palette first).
 5. The rest of Phase 2, then the **Gate** (G1-G3), then Phase 3, then Phase 4.
-6. After each step: rebuild both reports, screenshot, run `test_data.py` and `test_api.py`
-   (use the `game1` env). `test_e2e.py` is still unresolved on Windows (see
+6. After each step: rebuild both reports, screenshot, run `tests/test_data.py` and `tests/test_api.py`
+   (use the `game1` env). `tests/test_e2e.py` is still unresolved on Windows (see
    `PROJECT_CONTEXT.md`), so check the entry-app changes in 3.4 by hand until it is.
 7. **Phase 5:** 5.1 and 5.2 first (everything else reads the vote share), then 5.6 (small, touches
    all three outputs), then the Canon tab: 5.5, 5.4, 5.3.

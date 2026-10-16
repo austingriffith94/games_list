@@ -1,10 +1,13 @@
 """End-to-end UI test: runs the real server on a scratch copy of the data and drives it with a headless browser."""
+import os, sys
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, ROOT); os.chdir(ROOT)   # tests use root-relative paths (gamelist.db, app.py, covers/)
 import os, sys, shutil, sqlite3, subprocess, tempfile, time, json, urllib.request, urllib.error
 from urllib.parse import quote
 from playwright.sync_api import sync_playwright
 SC = os.path.join(tempfile.gettempdir(), 'games_list_e2e') + os.sep   # screenshots go here, not the repo
 os.makedirs(SC, exist_ok=True)
-S = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'covers') + os.sep   # real cover art as upload fixtures
+S = os.path.join(ROOT, 'covers') + os.sep   # real cover art as upload fixtures
 tmp = tempfile.mkdtemp(); db = os.path.join(tmp, 't.db'); cov = os.path.join(tmp, 'covers'); out = os.path.join(tmp, 'out')
 os.makedirs(cov); os.makedirs(out); shutil.copy('gamelist.db', db)
 _seed = sqlite3.connect(db)   # re-seed the two out-of-range scores the Checks flow below fixes through the UI,

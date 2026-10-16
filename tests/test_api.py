@@ -1,4 +1,7 @@
 """API tests against a scratch copy of the database (never touches gamelist.db)."""
+import os, sys
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, ROOT); os.chdir(ROOT)   # tests use root-relative paths (gamelist.db, app.py, covers/)
 import os, shutil, tempfile, io, json, zipfile, sqlite3
 import app as A
 

@@ -32,3 +32,6 @@ config.json
 
 # Review screenshots (tools/screenshot.py)
 screenshots/
+
+# Backups are full copies of gamelist.db (personal data; app.py keeps the last 30)
+backups/

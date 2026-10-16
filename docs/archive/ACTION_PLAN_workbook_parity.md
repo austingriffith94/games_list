@@ -1,13 +1,13 @@
 # Action plan: closing the gap with the old workbook PDF
 
 > **Archived Oct 12 2026.** Every phase below is built. The two leftovers (the dashboard half of 1.3
-> and the optional Phase 2b residuals) moved to the current [`ACTION_PLAN.md`](../../ACTION_PLAN.md).
+> and the optional Phase 2b residuals) moved to the current [`ACTION_PLAN_ui_charts.md`](ACTION_PLAN_ui_charts.md).
 > Kept as the record of what was built and why.
 
 Derived from a page-by-page review of `old_excel/games_list.pdf` (30 pages, exported Aug 9 2026)
 against the current `build_pdf.py` (9 content pages + collage) and `dashboard.template.html`.
 
-Read with `PROJECT_CONTEXT.md` (project state) and `REPORT_LOGIC.md` (decoded workbook formulas).
+Read with [`PROJECT_CONTEXT.md`](../../PROJECT_CONTEXT.md) (project state) and `docs/REPORT_LOGIC.md` (decoded workbook formulas).
 This file is the backlog; the other two are the spec.
 
 ## Status (Oct 12 2026)
@@ -131,7 +131,7 @@ readable — it shows the console→PC migration around 2015.
 
 ---
 
-## Phase 2 — Needs the derived columns from `REPORT_LOGIC.md` §3.1 — DONE
+## Phase 2 — Needs the derived columns from `docs/REPORT_LOGIC.md` §3.1 — DONE
 
 The four derived columns are in `data.build()`: `Hours Per Series Rank`, `Normalized Playthroughs`,
 and the two `DATEDIF` gap columns. 2.1-2.3 are built on them.
@@ -242,7 +242,7 @@ Work:
    filtered by game. This is the part the owner actually wants to look at.
 4. Optional: per-game summary (`HaloRankLetterScore` / `HaloRankNumberScore`) as a side panel.
 
-Formula rules from `REPORT_LOGIC.md` §1 that must survive the rebuild:
+Formula rules from `docs/REPORT_LOGIC.md` §1 that must survive the rebuild:
 - `SUMPRODUCT` pairs weights to columns **by position, not by name** — the weight labels and the
   master column names deliberately do not match. Never join on the label.
 - Tier bands are **upper-inclusive** (`(4.5,5] = S` ... `<=1 = F`). Naive `floor` binning gets
@@ -250,17 +250,17 @@ Formula rules from `REPORT_LOGIC.md` §1 that must survive the rebuild:
 - Scores above 5 yield `#N/A` in the workbook — decide what the tab shows instead.
 
 **Decided and shipped:** all-zero rows are imported as unrated and excluded from averages. The
-original open question (REPORT_LOGIC.md §1 "Data note"): Halo 5 (12 levels) and Halo Infinite (14 levels)
+original open question (../REPORT_LOGIC.md §1 "Data note"): Halo 5 (12 levels) and Halo Infinite (14 levels)
 have all nine ratings set to `0` — 26 of 85 rows are unrated placeholders that currently score 0.0
 and land in tier F, indistinguishable from "rated terrible". An editable tab makes this worth fixing
 properly: treat all-zero as **unrated**, render it as an empty/"—" tier, and exclude it from the
 per-game averages. That also turns the tab into the thing that lets the owner fill them in.
 
 ### 3.2 HeatMapScore — DONE (`data.heatmap()`, PDF p19, interactive Statistics tab in the dashboard)
-`REPORT_LOGIC.md` §2 (parameters, bin edges, counts and fit). All inputs already in the DB.
+`docs/REPORT_LOGIC.md` §2 (parameters, bin edges, counts and fit). All inputs already in the DB.
 
 ### 3.3 Stats sheet — fourteen tables — DONE (`data.stats_tables()`, PDF p20-22, dashboard Statistics tab; checked by `tools/verify_rebuild.py`)
-`REPORT_LOGIC.md` §3.2. Needs the §3.1 derived columns from Phase 2. Note §4: the two out-of-range
+`docs/REPORT_LOGIC.md` §3.2. Needs the §3.1 derived columns from Phase 2. Note §4: the two out-of-range
 scores that distorted `StatTable` are already fixed, so these can now be built against clean inputs.
 
 ### 3.4 Calendar Heat Map Comparison (old p7) — DONE

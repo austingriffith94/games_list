@@ -567,7 +567,7 @@ with PdfPages(OUT) as pdf:
         share_bar(fig, [0.06, 0.34 - k_ * 0.13, 0.6, 0.06], ST[1][key], ST[0][key], fmt_, title, labels=('soundtrack owned', 'not owned'), colors=(OWN_C, NOT_C))
     footer(fig, n); pdf.savefig(fig); plt.close(fig)
 
-    # ---------------- Page 10: HeatMapScore (REPORT_LOGIC.md section 2) - two of the workbook's dropdown pairings
+    # ---------------- Page 10: HeatMapScore (docs/REPORT_LOGIC.md section 2) - two of the workbook's dropdown pairings
     fig = plt.figure(figsize=(11, 8.5)); n += 1
     header(fig, 'Score heat map', 'Axes are on a 0–10 scale; the fit line y = mx + c is in raw units (Metacritic 0–100, other sources and my score 0–10)')
     for k, (yn, yi, rect) in enumerate([('Game Informer', 0.25, [0.06, 0.1, 0.36, 0.76]), ('Metacritic', 0.5, [0.57, 0.1, 0.36, 0.76])]):
@@ -592,7 +592,7 @@ with PdfPages(OUT) as pdf:
         ax.set_title(f"{yn} vs. my score · n={hm['n']} · R² = {hm['rsq']:.2f} · y = {hm['slope']:.2f}x + {hm['intercept']:.2f}", loc='left', fontsize=8.5)
     footer(fig, n); pdf.savefig(fig); plt.close(fig)
 
-    # ---------------- Pages 11-13: the Stats sheet tables (REPORT_LOGIC.md section 3.2), all from data.stats_tables()
+    # ---------------- Pages 11-13: the Stats sheet tables (docs/REPORT_LOGIC.md section 3.2), all from data.stats_tables()
     ST_T = D.stats_tables(t, g, scale)
     pct = '{:.1%}'.format
     fig = plt.figure(figsize=(11, 8.5)); n += 1
