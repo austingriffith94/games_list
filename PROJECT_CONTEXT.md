@@ -11,12 +11,20 @@ They don't need to look identical. The HTML can be more interactive. A reliable 
 
 ## Architecture (approved)
 SQLite database + Python + generated reports + a local entry app.
-- `gamelist.db` is the source of truth (schema v4). Counts: 656 games, 783 releases (game x system), 2,717 play-log rows, 9,747.5 hours.
-- `app.py` is a Flask app on 127.0.0.1. Tabs: Log time, Games, Top list, HaloRank, Gallery, Stats, Checks, History (undo), Reports.
+- `gamelist.db` is the source of truth (schema v6: v5 added `reviews`, `ref_tier` and `games.tier`; v6 gave `ref_tier` an id so tier edits are audited). Counts: 656 games, 783 releases (game x system), 2,717 play-log rows, 9,747.5 hours.
+- `app.py` is a Flask app on 127.0.0.1. Tabs: Log time, Games, Reviews, Top list, HaloRank, Gallery, Stats, Checks, History (undo), Reports.
 - `build_pdf.py` makes the PDF (matplotlib, Letter, 26 pages including the cover collage).
 - `build_html.py` + `dashboard.template.html` make a self-contained dashboard (vanilla JS, inline SVG, no CDN).
 - `data.py` replaces about 90K workbook formulas with pandas.
 - `gamelist.db` is now the master copy (the one-time workbook import was removed). `schema.py` documents the structure and holds upgrades (v4 dropped `play_log.real`).
+- Reviews (Oct 24 2026): write-ups live in `reviews` (one per game, draft/published, plain-text body - format in `reviews.py`).
+  The tier is a column on `games` (a `ref_tier` name; 11 tiers, Worstest to Masterpiece, seeded from the old page) but is
+  **deliberately only set from a review** - triggers refuse a tier on a game with no review. I don't want every game tiered yet.
+  Tiers are edited in the app (Reviews tab > Edit tiers; `PUT /api/tiers` saves the whole ordered list as one undo batch).
+  Tiers are an independent judgment, not derived from `my_score` (e.g. Round Peg 4s sit below Forgettable 5-6s).
+  `build_reviews.py` + `reviews.template.html` make `games_list_reviews.html` (layout follows my old hand-made reviews page,
+  plus a library details panel). The old page's 45 tier-only placements (no write-up) were intentionally not imported.
+  Undo now restores only the columns an edit changed, so undoing an old game edit can't wipe a later tier.
 - Tests: `tests/test_data.py` (derived numbers are internally consistent) and `tests/test_api.py` pass cleanly on Windows. `tests/test_e2e.py` (39 Playwright UI checks) is unresolved on Windows — see **Windows test status** below before touching it.
 - `docs/REPORT_LOGIC.md` is a verified spec decoding the workbook's HaloRank, HeatMapScore and Stats sheet formulas (see **Reports decoded** below) — read it before rebuilding any of those reports.
 - Run: `pip install -r requirements.txt`, then `python app.py` (or `start_app.bat`).

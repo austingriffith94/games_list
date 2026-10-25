@@ -36,13 +36,17 @@ sysmap = r.groupby('title')['system'].apply(lambda s: [x for x in D.SYSTEMS if x
 rank_of = dict(zip(t['top_rank']['title'], t['top_rank']['rank']))
 npt_of = dict(zip(g['title'], g['Normalized Playthroughs']))
 rgap_of = dict(zip(g['title'], g['Release Year vs First Played']))
+# one player-mode bucket per game: any versus mode wins, then any co-op, else single-player
+def mode(x):
+    on = lambda *k: any(num(getattr(x, c)) == 1 for c in k)
+    return 'Multiplayer' if on('local_multiplayer', 'online_multiplayer') else 'Co-op' if on('local_co_op', 'online_co_op') else 'Single-player'
 lgap_of = dict(zip(g['title'], g['First Played vs Last Played']))
 G = [dict(t=x.title, s=clean(x.series), genre=clean(x.genre), view=clean(x.camera_view), style=clean(x.graphic_style),
           so=int(x.soundtrack_owned or 0), ms=num(x.my_score), mc=num(x.metacritic), pg=num(x.pc_gamer), gs=num(x.gamespot), ign=num(x.ign),
           des=num(x.destructoid), gi=num(x.game_informer), zp=clean(x.zero_punctuation), hrs=num(x.hours),
           rel=num(x.release_year), ay=num(x.added_year), fp=clean(x.first_played), lp=clean(x.last_played),
           goat=int(x.wikipedia_goat or 0), gv=num(x.goty_votes), vs=num(x.goty_share),
-          rank=rank_of.get(x.title), sys=sysmap.get(x.title, []),
+          rank=rank_of.get(x.title), sys=sysmap.get(x.title, []), mode=mode(x),
           plt=num(x.playthroughs), npt=num(npt_of.get(x.title)), rgap=num(rgap_of.get(x.title)), lgap=num(lgap_of.get(x.title)))
      for x in g.itertuples()]
 R = [dict(t=x.title, sys=x.system, own=clean(x.ownership), rt=clean(x.release), hrs=num(x.hours), ay=num(x.added_year),

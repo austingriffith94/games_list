@@ -90,6 +90,10 @@ a.xf,span.xf{color:inherit;text-decoration:underline dotted var(--muted);text-un
 table.mx th.xf:hover,table.mx td.sys.xf:hover{color:var(--accent-ink)}table.mx .xon{color:var(--accent-ink);text-decoration:underline}
 .fnote{display:none;margin:0 0 12px;padding:8px 12px;border-radius:8px;background:var(--soft);font-size:12px}body.filtered .fnote{display:block}
 #tip{position:fixed;pointer-events:none;background:#000d;color:#fff;padding:6px 9px;border-radius:6px;font-size:12px;z-index:50;display:none;max-width:260px}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--grid);border-radius:8px;overflow:hidden;margin-bottom:8px}
+.seg button{border:0;border-radius:0;border-left:1px solid var(--grid);padding:4px 11px;font-size:12.5px}.seg button:first-child{border-left:0}
+.seg button span{color:var(--muted);font-size:11px;margin-left:3px}.seg button:hover{background:var(--hl)}
+.seg button[aria-pressed=true]{background:var(--accent-ink);color:var(--accent-t)}.seg button[aria-pressed=true] span{color:inherit;opacity:.8}
 .legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--muted);margin-bottom:4px}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
 #panel{position:fixed;right:0;top:0;bottom:0;width:min(380px,100%);background:var(--card);border-left:1px solid var(--grid);box-shadow:-4px 0 16px #0003;transform:translateX(100%);transition:transform .2s;z-index:20;padding:14px;overflow:auto}
@@ -162,8 +166,10 @@ table.mx th.xf:hover,table.mx td.sys.xf:hover{color:var(--accent-ink)}table.mx .
    <label title="Colour every year against the busiest day of any year, so frames are comparable while scrubbing"><input type="checkbox" id="calfix"> Same colour scale for all years</label>
    <label title="Stats are over days played unless this is on. The workbook counted every day."><input type="checkbox" class="calzero"> Include zero-hour days in stats</label></div>
    <div class="legend" id="calstats"></div><div id="calspark"></div><div id="cal"></div></div>
-  <div class="card"><h2>Per-game playtime timeline</h2><p class="note">One strip per game, from its first to its last log entry. Each mark is a day played (darker = more hours), so a short dense block is a binge and a long sparse strip is a game returned to over the years. Click a strip for details.</p>
-   <div class="row"><label>Sort by <select id="tlsort"><option value="first">First played</option><option value="span">Longest span</option><option value="hours">Most hours</option><option value="days">Most days played</option></select></label>
+  <div class="card"><h2>Per-game playtime timeline</h2><p class="note">One strip per game, from its first to its last log entry. Each mark is a day played (darker = more hours), so a short dense block is a binge and a long sparse strip is a game returned to over the years. The buttons pick a play pattern; grouped sections have headers you can click to filter the whole dashboard. Click a strip for details.</p>
+   <div class="seg" id="tlpat" role="group" aria-label="Play pattern"></div>
+   <div class="row"><label>Sort by <select id="tlsort"><option value="first">First played</option><option value="last">Last played</option><option value="hours">Most hours</option><option value="days">Most days played</option><option value="span">Longest span</option><option value="gap">Longest break</option><option value="score">My score</option><option value="rel">Release year</option></select></label>
+    <label>Group by <select id="tlgrp"><option value="">None</option><option value="series">Series</option><option value="genre">Genre</option><option value="system">Main system</option><option value="mode">Player mode</option><option value="pat">Play pattern</option><option value="fpy">Year first played</option></select></label>
     <label>Show <select id="tln"><option value="40">Top 40</option><option value="100">Top 100</option><option value="0">All</option></select></label><span class="note" id="tlcnt" style="margin:0"></span></div>
    <div class="tablewrap" style="max-height:640px"><div id="tl"></div></div></div>
   <div class="card"><h2>Calendar heat map comparison</h2><p class="note">The last 365 days and the same window in the three years before, all on one colour scale so the years compare directly.</p>
@@ -384,6 +390,7 @@ const DIMS={
   own:{name:'Ownership',g:g=>(relsOf.get(g.t)||[]).map(r=>r.own),r:r=>r.own},
   rt:{name:'Release type',g:g=>(relsOf.get(g.t)||[]).map(r=>r.rt),r:r=>r.rt},
   series:{name:'Series',g:g=>g.s},
+  mode:{name:'Player mode',g:g=>g.mode},
   zp:{name:'Zero Punctuation',g:g=>g.zp},
   ms:{name:'My score',g:g=>g.ms},
   rel:{name:'Released',g:g=>g.rel},
@@ -722,28 +729,72 @@ time(){
       if(+sl.value>=ascYrs.length-1){stop();return}goYear(+sl.value+1)},1300)};
   // ---- per-game timeline: a strip per game from first to last log entry, a mark per day played
   const dnum=d=>Date.parse(d+'T00:00:00Z')/864e5;
-  const tlGames=(()=>{const m=new Map();L.forEach(r=>{let e=m.get(r[1]);if(!e){e=new Map();m.set(r[1],e)}e.set(r[0],(e.get(r[0])||0)+r[3])});
-    return [...m].map(([t,days])=>{const ds=[...days.keys()].sort(),hrs=[...days.values()].reduce((a,b)=>a+b,0);
-      return {t,days:ds.map(d=>[dnum(d),days.get(d),d]),first:ds[0],last:ds[ds.length-1],n:ds.length,hrs,span:dnum(ds[ds.length-1])-dnum(ds[0])}})})();
+  /* play pattern from the gaps between play days. A game logged on only one or two days has no shape to read, so it is a
+     one-off and sits outside "All". Otherwise: sprint = every day inside a month, binge = never away over RUN_GAP days,
+     on and off = several runs but never away a full year, comeback = returned after a year or more */
+  const RUN_GAP=60,PAT=[['sprint','Sprint','3+ days played, all inside a month'],['binge','Binge','One run, never away more than two months'],
+    ['onoff','On and off','Several runs, never away a full year'],['back','Comeback','Came back after a year or more away'],
+    ['oneoff','One-off','Logged on only one or two days (left out of All)']];
+  const patName=k=>PAT.find(p=>p[0]===k)[1];
+  const tlGames=(()=>{const m=new Map(),sy=new Map();L.forEach(r=>{let e=m.get(r[1]);if(!e){e=new Map();m.set(r[1],e);sy.set(r[1],new Map())}
+      e.set(r[0],(e.get(r[0])||0)+r[3]);const s=sy.get(r[1]);s.set(r[2],(s.get(r[2])||0)+r[3])});
+    return [...m].map(([t,days])=>{const ds=[...days.keys()].sort(),hrs=[...days.values()].reduce((a,b)=>a+b,0),dn=ds.map(dnum);
+      const span=dn[dn.length-1]-dn[0],gap=Math.max(0,...dn.slice(1).map((d,i)=>d-dn[i]));
+      return {t,gg:gByTitle.get(t),days:ds.map((d,i)=>[dn[i],days.get(d),d]),first:ds[0],last:ds[ds.length-1],n:ds.length,hrs,span,gap,
+        sys:[...sy.get(t)].sort((a,b)=>b[1]-a[1])[0][0],pat:ds.length<=2?'oneoff':span<=30?'sprint':gap<=RUN_GAP?'binge':gap<365?'onoff':'back'}})})();
   const tlT0=dnum(firstLog),tlT1=dnum(iso(last));
-  const drawTl=()=>{const so=$('#tlsort').value,cap=+$('#tln').value;
-    const cmp={first:(a,b)=>a.first<b.first?-1:a.first>b.first?1:0,span:(a,b)=>b.span-a.span,hours:(a,b)=>b.hrs-a.hrs,days:(a,b)=>b.n-a.n}[so];
-    let gs=tlGames.slice().sort(cmp);if(cap)gs=gs.slice(0,cap);if(so!=='first'&&cap)gs.sort(cmp);
-    $('#tlcnt').textContent=`${gs.length} of ${tlGames.length} games`;
+  // missing values (unscored, no release year) sort last either way; ties go to the game with more hours
+  const by=(f,desc)=>(a,b)=>{const p=f(a),q=f(b);return (p==null)-(q==null)||(p==null?0:desc?q-p:p-q)||b.hrs-a.hrs};
+  const TLSORT={first:by(g=>g.days[0][0]),last:by(g=>g.days[g.n-1][0],1),hours:by(g=>g.hrs,1),days:by(g=>g.n,1),span:by(g=>g.span,1),
+    gap:by(g=>g.gap,1),score:by(g=>g.gg?.ms,1),rel:by(g=>g.gg?.rel)};
+  // k: a game's section; d: the dashboard filter a section header sets
+  const TLGRP={series:{k:g=>g.gg?.s,d:'series'},genre:{k:g=>g.gg?.genre,d:'genre'},system:{k:g=>g.sys,d:'system'},mode:{k:g=>g.gg?.mode,d:'mode'},
+    pat:{k:g=>patName(g.pat)},fpy:{k:g=>+g.first.slice(0,4),d:'fpy'}};
+  const pills=$('#tlpat');if(!PAT.some(p=>p[0]===pills.dataset.v))pills.dataset.v='';
+  const drawPills=()=>{const n=k=>tlGames.filter(g=>g.pat===k).length;
+    pills.innerHTML=[['','All','Every game played on 3 or more days',tlGames.length-n('oneoff')],...PAT.map(p=>[...p,n(p[0])])].map(([v,name,tt,c])=>
+      `<button data-v="${v}" title="${tt}" aria-pressed="${pills.dataset.v===v}">${name}<span>${c}</span></button>`).join('');
+    pills.querySelectorAll('button').forEach(b=>b.onclick=()=>{pills.dataset.v=b.dataset.v;drawPills();drawTl()})};
+  const drawTl=()=>{const pat=pills.dataset.v,gb=$('#tlgrp').value,cap=+$('#tln').value;
+    let gs=tlGames.filter(g=>pat?g.pat===pat:g.pat!=='oneoff').sort(TLSORT[$('#tlsort').value]);if(cap)gs=gs.slice(0,cap);
+    // sections in order of their first game under the current sort; single-game series fold into one Standalone section
+    let groups=[['',gs]];
+    if(gb){const m=new Map();gs.forEach(g=>{const k=TLGRP[gb].k(g)??'—';if(!m.has(k))m.set(k,[]);m.get(k).push(g)});groups=[...m];
+      if(gb==='fpy')groups.sort((a,b)=>a[0]-b[0]);
+      if(gb==='pat')groups.sort((a,b)=>PAT.findIndex(p=>p[1]===a[0])-PAT.findIndex(p=>p[1]===b[0]));
+      groups.sort((a,b)=>(a[0]==='—')-(b[0]==='—'));
+      if(gb==='series'){const solo=groups.filter(([k,a])=>a.length===1||k==='—').flatMap(([,a])=>a);
+        groups=groups.filter(([k,a])=>a.length>1&&k!=='—');if(solo.length)groups.push(['Standalone',solo])}}
+    $('#tlcnt').textContent=`${gs.length} of ${tlGames.length} games`+(gb?` in ${groups.length} section${groups.length===1?'':'s'}`:'');
     if(!gs.length){$('#tl').innerHTML='<p class="note">No logged play under this filter.</p>';return}
-    const RH=10,lw=190,c=canvas('#tl',1000,gs.length*RH+24,{t:18,r:10,b:6,l:lw},{fixed:true}),x=lin(tlT0,tlT1+1,0,c.W),dw=Math.max(1.4,c.W/(tlT1-tlT0+1));
+    const RH=10,HH=gb?18:0,H=gs.length*RH+groups.length*HH,lw=190,c=canvas('#tl',1000,H+24,{t:18,r:10,b:6,l:lw},{fixed:true}),x=lin(tlT0,tlT1+1,0,c.W),dw=Math.max(1.4,c.W/(tlT1-tlT0+1));
     let lastLbl=-99;
     for(let y=+firstLog.slice(0,4);y<=+iso(last).slice(0,4);y++){const px=x(Math.max(tlT0,dnum(y+'-01-01')));
-      mk('line',{class:'gridline',x1:px,x2:px,y1:-4,y2:gs.length*RH},c.g);if(px-lastLbl>=28){txt(c.g,px+2,-6,y,{style:'font-size:10px'});lastLbl=px}}
+      mk('line',{class:'gridline',x1:px,x2:px,y1:-4,y2:H},c.g);if(px-lastLbl>=28){txt(c.g,px+2,-6,y,{style:'font-size:10px'});lastLbl=px}}
     const hmax=Math.max(1,...gs.flatMap(g=>g.days.map(d=>d[1])));
-    gs.forEach((g,i)=>{const y=i*RH,row=mk('g',{class:'xf'},c.g);
-      mk('rect',{x:0,y,width:c.W,height:RH,fill:'transparent'},row);
-      mk('line',{x1:x(dnum(g.first)),x2:x(dnum(g.last)+1),y1:y+RH/2,y2:y+RH/2,stroke:css('muted'),'stroke-opacity':.4,'stroke-width':1},row);
-      g.days.forEach(d=>mk('rect',{x:x(d[0]),y:y+1.5,width:dw,height:RH-3,fill:css('accent'),'fill-opacity':(.3+.7*Math.sqrt(Math.min(1,d[1]/Math.min(hmax,6)))).toFixed(2)},row));
-      txt(row,-6,y+RH-2,g.t.length>30?g.t.slice(0,29)+'…':g.t,{'text-anchor':'end',class:'lbl',style:'font-size:8.5px'});
-      tip(row,`<b>${esc(g.t)}</b><br>${g.first} → ${g.last} (${fmt(g.span)} days)<br>${g.n} days played · ${fmt(g.hrs,1)} h`);
-      row.onclick=()=>{const gg=gByTitle.get(g.t);if(gg)gameCard(gg)}})};
-  $('#tlsort').onchange=drawTl;$('#tln').onchange=drawTl;drawTl()},
+    let y=0;
+    groups.forEach(([k,arr])=>{
+      if(gb){const hd=mk('g',{},c.g),d=TLGRP[gb].d,on=d?isOn(d,k):pat===arr[0].pat;
+        // the header band masks the year lines so each section reads as its own block
+        mk('rect',{x:-lw,y,width:c.W+lw,height:HH,fill:css('card')},hd);
+        mk('line',{x1:-lw,x2:c.W,y1:y+HH-2,y2:y+HH-2,stroke:css('grid')},hd);
+        const t=txt(hd,-lw+2,y+HH-6,'',{class:'lbl',style:'font-size:11px;font-weight:700'+(on?';fill:var(--accent-ink)':'')});
+        t.textContent=String(k).length>40?String(k).slice(0,39)+'…':k;
+        const s=mk('tspan',{style:'font-weight:400;font-size:10px',fill:css('muted')},t);
+        s.textContent=`  ${arr.length} ${arr.length===1?'game':'games'} · ${fmt(arr.reduce((a,g)=>a+g.hrs,0))} h`;
+        const clickable=gb==='pat'||(d&&k!=='—'&&k!=='Standalone');
+        if(clickable){hd.classList.add('xf');
+          tip(hd,on?`Click to clear the <b>${esc(k)}</b> filter`:`Click to show only <b>${esc(k)}</b>`+(gb==='pat'?'':' across the dashboard'));
+          hd.onclick=()=>{if(gb==='pat'){pills.dataset.v=on?'':arr[0].pat;drawPills();drawTl()}else setFilter(d,k)}}
+        y+=HH}
+      arr.forEach(g=>{const row=mk('g',{class:'xf'},c.g);
+        mk('rect',{x:0,y,width:c.W,height:RH,fill:'transparent'},row);
+        mk('line',{x1:x(dnum(g.first)),x2:x(dnum(g.last)+1),y1:y+RH/2,y2:y+RH/2,stroke:css('muted'),'stroke-opacity':.4,'stroke-width':1},row);
+        g.days.forEach(d=>mk('rect',{x:x(d[0]),y:y+1.5,width:dw,height:RH-3,fill:css('accent'),'fill-opacity':(.3+.7*Math.sqrt(Math.min(1,d[1]/Math.min(hmax,6)))).toFixed(2)},row));
+        txt(row,-6,y+RH-2,g.t.length>30?g.t.slice(0,29)+'…':g.t,{'text-anchor':'end',class:'lbl',style:'font-size:8.5px'});
+        tip(row,`<b>${esc(g.t)}</b><br>${g.first} → ${g.last} (${fmt(g.span)} days)<br>${g.n} days played · ${fmt(g.hrs,1)} h<br>${patName(g.pat)}`+(g.gap>RUN_GAP?` · longest break ${fmt(g.gap)} days`:'')+`<br>Mostly on ${esc(g.sys)}`);
+        row.onclick=()=>{if(g.gg)gameCard(g.gg)};y+=RH})})};
+  ['tlsort','tlgrp','tln'].forEach(id=>$('#'+id).onchange=drawTl);drawPills();drawTl()},
 mosaic(){
   const host=$('#mosaic'),els=new Map();
   const METRIC={score:{f:g=>g.ms,lo:1,hi:10,fmt:v=>fmt(v,0)},crit:{f:g=>g.crit,lo:40,hi:100,fmt:v=>fmt(v,0)},

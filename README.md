@@ -14,7 +14,8 @@ Options: `--covers covers` `--db gamelist.db` `--port 8765` (or set them in `con
 | **Top list** | Reorder your favourites; the first 10 feed the dashboard and PDF. |
 | **Checks** | The workbook's check columns (Data Filled, Year Check, Date Check, duplicates) plus score-range checks, listing anything already wrong in the data. |
 | **History** | Every change is recorded; **Undo** any of them. Backup now / CSV export. |
-| **Reports** | Rebuild the interactive dashboard and the printable PDF, then open them. |
+| **Reviews** | Write a review of any game in the library: pick its tier (worst to best), write paragraphs, add screenshots (button, paste or drop), see a live preview, publish. The tier is stored on the game and only set here. **Edit tiers** renames, reorders, adds and removes tiers and edits their descriptions (one Undo covers the whole edit; a tier can't be removed while a review is filed under it). **Build reviews page** makes the shareable `games_list_reviews.html`, which pulls each game's scores, hours, systems and so on into a details panel. |
+| **Reports** | Rebuild the interactive dashboard, the printable PDF and the reviews page, then open them. |
 
 Every save also offers an **Undo** button in its confirmation.
 
@@ -29,8 +30,14 @@ Images live in `covers/` next to `app.py`, which acts as the local cache (git-ig
 can't use removed (colons etc.) - the same rule the workbook used, e.g. `Fallout New Vegas.png`.
 Covers are cropped to 2:3 and downscaled in the PDF, so large originals are fine and the PDF stays small.
 
+## Review text format
+Plain text. A blank line starts a new paragraph. A figure is a line of its own: `![caption](file.jpg)`, or `![caption](file.jpg){small}`
+for a narrow in-column image. Images live in `review_images/` (git-ignored; `--review-images` or `review_images` in `config.json` to move it).
+The old standalone reviews page was imported once with `python tools/import_reviews.py "<file>.html"` (re-running skips games that already have a review).
+
 ## Reports without the app
     python build_html.py          # games_list_dashboard.html
+    python build_reviews.py       # games_list_reviews.html   (published reviews only)
     python build_pdf.py [covers]  # games_list_report.pdf   (--all includes unplayed games in the collage)
 
 ## Data notes
@@ -47,5 +54,6 @@ Covers are cropped to 2:3 and downscaled in the PDF, so large originals are fine
 
 ## Files
 app.py (server + API) · static/app.html (UI) · schema.py (constraints, upgrades) · data.py (derived metrics) ·
-halo.py (HaloRank scoring) · build_html.py / build_pdf.py (reports) · dashboard.template.html · tests/ · tools/screenshot.py (review screenshots) ·
+halo.py (HaloRank scoring) · reviews.py (review text format + reviews page data) · build_html.py / build_pdf.py / build_reviews.py (reports) ·
+dashboard.template.html · reviews.template.html · tools/import_reviews.py (one-time import of the old reviews page) · tests/ · tools/screenshot.py (review screenshots) ·
 docs/ (REPORT_LOGIC.md = formula spec; archive/ = finished plans and one-time verify scripts) · PROJECT_CONTEXT.md (project state)

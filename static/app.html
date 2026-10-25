@@ -109,6 +109,22 @@ table.hg td,table.hg th{padding:4px 4px}table.hg tr.inc input.rt:placeholder-sho
 #toplist{max-width:680px}.ord{padding:3px 0;gap:8px}.ord button{min-width:28px;min-height:28px;padding:2px 6px}
 .ord img,.ord .ph{width:36px}.ord{grid-template-columns:30px 36px minmax(0,1fr) auto}
 .repline{margin:2px 0}
+.rvtier{padding:8px 10px 4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);background:var(--bg);border-bottom:1px solid var(--grid);position:sticky;top:0;z-index:1}
+.rvhead{display:flex;gap:12px;align-items:center}.rvhead img{width:44px;aspect-ratio:2/3;object-fit:cover;border-radius:5px;flex:none}
+.rvbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0 8px}
+.rvpane{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.rvpane.write,.rvpane.preview{grid-template-columns:minmax(0,1fr)}.rvpane.write iframe,.rvpane.preview textarea{display:none}
+#rvbody{width:100%;height:72vh;resize:vertical;font:15px/1.65 Georgia,"Times New Roman",serif;padding:12px 14px}
+#rvbody.over{outline:2px dashed var(--accent);outline-offset:-2px}
+#rvprev{width:100%;height:72vh;border:1px solid var(--grid);border-radius:8px;background:var(--bg)}
+.tierdesc{display:block;font-size:12px;color:var(--muted);margin-top:5px;line-height:1.45;max-width:75ch}
+code{font-size:12px;background:var(--bg);padding:1px 4px;border-radius:4px}
+.te-list{max-height:60vh;overflow:auto;margin:8px -4px 0;padding:0 4px}
+.te{display:grid;grid-template-columns:26px minmax(0,1fr) 68px;gap:10px;padding:10px 0;border-bottom:1px solid var(--grid);align-items:start}
+.te .n{font-weight:700;color:var(--accent);text-align:center;padding-top:22px}
+.te textarea{width:100%;display:block;margin-top:3px;font-size:13px;resize:vertical}
+.te .b{display:flex;flex-direction:column;gap:4px;align-items:stretch;padding-top:16px}.te .b .cnt{font-size:11px;color:var(--muted);text-align:center}
+@media(max-width:900px){.rvpane{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:700px){nav{order:3;flex:1 0 100%;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin;padding-bottom:4px}nav a{white-space:nowrap;flex:none}}
 </style>
 </head>
@@ -174,6 +190,19 @@ table.hg td,table.hg th{padding:4px 4px}table.hg tr.inc input.rt:placeholder-sho
    <div class="gl" id="glist"></div>
   </div>
   <div id="geditor"><div class="card muted">Select a game on the left to edit it, or add a new one.</div></div>
+ </div>
+</section>
+
+<!-- ======================= REVIEWS ======================= -->
+<section class="tab" id="tab-reviews">
+ <div class="split">
+  <div class="card" style="padding:12px">
+   <div style="display:flex;gap:6px;margin-bottom:8px"><input id="rvsearch" placeholder="Search reviews…" style="flex:1;min-width:0"><button class="primary sm" id="rvnew">+ New</button></div>
+   <div class="gl" id="rvlist"></div>
+   <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap"><button class="sm" id="rvbuild">Build reviews page</button><button class="sm" id="rvtiers" title="Rename, reorder, add or remove tiers and edit their descriptions">Edit tiers</button><a href="/reviews" target="_blank"><button type="button" class="sm">Open reviews page</button></a></div>
+   <div class="muted" id="rvbuilt" style="font-size:12px;margin-top:6px"></div>
+  </div>
+  <div id="rveditor"><div class="card muted">Pick a review on the left, or start a new one with <b>+ New</b>.</div></div>
  </div>
 </section>
 
@@ -252,8 +281,8 @@ table.hg td,table.hg th{padding:4px 4px}table.hg tr.inc input.rt:placeholder-sho
 <section class="tab" id="tab-reports">
  <div class="card"><h2>Reports</h2>
   <div id="repstatus"></div>
-  <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="primary" id="rebuildbtn">Rebuild dashboard + PDF</button>
-   <a href="/dashboard" target="_blank"><button type="button">Open dashboard</button></a><a href="/report.pdf" target="_blank"><button type="button">Open PDF</button></a></div>
+  <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="primary" id="rebuildbtn">Rebuild all reports</button>
+   <a href="/dashboard" target="_blank"><button type="button">Open dashboard</button></a><a href="/report.pdf" target="_blank"><button type="button">Open PDF</button></a><a href="/reviews" target="_blank"><button type="button">Open reviews page</button></a></div>
   <div id="replog" class="muted" style="margin-top:10px;white-space:pre-wrap"></div></div>
 </section>
 </main>
@@ -298,7 +327,7 @@ async function refreshMeta(){META=await api('GET','/api/meta');$('#gamelist').in
 async function afterChange(){await refreshMeta();refreshBadge();const t=currentTab();if(TABS[t])TABS[t].show(true)}
 
 /* ---------- tabs / routing ---------- */
-const NAMES={log:'Log time',games:'Games',gallery:'Gallery',stats:'Stats',top:'Top list',halo:'HaloRank',checks:'Checks',history:'History',reports:'Reports'};
+const NAMES={log:'Log time',games:'Games',reviews:'Reviews',gallery:'Gallery',stats:'Stats',top:'Top list',halo:'HaloRank',checks:'Checks',history:'History',reports:'Reports'};
 const TABS={};
 $('#nav').innerHTML=Object.entries(NAMES).map(([k,n])=>`<a data-k="${k}" href="#${k}">${n}${k==='checks'?'<span class="badge" id="chkbadge" hidden></span>':''}</a>`).join('');
 const currentTab=()=>(location.hash.slice(1).split('/')[0]||'log');
@@ -449,8 +478,8 @@ async function openGame(id,quiet){
   GAMES.sel=id;GAMES.cur=d;renderGameList();const g=d.game;
   $('#geditor').innerHTML=`<div class="card"><div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start">${coverBoxHTML(d.cover)}
    <div style="flex:1;min-width:260px"><h2 style="margin-bottom:2px">${esc(g.title)}</h2>
-   <div class="stat" style="margin:8px 0"><div><b>${fmt(d.total_hours,1)}</b>hours</div><div><b>${d.releases.length}</b>release${d.releases.length===1?'':'s'}</div>${d.in_top?`<div><b>#${d.in_top}</b>in Top list</div>`:''}</div>
-   <div style="display:flex;gap:8px;flex-wrap:wrap"><button id="gtolog" class="sm">Log time for this game</button><button id="gdel" class="sm danger">Delete game…</button></div></div></div></div>
+   <div class="stat" style="margin:8px 0"><div><b>${fmt(d.total_hours,1)}</b>hours</div><div><b>${d.releases.length}</b>release${d.releases.length===1?'':'s'}</div>${d.in_top?`<div><b>#${d.in_top}</b>in Top list</div>`:''}${g.tier?`<div><b>${esc(g.tier)}</b>review tier</div>`:''}</div>
+   <div style="display:flex;gap:8px;flex-wrap:wrap"><button id="gtolog" class="sm">Log time for this game</button>${d.review?`<a href="#reviews/${d.review.id}"><button type="button" class="sm">Open review${d.review.status==='draft'?' (draft)':''}</button></a>`:'<button type="button" id="gtoreview" class="sm">Write a review</button>'}<button id="gdel" class="sm danger">Delete game…</button></div></div></div></div>
   <div class="card"><form id="gform" novalidate>${gameFormHTML(g)}<div class="formerr"></div><div style="margin-top:12px"><button class="primary" id="gsave">Save changes</button></div></form></div>
   <div class="card"><h2>Releases</h2><div style="overflow:auto"><table><thead><tr><th>System</th><th>Type</th><th>Ownership</th><th>Original</th><th>Version</th><th>Added</th><th class="num">Hours</th><th></th></tr></thead><tbody>${d.releases.map(r=>`<tr><td>${esc(r.system)}</td><td>${esc(r.release)}</td><td>${esc(r.ownership)}</td><td>${r.original_release_date}</td><td>${r.version_release_date}</td><td>${r.added_date}</td><td class="num">${fmt(r.hours,1)}</td><td style="white-space:nowrap"><button class="sm" data-redit="${r.id}">Edit</button> <button class="sm danger" data-rdel="${r.id}">Delete</button></td></tr>${r.warnings.length?`<tr><td colspan="8" class="warnline">⚠ ${r.warnings.map(esc).join(' · ')}</td></tr>`:''}`).join('')}</tbody></table></div>
   <div style="margin-top:10px"><button id="raddbtn">+ Add release</button></div></div>
@@ -462,6 +491,7 @@ async function openGame(id,quiet){
   $('#coverdel')?.addEventListener('click',async()=>{await api('DELETE',`/api/games/${id}/cover`);toast('Cover removed');await afterChange();await openGame(id,true)});
   $('#gtolog').onclick=()=>{location.hash='#log';setTimeout(()=>{logf().game.value=g.title;logf().system.dataset.game='';logPreview();logf().hours.focus()},50)};
   $('#gdel').onclick=()=>deleteGame(d);
+  $('#gtoreview')?.addEventListener('click',async()=>{location.hash='#reviews';await TABS.reviews.show();newReview(g.title)});
   $('#raddbtn').onclick=()=>releaseDialog(id,null);
   $('#geditor').onclick=async e=>{const re=e.target.dataset.redit,rd=e.target.dataset.rdel;
     if(re)releaseDialog(id,d.releases.find(r=>r.id==re));
@@ -498,6 +528,133 @@ function newGame(prefill){
       toast(`Added ${r.title}`,{undo:r._batch});await afterChange();location.hash='#games/'+r.id}
     catch(x){applyErrors(form,x.data?.fields,x.message);$('.err:not(:empty)',form)?.scrollIntoView({block:'center'})}};
   $('[name=title]',form).focus()}
+
+/* ======================= REVIEWS ======================= */
+// Write-ups. The body is plain text: blank line = new paragraph, a line ![caption](file.jpg){small?} = figure (reviews.py).
+const RV={list:[],sel:null,cur:null,dirty:false,status:'draft',view:'split',tmr:null};
+try{RV.view=localStorage.getItem('rvview')||'split'}catch{}
+const RV_FIG=/^!\[(.*)\]\(([^()\s]+)\)\s*(\{small\})?\s*$/;
+const tierDesc=n=>META.tiers.find(t=>t.name===n)?.description||'';
+TABS.reviews={async show(force,arg){
+  RV.list=await api('GET','/api/reviews');renderRvList();rvBuilt();
+  arg=arg??location.hash.slice(1).split('/')[1];const id=arg?+arg:null;      // afterChange() (e.g. Undo) calls show(true) without the arg
+  if(id&&id!==RV.sel){if(!await rvLeave()){location.hash='#reviews/'+RV.sel;return}await openReview(id)}
+  else if(id&&force&&!RV.dirty)await openReview(id)
+  else if(!id&&!RV.cur)$('#rveditor').innerHTML='<div class="card muted">Pick a review on the left, or start a new one with <b>+ New</b>.</div>'}};
+async function rvLeave(){return !RV.dirty||!!await confirmBox('Discard unsaved changes?',`Your edits to <b>${esc(RV.cur?.title)}</b> have not been saved.`,'Discard')}
+addEventListener('beforeunload',e=>{if(RV.dirty){e.preventDefault();e.returnValue=''}});
+function renderRvList(){
+  const q=$('#rvsearch').value.toLowerCase();let last,html='';
+  for(const r of RV.list.filter(r=>!q||r.title.toLowerCase().includes(q))){
+    if(r.tier!==last){html+=`<div class="rvtier">${esc(r.tier||'No tier')}</div>`;last=r.tier}
+    html+=`<div class="it ${r.id===RV.sel?'on':''}" data-id="${r.id}"><div class="t"><div>${esc(r.title)}</div><div class="muted">${fmt(r.words,0)} words · ${r.mins} min${r.my_score?` · ${r.my_score}/10`:''}</div></div>${r.status==='draft'?'<span class="pill warn">draft</span>':''}</div>`}
+  $('#rvlist').innerHTML=html||'<div class="muted" style="padding:10px">No reviews yet. Start one with + New.</div>'}
+async function rvBuilt(){try{const r=await api('GET','/api/reports'),x=r.reviews;
+  const stale=x.ts&&r.last_review_change&&r.last_review_change>x.ts;
+  $('#rvbuilt').innerHTML=x.exists?`Built ${esc(x.built.replace('T',' '))}`+(stale?' · <span style="color:var(--warn)">out of date</span>':''):'Not built yet'}catch{}}
+$('#rvsearch').addEventListener('input',renderRvList);
+$('#rvlist').addEventListener('click',e=>{const it=e.target.closest('.it');if(it)location.hash='#reviews/'+it.dataset.id});
+$('#rvnew').onclick=()=>newReview();
+$('#rvbuild').onclick=async()=>{const b=$('#rvbuild');b.disabled=true;b.textContent='Building…';
+  try{const r=await api('POST','/api/rebuild?only=reviews');toast(`Reviews page built (${r.reviews.seconds}s)`+(/WARNING/.test(r.reviews.log)?' · some images are missing, see Checks':''))}
+  catch(e){toast('Build failed: '+(e.data?.reviews?.log||e.message).slice(-200),{err:1})}
+  b.disabled=false;b.textContent='Build reviews page';rvBuilt()};
+
+async function editTiers(){
+  if(!await rvLeave())return;RV.dirty=false;
+  let rows=(await api('GET','/api/tiers')).map(t=>({id:t.id,name:t.name,description:t.description,n:t.n_games}));
+  const read=d=>$$('.te',d).map((el,i)=>({...rows[i],name:$('.te-name',el).value,description:$('.te-desc',el).value}));
+  const draw=d=>{$('#telist',d).innerHTML=rows.map((t,i)=>`<div class="te"><div class="n">${i+1}</div>
+     <div><label data-f="tiers.${i}.name">Name<input class="te-name" value="${esc(t.name)}" maxlength="60"><span class="err"></span></label>
+      <label style="margin-top:6px">Description (shown on the reviews page)<textarea class="te-desc" rows="3">${esc(t.description)}</textarea></label></div>
+     <div class="b"><button type="button" class="sm" data-up="${i}" ${i?'':'disabled'} title="Move toward worst">↑</button><button type="button" class="sm" data-dn="${i}" ${i<rows.length-1?'':'disabled'} title="Move toward best">↓</button>
+      <button type="button" class="sm danger" data-rm="${i}" ${t.n?`disabled title="${t.n} review${t.n===1?'':'s'} filed here - move ${t.n===1?'it':'them'} first"`:'title="Remove this tier"'}>✕</button>
+      <span class="cnt">${t.n?t.n+' review'+(t.n===1?'':'s'):''}</span></div></div>`).join('')};
+  await dialog(`<h2>Edit tiers</h2><p class="muted" style="margin:0">Worst at the top, best at the bottom; the order here is the order on the reviews page. Renaming a tier updates every review filed under it. A tier can only be removed when no review is filed under it.</p>
+    <div class="te-list" id="telist"></div><div style="margin-top:10px"><button type="button" class="sm" id="teadd">+ Add tier</button></div><div data-f="tiers"><span class="err"></span></div>`,
+   {ok:'Save tiers',wide:true,
+    onOpen:d=>{draw(d);
+      $('#teadd',d).onclick=()=>{rows=read(d);rows.push({id:null,name:'',description:'',n:0});draw(d);const l=$$('.te-name',d);l[l.length-1].focus();$('#telist',d).scrollTop=1e6};
+      $('#telist',d).onclick=e=>{const b=e.target.closest('button');if(!b||b.disabled)return;const D=b.dataset;rows=read(d);
+        if(D.up!==undefined){const i=+D.up;[rows[i-1],rows[i]]=[rows[i],rows[i-1]]}else if(D.dn!==undefined){const i=+D.dn;[rows[i+1],rows[i]]=[rows[i],rows[i+1]]}else if(D.rm!==undefined)rows.splice(+D.rm,1);else return;
+        draw(d)}},
+    onOk:async d=>{const x=await api('PUT','/api/tiers',{tiers:read(d).map(t=>({id:t.id,name:t.name,description:t.description}))});toast('Tiers saved',{undo:x._batch});await afterChange()}});}
+$('#rvtiers').onclick=editTiers;
+
+async function newReview(prefill){
+  const have=new Set(RV.list.map(r=>r.title.toLowerCase())),opts=META.titles.filter(t=>!have.has(t.title.toLowerCase()));
+  const id=await dialog(`<h2>New review</h2><datalist id="rvgames">${opts.map(t=>`<option value="${esc(t.title)}">`).join('')}</datalist>
+    <label data-f="title">Game<input name="title" list="rvgames" value="${esc(prefill||'')}" placeholder="Start typing a title…" autocomplete="off"><span class="err"></span></label>
+    <label data-f="tier" style="margin-top:10px">Tier<select name="tier">${selOpts(META.tiers.map(t=>t.name),'','Choose…')}</select><span class="tierdesc" id="nrdesc"></span><span class="err"></span></label>
+    <p class="muted" style="font-size:12px">The tier is saved on the game along with the review. It starts as a draft; nothing appears on the reviews page until you publish.</p>`,
+   {ok:'Start writing',onOpen:d=>{const s=$('[name=tier]',d);s.onchange=()=>$('#nrdesc',d).textContent=tierDesc(s.value)},
+    onOk:async d=>(await api('POST','/api/reviews',{title:$('[name=title]',d).value,tier:$('[name=tier]',d).value,status:'draft',body:''})).id});
+  if(id){toast('Review started');location.hash='#reviews/'+id}}
+
+async function openReview(id){
+  let d;try{d=await api('GET','/api/reviews/'+id)}catch(e){RV.sel=null;RV.cur=null;RV.dirty=false;renderRvList();$('#rveditor').innerHTML=`<div class="card">${esc(e.message)}</div>`;return}
+  const r=d.review;RV.sel=id;RV.cur=r;RV.dirty=false;RV.status=r.status;renderRvList();
+  $('#rveditor').innerHTML=`<div class="card"><div class="rvhead">${d.cover?`<img src="${d.cover}" alt="">`:''}<div style="flex:1;min-width:0"><h2 style="margin:0">${esc(r.title)}</h2>
+     <div class="muted">Started ${esc(r.created.slice(0,10))} · last saved ${esc(r.updated)}</div></div><a href="#games/${r.game_id}"><button type="button" class="sm">Game details</button></a></div>
+   <form id="rvform" novalidate><div class="grid" style="margin-top:14px">
+    <label class="wide" data-f="tier">Tier<select name="tier">${selOpts(META.tiers.map(t=>t.name),r.tier,'Choose…')}</select><span class="tierdesc" id="rvtierdesc">${esc(tierDesc(r.tier))}</span><span class="err"></span></label>
+    <div data-f="status"><label>Status</label><span class="seg" id="rvstatus" style="margin-top:3px">${['draft','published'].map(v=>`<button type="button" data-v="${v}">${v==='draft'?'Draft':'Published'}</button>`).join('')}</span>
+     <span class="tierdesc">Only published reviews go on the reviews page.</span><span class="err"></span></div></div>
+   <div class="rvbar"><button type="button" class="sm" id="rvimg">+ Image</button><input type="file" id="rvfile" accept="image/*" multiple hidden>
+    <span class="muted" id="rvstats"></span><span style="flex:1"></span>
+    <span class="seg" id="rvview">${[['write','Write'],['split','Split'],['preview','Preview']].map(([v,n])=>`<button type="button" data-v="${v}">${n}</button>`).join('')}</span></div>
+   <div data-f="body"><div class="rvpane ${RV.view}" id="rvpane"><textarea id="rvbody" spellcheck="true" placeholder="Start writing. Leave a blank line between paragraphs.">${esc(r.body)}</textarea><iframe id="rvprev" title="Preview of this review"></iframe></div><span class="err"></span></div>
+   <p class="muted" style="font-size:12px;margin:6px 0 0">Blank line = new paragraph. Add screenshots with <b>+ Image</b>, or paste / drop them into the text. A figure is its own line: <code>![caption](file.jpg)</code>, with <code>{small}</code> after it for a narrow in-column image. The details panel (scores, hours, systems…) comes from the game's entry automatically.</p>
+   <div class="formerr"></div>
+   <div style="display:flex;gap:10px;align-items:center;margin-top:12px"><button class="primary" id="rvsave">Save</button><span class="muted" id="rvdirty"></span><span style="flex:1"></span><button type="button" class="sm danger" id="rvdel">Delete review…</button></div></form></div>`;
+  const form=$('#rvform'),body=$('#rvbody');
+  rvSeg();rvStats();rvPreview();
+  form.tier.onchange=()=>{$('#rvtierdesc').textContent=tierDesc(form.tier.value);rvChanged()};
+  $('#rvstatus').onclick=e=>{const b=e.target.closest('button');if(!b)return;RV.status=b.dataset.v;rvSeg();rvChanged()};
+  $('#rvview').onclick=e=>{const b=e.target.closest('button');if(!b)return;RV.view=b.dataset.v;try{localStorage.setItem('rvview',RV.view)}catch{};$('#rvpane').className='rvpane '+RV.view;rvSeg();rvPreview()};
+  body.addEventListener('input',rvChanged);
+  body.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();rvSave()}});
+  body.addEventListener('paste',e=>{const fs=[...(e.clipboardData?.files||[])].filter(f=>f.type.startsWith('image/'));if(fs.length){e.preventDefault();rvUpload(fs)}});
+  body.addEventListener('dragover',e=>{if([...e.dataTransfer.types].includes('Files')){e.preventDefault();body.classList.add('over')}});
+  body.addEventListener('dragleave',()=>body.classList.remove('over'));
+  body.addEventListener('drop',e=>{body.classList.remove('over');const fs=[...e.dataTransfer.files].filter(f=>f.type.startsWith('image/'));if(fs.length){e.preventDefault();rvUpload(fs)}});
+  $('#rvimg').onclick=()=>$('#rvfile').click();
+  $('#rvfile').onchange=e=>{rvUpload([...e.target.files]);e.target.value=''};
+  form.onsubmit=e=>{e.preventDefault();rvSave()};
+  $('#rvdel').onclick=rvDelete}
+function rvSeg(){$$('#rvstatus button').forEach(b=>b.classList.toggle('on',b.dataset.v===RV.status));$$('#rvview button').forEach(b=>b.classList.toggle('on',b.dataset.v===RV.view))}
+function rvChanged(){RV.dirty=true;$('#rvdirty').textContent='Unsaved changes';rvStats();clearTimeout(RV.tmr);RV.tmr=setTimeout(rvPreview,500)}
+function rvStats(){
+  const lines=$('#rvbody').value.split('\n'),figs=lines.filter(l=>RV_FIG.test(l.trim())).length;
+  const words=lines.filter(l=>!RV_FIG.test(l.trim())).join(' ').split(/\s+/).filter(Boolean).length;
+  $('#rvstats').textContent=`${fmt(words,0)} words · ${Math.max(1,Math.ceil(words/238))} min read · ${figs} image${figs===1?'':'s'}`}
+async function rvPreview(){
+  const f=$('#rvprev');if(!f||RV.view==='write')return;
+  let y=0;try{y=f.contentWindow.scrollY}catch{}
+  const r=await fetch(`/api/reviews/${RV.sel}/preview`,{method:'POST',headers:{'X-Requested-With':'gamelist','Content-Type':'application/json'},
+    body:JSON.stringify({tier:$('#rvform').tier.value,body:$('#rvbody').value})});
+  if(!r.ok||$('#rvprev')!==f)return;
+  f.onload=()=>{try{f.contentWindow.scrollTo(0,y)}catch{}};f.srcdoc=await r.text()}
+function rvInsert(text){
+  const t=$('#rvbody'),s=t.selectionStart,v=t.value;
+  const before=v.slice(0,s).replace(/\s+$/,''),after=v.slice(t.selectionEnd).replace(/^\s+/,'');
+  const head=before+(before?'\n\n':'');t.value=head+text+(after?'\n\n'+after:'');
+  t.focus();t.setSelectionRange(head.length+2,head.length+2);rvChanged()}       // caret inside ![…] to type the caption
+async function rvUpload(files){
+  for(const f of files){const fd=new FormData();fd.append('file',f);fd.append('title',RV.cur.title);
+    try{const x=await api('POST','/api/review-images',fd);rvInsert(`![](${x.file})`);toast('Image added. Type its caption between the [ ]')}
+    catch(e){toast(e.message,{err:1})}}}
+async function rvSave(){
+  const form=$('#rvform');applyErrors(form,{});
+  try{const x=await api('PUT','/api/reviews/'+RV.sel,{tier:form.tier.value,status:RV.status,body:$('#rvbody').value});
+    RV.dirty=false;$('#rvdirty').textContent='';
+    toast((RV.status==='published'?'Saved and published':'Saved as draft')+(x.warnings?.length?' · '+x.warnings[0]:''),{undo:x._batch});
+    RV.list=await api('GET','/api/reviews');renderRvList();rvBuilt();RV.cur=(await api('GET','/api/reviews/'+RV.sel)).review}
+  catch(e){applyErrors(form,e.data?.fields||{},e.message)}}
+async function rvDelete(){
+  if(!await confirmBox('Delete this review?',`<b>${esc(RV.cur.title)}</b>: the write-up is removed and the game's tier is cleared. Images stay in the review images folder. You can undo this right after.`))return;
+  try{const x=await api('DELETE','/api/reviews/'+RV.sel);toast('Review deleted',{undo:x._batch});RV.sel=null;RV.cur=null;RV.dirty=false;location.hash='#reviews'}
+  catch(e){toast(e.message,{err:1})}}
 
 /* ======================= TOP LIST ======================= */
 const TOP={list:[],dirty:false};
@@ -663,10 +820,10 @@ $('#statyear').addEventListener('change',()=>TABS.stats.show());
 TABS.reports={async show(){const r=await api('GET','/api/reports');
   const st=(n,x)=>`<div class="repline">${n}: ${x.exists?'built '+esc(x.built.replace('T',' ')):'not built'}${x.kb?`, ${fmt(x.kb)} KB`:''}</div>`;
   const stale=r.last_change&&r.dashboard.built&&r.last_change.replace(' ','T')>r.dashboard.built;
-  $('#repstatus').innerHTML=st('Dashboard',r.dashboard)+st('PDF',r.pdf)+(stale?'<div class="repline" style="color:var(--warn)">Out of date: changes since the last build</div>':'')}};
+  $('#repstatus').innerHTML=st('Dashboard',r.dashboard)+st('PDF',r.pdf)+st('Reviews page',r.reviews)+(stale?'<div class="repline" style="color:var(--warn)">Out of date: changes since the last build</div>':'')}};
 $('#rebuildbtn').onclick=async()=>{const b=$('#rebuildbtn');b.disabled=true;b.textContent='Building…';$('#replog').textContent='';
-  try{const r=await api('POST','/api/rebuild');toast(`Reports rebuilt (${r.dashboard.seconds}s + ${r.pdf.seconds}s)`)}catch(e){$('#replog').textContent=JSON.stringify(e.data,null,1);toast('Rebuild failed',{err:1})}
-  b.disabled=false;b.textContent='Rebuild dashboard + PDF';TABS.reports.show()};
+  try{const r=await api('POST','/api/rebuild');toast(`Reports rebuilt (${Object.values(r).filter(x=>x&&x.seconds!=null).map(x=>x.seconds+'s').join(' + ')})`)}catch(e){$('#replog').textContent=JSON.stringify(e.data,null,1);toast('Rebuild failed',{err:1})}
+  b.disabled=false;b.textContent='Rebuild all reports';TABS.reports.show()};
 
 /* ---------- theme + start ---------- */
 $('#themebtn').onclick=()=>{const d=document.documentElement;const cur=d.dataset.theme||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');d.dataset.theme=cur==='dark'?'light':'dark';try{localStorage.setItem('theme',d.dataset.theme)}catch{}};

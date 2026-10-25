@@ -1,13 +1,15 @@
 """Game list entry app.  Run:  python app.py [--db gamelist.db] [--covers covers] [--port 8765]
 
-A local web app (127.0.0.1 only) for logging time, adding/editing games and releases, checking data quality,
-managing cover art and rebuilding the dashboard + PDF.  Replaces the workbook's Control/TimeControl sheets and macros.
+A local web app (127.0.0.1 only) for logging time, adding/editing games and releases, writing reviews, checking data
+quality, managing cover art and rebuilding the dashboard, PDF and reviews page.  Replaces the workbook's
+Control/TimeControl sheets and macros.
 """
 import argparse, csv, datetime as dt, glob, io, json, os, re, shutil, sqlite3, subprocess, sys, threading, uuid, webbrowser, zipfile
 from urllib.parse import quote
-from flask import Flask, g as G, jsonify, request, send_file, send_from_directory
+from flask import Flask, Response, g as G, jsonify, request, send_file, send_from_directory
 from PIL import Image
 import halo
+import reviews as RV
 import schema
 
 BASE = os.path.dirname(os.path.abspath(__file__))
@@ -29,10 +31,12 @@ CONFIG = load_config()
 # precedence: --flag > environment variable > config.json > default next to app.py
 DB = os.environ.get('GAMELIST_DB') or CONFIG.get('db') or os.path.join(BASE, 'gamelist.db')
 COVERS = os.environ.get('GAMELIST_COVERS') or CONFIG.get('covers') or os.path.join(BASE, 'covers')
+REVIEW_IMAGES = os.environ.get('GAMELIST_REVIEW_IMAGES') or CONFIG.get('review_images') or os.path.join(BASE, 'review_images')
 BACKUPS = os.environ.get('GAMELIST_BACKUPS', os.path.join(BASE, 'backups'))
 OUT = os.environ.get('GAMELIST_OUT', BASE)
 REPORT_HTML = os.path.join(OUT, 'games_list_dashboard.html')
 REPORT_PDF = os.path.join(OUT, 'games_list_report.pdf')
+REPORT_REVIEWS = os.path.join(OUT, 'games_list_reviews.html')
 
 app = Flask(__name__, static_folder=None)
 app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024
@@ -322,6 +326,17 @@ def report_pdf():
     return send_file(REPORT_PDF, max_age=0, mimetype='application/pdf')
 
 
+@app.get('/reviews')
+def reviews_page():
+    if not os.path.exists(REPORT_REVIEWS): raise ApiError('Reviews page not built yet - use Build reviews page.', 404)
+    return send_file(REPORT_REVIEWS, max_age=0)
+
+
+@app.get('/review-images/<path:name>')
+def review_images(name):
+    return send_from_directory(REVIEW_IMAGES, name, max_age=0)
+
+
 # ----------------------------------------------------------------------------- meta
 @app.get('/api/meta')
 def meta():
@@ -333,6 +348,7 @@ def meta():
              titles=rows('SELECT id, title, series FROM games ORDER BY title COLLATE NOCASE'),
              series=[x['series'] for x in rows('SELECT DISTINCT series FROM games ORDER BY series COLLATE NOCASE')],
              releases=releases, score_ranges={k: v[:2] for k, v in SCORES.items()}, covers_dir=COVERS,
+             tiers=RV.tiers(con()),
              covers={t: cover_url(t) for t in releases if cover_file(t)},
              counts=dict(games=scalar('SELECT COUNT(*) FROM games'), releases=scalar('SELECT COUNT(*) FROM releases'),
                          log=scalar('SELECT COUNT(*) FROM play_log')))
@@ -420,7 +436,8 @@ def get_game(gid):
     for r in rel: r['warnings'] = release_warnings(r, r['first_played'])
     log = rows('SELECT * FROM play_log WHERE game=? ORDER BY date DESC LIMIT 15', (game['title'],))
     return jsonify(game=game, releases=rel, log=log, total_hours=game_total(game['title']), cover=cover_url(game['title']),
-                   in_top=scalar('SELECT rank FROM top_rank WHERE title=?', (game['title'],)))
+                   in_top=scalar('SELECT rank FROM top_rank WHERE title=?', (game['title'],)),
+                   review=one('SELECT id, status FROM reviews WHERE title=?', (game['title'],)))
 
 
 @app.post('/api/games')
@@ -460,6 +477,8 @@ def update_game(gid):
 def delete_game(gid):
     game = get_row('games', gid)
     if not game: raise ApiError('Game not found', 404)
+    if scalar('SELECT 1 FROM reviews WHERE title=?', (game['title'],)):
+        raise ApiError(f'{game["title"]} has a review. Delete the review first (Reviews tab) if you really want to remove the game.', 409)
     n_rel = scalar('SELECT COUNT(*) FROM releases WHERE title=?', (game['title'],))
     n_log = scalar('SELECT COUNT(*) FROM play_log WHERE game=?', (game['title'],))
     if (n_rel or n_log) and request.args.get('force') != '1':
@@ -697,6 +716,174 @@ def delete_halo(lid):
     return jsonify(ok=True)
 
 
+# ----------------------------------------------------------------------------- reviews
+# The write-up lives in reviews; its tier is stored on the game (games.tier) but only ever set from here.
+def clean_review(d):
+    """Validate tier / status / body. Missing figure images block publishing; on a draft they are only warnings."""
+    errs, out = {}, {}
+    tier = canon(d.get('tier') or '', [t['name'] for t in RV.tiers(con())])
+    if tier is None: errs['tier'] = 'Choose a tier'
+    status = d.get('status') or 'draft'
+    if status not in ('draft', 'published'): errs['status'] = 'Status is draft or published'
+    out['status'] = status
+    out['body'] = str(d.get('body') or '').replace('\r\n', '\n').strip()
+    blocks = RV.parse_body(out['body'])
+    missing = [f for f in RV.figure_files(blocks) if not os.path.exists(os.path.join(REVIEW_IMAGES, f))]
+    if status == 'published' and not any(b['t'] == 'p' for b in blocks): errs['body'] = 'Write something before publishing'
+    if status == 'published' and missing: errs['body'] = 'Missing image file(s): ' + ', '.join(missing)
+    return out, tier, errs, [f'Image not found: {f}' for f in missing]
+
+
+def review_row(rid):
+    r = one('''SELECT r.*, g.id AS game_id, g.tier FROM reviews r JOIN games g ON g.title=r.title WHERE r.id=?''', (rid,))
+    if not r: raise ApiError('Review not found', 404)
+    return r
+
+
+def _now():
+    return dt.datetime.now().isoformat(sep=' ', timespec='seconds')
+
+
+def tier_list():
+    return rows('''SELECT t.id, t.rank, t.name, t.description, (SELECT COUNT(*) FROM games g WHERE g.tier=t.name) AS n_games
+                   FROM ref_tier t ORDER BY t.rank, t.id''')
+
+
+@app.get('/api/tiers')
+def get_tiers():
+    return jsonify(tier_list())
+
+
+@app.put('/api/tiers')
+def save_tiers():
+    """Save the whole tier list, worst to best: [{id|null, name, description}, ...]. The order sent is the new order.
+    Ids that are missing are deleted (refused while games are filed under them); null ids are new tiers.
+    Renames cascade to games.tier through the foreign key. One audit batch, so one Undo."""
+    items = request.get_json(force=True).get('tiers')
+    if not isinstance(items, list) or not items: raise ApiError('Keep at least one tier.', 400)
+    cur = {t['id']: t for t in tier_list()}
+    errs, clean, seen, names = {}, [], set(), set()
+    for i, it in enumerate(items):
+        name = re.sub(r'\s+', ' ', str(it.get('name') or '')).strip()
+        tid = it.get('id')
+        if tid is not None:
+            if tid not in cur or tid in seen: raise ApiError('The tier list changed since you opened it. Close and reopen the editor.', 409)
+            seen.add(tid)
+        if not name: errs[f'tiers.{i}.name'] = 'Name is required'
+        elif len(name) > 60: errs[f'tiers.{i}.name'] = 'Name is too long (60 characters)'
+        elif name.lower() in names: errs[f'tiers.{i}.name'] = 'Another tier already has this name'
+        names.add(name.lower())
+        clean.append(dict(id=tid, name=name, description=str(it.get('description') or '').strip()))
+    gone = [t for tid, t in cur.items() if tid not in seen]
+    for t in gone:
+        if t['n_games']:
+            errs['tiers'] = f'{t["name"]} still has {t["n_games"]} review{"" if t["n_games"] == 1 else "s"} filed under it. Move them to another tier first, or keep the tier.'
+    raise_if(errs)
+    for t in gone:
+        delete_row('ref_tier', t['id'], f'Edited tiers: deleted {t["name"]}')
+    renames = {c['id']: cur[c['id']]['name'] for c in clean if c['id'] is not None and c['name'] != cur[c['id']]['name']}
+    taken = {cur[c['id']]['name'].lower() for c in clean if c['id'] is not None}
+    if any(c['name'].lower() in taken and c['name'].lower() != renames[c['id']].lower() for c in clean if c['id'] in renames):
+        for tid, old in renames.items():            # e.g. swapping two names: park them on temporary names first
+            update_row('ref_tier', tid, {'name': f'~{tid}'}, f'Edited tiers: renamed {old}')
+    for i, c in enumerate(clean, 1):
+        if c['id'] is None:
+            insert_row('ref_tier', dict(rank=i, name=c['name'], description=c['description']), f'Edited tiers: added {c["name"]}')
+            continue
+        old = cur[c['id']]
+        data = {k: v for k, v in (('name', c['name']), ('description', c['description']), ('rank', i)) if v != old[k]}
+        if data:
+            what = f'renamed {old["name"]} to {c["name"]}' if 'name' in data else f'changed {old["name"]}'
+            update_row('ref_tier', c['id'], data, f'Edited tiers: {what}')
+    return jsonify(ok=True, renamed={old: next(c['name'] for c in clean if c['id'] == tid) for tid, old in renames.items()})
+
+
+@app.get('/api/reviews')
+def list_reviews():
+    out = rows('''SELECT r.id, r.title, r.status, r.updated, r.body, g.id AS game_id, g.tier, t.rank AS tier_rank, g.my_score
+                  FROM reviews r JOIN games g ON g.title=r.title LEFT JOIN ref_tier t ON t.name=g.tier
+                  ORDER BY t.rank IS NULL, t.rank, r.title COLLATE NOCASE''')
+    for r in out:
+        r.update(RV.text_stats(RV.parse_body(r.pop('body'))))
+        r['cover'] = cover_url(r['title'])
+    return jsonify(out)
+
+
+@app.get('/api/reviews/<int:rid>')
+def get_review(rid):
+    r = review_row(rid)
+    return jsonify(review=r, cover=cover_url(r['title']), **RV.text_stats(RV.parse_body(r['body'])))
+
+
+@app.post('/api/reviews')
+def create_review():
+    d = request.get_json(force=True)
+    game = find_game(d.get('title'))
+    review, tier, errs, warns = clean_review(d)
+    if not game: errs['title'] = 'Choose a game from the list'
+    elif scalar('SELECT id FROM reviews WHERE title=?', (game['title'],)):
+        errs['title'] = f'{game["title"]} already has a review'
+    raise_if(errs)
+    rid = insert_row('reviews', {'title': game['title'], **review}, f'Started review of {game["title"]}')
+    update_row('games', game['id'], {'tier': tier}, f'Filed {game["title"]} under {tier}')
+    return jsonify(id=rid, warnings=warns), 201
+
+
+@app.put('/api/reviews/<int:rid>')
+def update_review(rid):
+    old = review_row(rid)
+    review, tier, errs, warns = clean_review(request.get_json(force=True))
+    raise_if(errs)
+    verb = 'Published' if review['status'] == 'published' and old['status'] != 'published' else 'Edited'
+    update_row('reviews', rid, {**review, 'updated': _now()}, f'{verb} review of {old["title"]}')
+    if tier != old['tier']:
+        update_row('games', old['game_id'], {'tier': tier}, f'Filed {old["title"]} under {tier}')
+    return jsonify(id=rid, warnings=warns)
+
+
+@app.delete('/api/reviews/<int:rid>')
+def delete_review(rid):
+    r = review_row(rid)
+    if r['tier'] is not None:
+        update_row('games', r['game_id'], {'tier': None}, f'Cleared tier of {r["title"]}')
+    delete_row('reviews', rid, f'Deleted review of {r["title"]}')
+    return jsonify(ok=True)
+
+
+@app.post('/api/reviews/<int:rid>/preview')
+def preview_review(rid):
+    """The review rendered with the reviews-page template, using the editor's unsaved tier/body if sent."""
+    review_row(rid)
+    d = request.get_json(silent=True) or {}
+    payload = RV.gather(con(), COVERS, REVIEW_IMAGES, only=rid, draft={'tier': d.get('tier'), 'body': d.get('body')},
+                        embed=False, cover_url=cover_url)
+    return Response(RV.render(payload), mimetype='text/html')
+
+
+@app.post('/api/review-images')
+def upload_review_image():
+    """Save a screenshot for a review; returns the file name to reference as ![caption](file)."""
+    f = request.files.get('file')
+    if not f: raise ApiError('Choose an image file', 400)
+    raw = f.read()
+    try:
+        img = Image.open(io.BytesIO(raw)); img.load()
+    except Exception:
+        raise ApiError('That file is not a readable image (use JPG, PNG or WebP).', 400)
+    game = find_game(request.form.get('title'))
+    base, _ = RV.safe_image_name(f.filename)
+    if game: base = RV.slug(game['title']) + '_' + base
+    ext = {'JPEG': '.jpg', 'PNG': '.png', 'WEBP': '.webp'}.get(img.format)
+    os.makedirs(REVIEW_IMAGES, exist_ok=True)
+    name, n = base + (ext or '.png'), 1
+    while os.path.exists(os.path.join(REVIEW_IMAGES, name)):
+        n += 1; name = f'{base}-{n}{ext or ".png"}'
+    path = os.path.join(REVIEW_IMAGES, name)
+    if ext: open(path, 'wb').write(raw)                      # keep the original bytes; the page build resizes
+    else: img.save(path, 'PNG')
+    return jsonify(file=name, width=img.width, height=img.height), 201
+
+
 # ----------------------------------------------------------------------------- audit / undo
 @app.get('/api/audit')
 def get_audit():
@@ -720,8 +907,12 @@ def undo(batch):
         elif a['action'] == 'insert':
             con().execute(f'DELETE FROM {tbl} WHERE id=?', (a['row_id'],))
         elif a['action'] == 'update':
-            data = {k: v for k, v in old.items() if k != 'id'}
-            con().execute(f'UPDATE {tbl} SET {",".join(c + "=?" for c in data)} WHERE id=?', [*data.values(), a['row_id']])
+            # restore only the columns this change touched, so undoing an old edit can't clobber later ones
+            # (e.g. undoing a game edit must not wipe a tier its review set afterwards)
+            new = json.loads(a['new']) if a['new'] else {}
+            data = {k: v for k, v in old.items() if k != 'id' and (k not in new or new[k] != v)}
+            if data:
+                con().execute(f'UPDATE {tbl} SET {",".join(c + "=?" for c in data)} WHERE id=?', [*data.values(), a['row_id']])
         elif a['action'] == 'delete':
             con().execute(f'INSERT INTO {tbl}({",".join(old)}) VALUES ({",".join("?" * len(old))})', list(old.values()))
     con().execute('UPDATE audit SET undone=1 WHERE batch=?', (batch,))
@@ -756,6 +947,12 @@ def checks():
     if big: add('info', 'large_hours', f'{big} log entries over 24 hours', 'Likely backfilled totals (e.g. the first of a month); fine if intentional.')
     missing = [r['title'] for r in rows('SELECT title FROM top_rank ORDER BY rank LIMIT 10') if not cover_file(r['title'])]
     if missing: add('info', 'cover_missing', f'{len(missing)} Top 10 game(s) have no cover art', ', '.join(missing))
+    for r in rows('SELECT r.id, r.title, r.status, r.body, g.tier, g.id AS gid FROM reviews r JOIN games g ON g.title=r.title'):
+        gone = [f for f in RV.figure_files(RV.parse_body(r['body'])) if not os.path.exists(os.path.join(REVIEW_IMAGES, f))]
+        if gone: add('error' if r['status'] == 'published' else 'warn', 'review_image', f'{r["title"]} review',
+                     'Image file not found: ' + ', '.join(gone), game_id=r['gid'], review_id=r['id'])
+        if not r['tier']: add('warn', 'review_tier', f'{r["title"]} review', 'Review has no tier (it is left off the reviews page)',
+                              game_id=r['gid'], review_id=r['id'])
     order = {'error': 0, 'warn': 1, 'info': 2}
     out.sort(key=lambda x: order[x['severity']])
     summary = {s: sum(1 for x in out if x['severity'] == s) for s in order}
@@ -814,7 +1011,7 @@ def backup():
 def export():
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as z:
-        for t in ('games', 'releases', 'play_log', 'top_rank', 'halo_levels'):
+        for t in ('games', 'releases', 'play_log', 'top_rank', 'halo_levels', 'reviews', 'ref_tier'):
             cur = con().execute(f'SELECT * FROM {t} ORDER BY 1')
             s = io.StringIO(); w = csv.writer(s); w.writerow([c[0] for c in cur.description]); w.writerows(cur.fetchall())
             z.writestr(f'{t}.csv', s.getvalue())
@@ -827,12 +1024,18 @@ _build_lock = threading.Lock()
 
 @app.post('/api/rebuild')
 def rebuild():
+    """Rebuild every report, or one of them with ?only=dashboard|pdf|reviews."""
     if not _build_lock.acquire(blocking=False): raise ApiError('A rebuild is already running.', 409)
     try:
         env = dict(os.environ, GAMELIST_DB=DB)
         res = {}
-        for name, cmd in (('dashboard', [sys.executable, os.path.join(BASE, 'build_html.py'), REPORT_HTML, COVERS]),
-                          ('pdf', [sys.executable, os.path.join(BASE, 'build_pdf.py'), COVERS, REPORT_PDF])):
+        builds = (('dashboard', [sys.executable, os.path.join(BASE, 'build_html.py'), REPORT_HTML, COVERS]),
+                  ('pdf', [sys.executable, os.path.join(BASE, 'build_pdf.py'), COVERS, REPORT_PDF]),
+                  ('reviews', [sys.executable, os.path.join(BASE, 'build_reviews.py'), REPORT_REVIEWS, COVERS, REVIEW_IMAGES]))
+        only = request.args.get('only')
+        if only and only not in dict(builds): raise ApiError('Unknown report', 404)
+        for name, cmd in builds:
+            if only and name != only: continue
             t0 = dt.datetime.now()
             p = subprocess.run(cmd, cwd=BASE, env=env, capture_output=True, text=True, timeout=600)
             res[name] = dict(ok=p.returncode == 0, seconds=round((dt.datetime.now() - t0).total_seconds(), 1),
@@ -846,25 +1049,27 @@ def rebuild():
 @app.get('/api/reports')
 def reports():
     st = lambda p: dict(exists=os.path.exists(p), built=dt.datetime.fromtimestamp(os.path.getmtime(p)).isoformat(timespec='minutes') if os.path.exists(p) else None,
+                        ts=dt.datetime.fromtimestamp(os.path.getmtime(p)).isoformat(sep=' ', timespec='seconds') if os.path.exists(p) else None,
                         kb=round(os.path.getsize(p) / 1024) if os.path.exists(p) else None)
-    return jsonify(dashboard=st(REPORT_HTML), pdf=st(REPORT_PDF), last_change=scalar('SELECT MAX(ts) FROM audit'))
+    return jsonify(dashboard=st(REPORT_HTML), pdf=st(REPORT_PDF), reviews=st(REPORT_REVIEWS), last_change=scalar('SELECT MAX(ts) FROM audit'),
+                   last_review_change=scalar("SELECT MAX(ts) FROM audit WHERE tbl='reviews' OR summary LIKE 'Filed %' OR summary LIKE 'Cleared tier %'"))
 
 
 # ----------------------------------------------------------------------------- main
 def main():
-    global DB, COVERS, BACKUPS
+    global DB, COVERS, REVIEW_IMAGES, BACKUPS
     ap = argparse.ArgumentParser()
-    ap.add_argument('--db', default=DB); ap.add_argument('--covers', default=COVERS)
+    ap.add_argument('--db', default=DB); ap.add_argument('--covers', default=COVERS); ap.add_argument('--review-images', default=REVIEW_IMAGES)
     ap.add_argument('--port', type=int, default=CONFIG.get('port', 8765)); ap.add_argument('--no-browser', action='store_true')
     a = ap.parse_args()
-    DB, COVERS = os.path.abspath(a.db), os.path.abspath(a.covers)
+    DB, COVERS, REVIEW_IMAGES = os.path.abspath(a.db), os.path.abspath(a.covers), os.path.abspath(a.review_images)
     os.environ['GAMELIST_DB'] = DB
-    os.makedirs(COVERS, exist_ok=True)
+    os.makedirs(COVERS, exist_ok=True); os.makedirs(REVIEW_IMAGES, exist_ok=True)
     if schema.upgrade(DB): print('Database upgraded to schema v%d' % schema.VERSION)
     if not glob.glob(os.path.join(BACKUPS, f'gamelist-{dt.date.today():%Y%m%d}-*.db')):
         print('Backup:', make_backup())
     url = f'http://127.0.0.1:{a.port}/'
-    print(f'Game list app running at {url}  (Ctrl+C to stop)\n  database: {DB}\n  covers:   {COVERS}')
+    print(f'Game list app running at {url}  (Ctrl+C to stop)\n  database: {DB}\n  covers:   {COVERS}\n  review images: {REVIEW_IMAGES}')
     if not a.no_browser: threading.Timer(0.8, lambda: webbrowser.open(url)).start()
     app.run(host='127.0.0.1', port=a.port, threaded=True, use_reloader=False)
 
