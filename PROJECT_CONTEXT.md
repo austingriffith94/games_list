@@ -11,8 +11,8 @@ They don't need to look identical. The HTML can be more interactive. A reliable 
 
 ## Architecture (approved)
 SQLite database + Python + generated reports + a local entry app.
-- `gamelist.db` is the source of truth (schema v6: v5 added `reviews`, `ref_tier` and `games.tier`; v6 gave `ref_tier` an id so tier edits are audited). Counts: 656 games, 783 releases (game x system), 2,717 play-log rows, 9,747.5 hours.
-- `app.py` is a Flask app on 127.0.0.1. Tabs: Log time, Games, Reviews, Top list, HaloRank, Gallery, Stats, Checks, History (undo), Reports.
+- `gamelist.db` is the source of truth (schema v9: v5 added `reviews`, `ref_tier` and `games.tier`; v6 gave `ref_tier` an id so tier edits are audited; v7 added the Total War lord tables). Counts: 656 games, 783 releases (game x system), 2,717 play-log rows, 9,747.5 hours.
+- `app.py` is a Flask app on 127.0.0.1. Tabs: Log time, Games, Reviews, Top list, HaloRank, Lords, Gallery, Stats, Checks, History (undo), Reports.
 - `build_pdf.py` makes the PDF (matplotlib, Letter, 26 pages including the cover collage).
 - `build_html.py` + `dashboard.template.html` make a self-contained dashboard (vanilla JS, inline SVG, no CDN).
 - `data.py` replaces about 90K workbook formulas with pandas.
@@ -25,7 +25,15 @@ SQLite database + Python + generated reports + a local entry app.
   `build_reviews.py` + `reviews.template.html` make `games_list_reviews.html` (layout follows my old hand-made reviews page,
   plus a library details panel). The old page's 45 tier-only placements (no write-up) were intentionally not imported.
   Undo now restores only the columns an edit changed, so undoing an old game edit can't wipe a later tier.
-- Tests: `tests/test_data.py` (derived numbers are internally consistent) and `tests/test_api.py` pass cleanly on Windows. `tests/test_e2e.py` (39 Playwright UI checks) is unresolved on Windows — see **Windows test status** below before touching it.
+- Total War: Warhammer III lord tracker (Oct 24 2026): `tww_lords` (110 legendary lords, 25 races, filled by `tools/fetch_tww_lords.py`
+  from the Total War wiki API) and `tww_campaigns` (any number per lord; only lord, mode and status required; the seven 0-5
+  ratings are all-or-none). Lookups: `ref_tww_mode`, `ref_tww_status` (editable), `ref_tww_difficulty`, and weights in
+  `lk_twwratingweights`. `tww.py` scores like `halo.py` and shares its tier bands. A lord's score is their best rated campaign
+  (the dashboard also offers average and recomputes it for the mode filter). `roc_playable` limits Realms of Chaos progress and
+  drives a Checks warning. Entry is in the app's Lords tab; the dashboard's Lords tab is read-only. Images are in `lords/`
+  (git-ignored cache, served at `/lords/<file>`). The old Old World mod uses the same lords, so it is only a campaign mode.
+  Playthroughs are still to be entered by hand.
+- Tests: `tests/test_tww.py` covers the scoring. `tests/test_data.py` (derived numbers are internally consistent) and `tests/test_api.py` pass cleanly on Windows. `tests/test_e2e.py` (39 Playwright UI checks) is unresolved on Windows — see **Windows test status** below before touching it.
 - `docs/REPORT_LOGIC.md` is a verified spec decoding the workbook's HaloRank, HeatMapScore and Stats sheet formulas (see **Reports decoded** below) — read it before rebuilding any of those reports.
 - Run: `pip install -r requirements.txt`, then `python app.py` (or `start_app.bat`).
 

@@ -113,6 +113,16 @@ try:
         pg.wait_for_selector(f'#gform [name=title][value="{title}"]'); pg.fill(f'#gform [name={field}]', val); pg.click('#gsave'); toast('Saved')
     pg.click('nav a[data-k=checks]'); pg.wait_for_function("document.querySelector('#checksum').innerText.trim().startsWith('0')"); ok(not pg.locator('#chkbadge').is_visible(), 'badge clears once the data is fixed')
 
+    # ---- LORDS: add, edit and score a playthrough through the dialogs
+    pg.click('nav a[data-k=lords]'); pg.wait_for_selector('.lc'); ok(pg.locator('.lc').count() >= 100 and pg.locator('.lordrace').count() > 10, 'lords grouped by race')
+    pg.locator('.lc').first.click(); pg.wait_for_selector('#lcadd'); pg.click('#lcadd'); pg.wait_for_selector('#dlg .lcr')
+    for i in pg.locator('#dlg .lcr').all(): i.fill('4')
+    ok('B' in pg.inner_text('#lcprev'), 'live score preview'); pg.click('#dok'); pg.wait_for_selector('#dlg .camp'); toast('Playthrough added')
+    ok('B' in pg.inner_text('#dlg .camp'), 'saved playthrough shows its tier')
+    pg.click('#dlg button[data-edit]'); pg.wait_for_selector('#dlg .lcr'); pg.fill('#dlg [name=hours]', '12.5'); pg.click('#dok'); pg.wait_for_selector('#dlg .camp:has-text("12.5 h")')
+    pg.click('#dok'); pg.wait_for_function("document.querySelectorAll('.lc:not(.un)').length === 1"); ok(True, 'edited playthrough and the played tile lights up')
+    pg.screenshot(path=SC + 'e2e_lords.png')
+
     # ---- HISTORY
     pg.click('nav a[data-k=history]'); pg.wait_for_selector('#histtable button[data-undo]'); pg.click('#histtable button[data-undo] >> nth=0'); toast('Undone'); ok(True, 'history undo')
     pg.click('#backupbtn'); toast('Backup saved')
@@ -121,6 +131,8 @@ try:
     pg.click('nav a[data-k=reports]'); pg.click('#rebuildbtn'); toast('Reports rebuilt', timeout=180000)
     ok(os.path.getsize(os.path.join(out, 'games_list_dashboard.html')) > 1e5 and os.path.getsize(os.path.join(out, 'games_list_report.pdf')) > 1e4, 'dashboard and pdf rebuilt from the app')
     ok(urllib.request.urlopen(URL + '/dashboard').status == 200 and urllib.request.urlopen(URL + '/report.pdf').status == 200, 'served at /dashboard and /report.pdf')
+    _dash = open(os.path.join(out, 'games_list_dashboard.html'), encoding='utf-8').read()
+    ok('"LORDS":{"lords":[{' in _dash and '"cards":{"' in _dash, 'dashboard embeds the lords and their unit cards')
     pg.click('nav a[data-k=log]'); pg.wait_for_selector('#logtable tr')
     pg.screenshot(path=SC + 'e2e_final.png')
     b.close()

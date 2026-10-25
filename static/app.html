@@ -100,6 +100,19 @@ dialog .btns{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
 .gkey{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin:2px 0 10px}.gkey i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
 table.hg input.rt{width:46px;padding:3px 4px;text-align:center}table.hg input.nm{min-width:260px;padding:3px 6px}table.hg input.nt{min-width:230px;padding:3px 6px}
 table.hg td,table.hg th{padding:4px 4px}table.hg tr.inc input.rt:placeholder-shown{border-color:var(--warn)}table.hg td.sc{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.lordrace{margin-bottom:10px}.lordrace>summary{cursor:pointer;display:flex;gap:10px;align-items:center;padding:6px 0;font-weight:700}
+.lordrace>summary img{width:22px;height:22px;object-fit:contain}.lordrace>summary .muted{font-weight:400;font-size:12px}
+.lordrace>summary .pbar{flex:0 0 90px;height:6px;border-radius:3px;background:var(--grid);overflow:hidden}.lordrace>summary .pbar i{display:block;height:100%;background:var(--accent)}
+.lordgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px}
+.lc{position:relative;display:flex;flex-direction:column;gap:3px;align-items:center;text-align:center;padding:6px 4px;font-size:12px;background:var(--card);border:1px solid var(--grid);border-radius:8px;cursor:pointer;color:var(--text)}
+.lc:hover,.lc:focus-visible{border-color:var(--accent);outline:none}.lc.un img,.lc.un .ini{filter:grayscale(1);opacity:.55}
+.lc img,.lc .ini{width:85px;aspect-ratio:85/115;object-fit:cover;border-radius:4px;background:var(--grid)}
+.lc .ini{display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--muted);font-size:20px}
+.lc b{font-size:12px;line-height:1.2;max-width:100%}.lc .tp{position:absolute;top:4px;right:4px;font-size:11px;min-width:20px;padding:0 4px}
+.lc .fi{position:absolute;top:4px;left:4px;width:18px;height:18px;object-fit:contain;filter:none!important;opacity:1!important;background:none;aspect-ratio:auto}
+.chip{display:inline-block;padding:0 5px;border-radius:8px;font-size:10px;background:var(--soft);border:1px solid var(--grid);color:var(--text)}
+.camp{border-top:1px solid var(--grid);padding:8px 0;font-size:13px}.camp.best{border-left:3px solid var(--accent);padding-left:8px}
+.camp .rt{font-size:11.5px;color:var(--muted)}
 .tp{display:inline-block;min-width:24px;text-align:center;border-radius:5px;padding:0 6px;font-weight:700;color:#222}
 .detail{display:flex;gap:16px;flex-wrap:wrap}.detail img{width:150px;aspect-ratio:2/3;object-fit:cover;border-radius:8px;flex:none}
 .detail .info{flex:1;min-width:220px}.detail .scs{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.detail .scs span{background:var(--bg);border-radius:8px;padding:2px 8px;font-size:12px}
@@ -232,6 +245,21 @@ code{font-size:12px;background:var(--bg);padding:1px 4px;border-radius:4px}
   <div style="overflow:auto"><table id="halosum"></table></div></div>
 </section>
 
+<!-- ======================= LORDS ======================= -->
+<section class="tab" id="tab-lords">
+ <div class="card">
+  <div class="halohead"><h2>Warhammer III lords</h2>
+   <select id="lordrace"></select>
+   <select id="lordplayed"><option value="">All lords</option><option value="1">Played</option><option value="0">Not played</option></select>
+   <select id="lordhow"><option value="best">Score: best campaign</option><option value="avg">Score: average</option></select>
+   <button class="primary sm" id="lordadd">+ Lord</button><span class="muted" id="lordcount"></span></div>
+  <p class="muted" style="margin:0 0 10px" id="lordnote"></p>
+  <div id="lordlist"></div>
+ </div>
+ <div class="card"><h2>By race</h2><p class="muted" style="margin-top:0">Averages use rated campaigns only.</p>
+  <div style="overflow:auto"><table id="lordsum"></table></div></div>
+</section>
+
 <!-- ======================= GALLERY ======================= -->
 <section class="tab" id="tab-gallery">
  <div class="card">
@@ -327,7 +355,7 @@ async function refreshMeta(){META=await api('GET','/api/meta');$('#gamelist').in
 async function afterChange(){await refreshMeta();refreshBadge();const t=currentTab();if(TABS[t])TABS[t].show(true)}
 
 /* ---------- tabs / routing ---------- */
-const NAMES={log:'Log time',games:'Games',reviews:'Reviews',gallery:'Gallery',stats:'Stats',top:'Top list',halo:'HaloRank',checks:'Checks',history:'History',reports:'Reports'};
+const NAMES={log:'Log time',games:'Games',reviews:'Reviews',gallery:'Gallery',stats:'Stats',top:'Top list',halo:'HaloRank',lords:'Lords',checks:'Checks',history:'History',reports:'Reports'};
 const TABS={};
 $('#nav').innerHTML=Object.entries(NAMES).map(([k,n])=>`<a data-k="${k}" href="#${k}">${n}${k==='checks'?'<span class="badge" id="chkbadge" hidden></span>':''}</a>`).join('');
 const currentTab=()=>(location.hash.slice(1).split('/')[0]||'log');
@@ -748,10 +776,121 @@ $('#haloadd').onclick=()=>haloDialog(null);
 $('#halogame').onchange=e=>{HALO.game=e.target.value;haloRender()};
 $('#halov-tier').onclick=()=>{HALO.view='tier';haloRender()};$('#halov-grid').onclick=()=>{HALO.view='grid';haloRender()};
 
+/* ======================= LORDS ======================= */
+const LORDS={data:null,race:'',played:'',how:'best',closed:new Set()};
+const MODEABBR={'Realms of Chaos':'RoC','Immortal Empires':'IE','Old World':'OW'};
+const modeAbbr=m=>MODEABBR[m]||m.split(/\s+/).map(w=>w[0]).join('');
+const lordInit=n=>n.split(/\s+/).filter(w=>/^[A-Z]/.test(w)).slice(0,2).map(w=>w[0]).join('');
+const lordById=id=>LORDS.data.lords.find(l=>l.id==id);
+const lordCamps=id=>LORDS.data.campaigns.filter(c=>c.lord_id==id);
+// same arithmetic as tww.py: weights pair to columns by position; bands are upper-inclusive
+function lordVS(r){const D=LORDS.data,v=D.cols.map(c=>r[c]);if(v.some(x=>x==null||x===''))return null;
+  return v.reduce((a,x,i)=>a+x*D.weights[i],0)/D.weights.reduce((a,b)=>a+b,0)}
+function lordTier(vs){if(vs==null)return null;const c=LORDS.data.tiers.filter(t=>t.upper>=vs-1e-12);return c.length?c.reduce((a,b)=>a.upper<=b.upper?a:b).tier:null}
+TABS.lords={async show(force,arg){LORDS.data=await api('GET','/api/lords');lordsRender();
+  if(arg&&!force){history.replaceState(null,'','#lords');if(lordById(arg))lordDetail(+arg)}}};
+function lordsRender(){
+  const D=LORDS.data,sc=D.scores[LORDS.how];
+  if(LORDS.race&&!D.races.some(r=>r.race===LORDS.race))LORDS.race='';
+  $('#lordrace').innerHTML=`<option value="">All races</option>`+D.races.map(r=>`<option ${r.race===LORDS.race?'selected':''}>${esc(r.race)}</option>`).join('');
+  $('#lordplayed').value=LORDS.played;$('#lordhow').value=LORDS.how;
+  const played=D.lords.filter(l=>sc[l.id]).length,roc=D.lords.filter(l=>l.roc_playable),rocPlayed=roc.filter(l=>lordCamps(l.id).some(c=>c.mode==='Realms of Chaos')).length;
+  $('#lordcount').textContent=`${played} / ${D.lords.length} lords played · ${D.campaigns.length} campaigns`;
+  $('#lordnote').textContent=`Realms of Chaos: ${rocPlayed} / ${roc.length} available lords played · ${fmt(D.campaign_hours,1)} h in campaigns (${fmt(D.wh3_hours,0)} h logged on Warhammer III). A lord's tier comes from their ${LORDS.how==='best'?'best':'average'} rated campaign.`;
+  const show=l=>(!LORDS.race||l.race===LORDS.race)&&(LORDS.played===''||!!sc[l.id]===(LORDS.played==='1'));
+  $('#lordlist').innerHTML=D.races.map(r=>{
+    const all=D.lords.filter(l=>l.race===r.race),ls=all.filter(show);if(!ls.length)return '';
+    const icon=all.find(l=>l.faction_icon_url)?.faction_icon_url;
+    return `<details class="lordrace" data-race="${esc(r.race)}" ${LORDS.closed.has(r.race)?'':'open'}><summary>${icon?`<img src="${icon}" alt="">`:''}<span>${esc(r.race)}</span><span class="muted">${r.played} / ${r.lords}</span><span class="pbar"><i style="width:${r.lords?100*r.played/r.lords:0}%"></i></span></summary>
+     <div class="lordgrid">${ls.map(l=>{const s=sc[l.id],modes=[...new Set(lordCamps(l.id).map(c=>c.mode))];
+      return `<button type="button" class="lc ${s?'':'un'}" data-id="${l.id}" title="${esc(l.lord)}${l.faction?' · '+esc(l.faction):''}">${l.card_url?`<img src="${l.card_url}" alt="" loading="lazy">`:`<span class="ini">${esc(lordInit(l.lord))}</span>`}
+       <b>${esc(l.lord)}</b>${s?.tier?haloPill(s.tier):''}<span>${modes.map(m=>`<span class="chip">${esc(modeAbbr(m))}</span>`).join(' ')}</span></button>`}).join('')}</div></details>`}).join('')||'<span class="muted">No lords match.</span>';
+  $('#lordsum').innerHTML=`<thead><tr><th>Race</th><th class="num">Played</th><th class="num">Campaigns</th><th class="num">Rated</th>${D.modes.map(m=>`<th class="num">${esc(modeAbbr(m))}</th>`).join('')}${D.cols.map((c,i)=>`<th class="num" title="${esc(D.labels[i])} · weight ${D.weights[i]}">${esc(D.labels[i].split(/[ /]/)[0])}</th>`).join('')}</tr></thead><tbody>`+
+   D.races.map(r=>`<tr><td>${esc(r.race)}</td><td class="num">${r.played} / ${r.lords}</td><td class="num">${r.campaigns}</td><td class="num">${r.rated}</td>${D.modes.map(m=>`<td class="num">${r.modes[m]||'·'}</td>`).join('')}${D.cols.map(c=>`<td class="num">${r.ratings[c]==null?'—':fmt(r.ratings[c],2)}</td>`).join('')}</tr>`).join('')+'</tbody>'}
+$('#lordlist').addEventListener('click',e=>{const c=e.target.closest('.lc');if(c)lordDetail(+c.dataset.id)});
+$('#lordlist').addEventListener('toggle',e=>{const d=e.target;if(d.dataset?.race)d.open?LORDS.closed.delete(d.dataset.race):LORDS.closed.add(d.dataset.race)},true);
+$('#lordrace').onchange=e=>{LORDS.race=e.target.value;lordsRender()};
+$('#lordplayed').onchange=e=>{LORDS.played=e.target.value;lordsRender()};
+$('#lordhow').onchange=e=>{LORDS.how=e.target.value;lordsRender()};
+$('#lordadd').onclick=()=>lordForm(null);
+// a dialog's close event arrives asynchronously, so a stale one can land after the dialog was reopened for the next step
+function afterClose(d,fn){const h=()=>{if(d.open)return;d.removeEventListener('close',h);fn()};d.addEventListener('close',h)}
+const reopenLord=async id=>{await refreshMeta();refreshBadge();await TABS.lords.show(true);if(id&&lordById(id))lordDetail(id)};
+function lordDetail(id){
+  const D=LORDS.data,l=lordById(id),cs=lordCamps(id),s=D.scores[LORDS.how][id]||{};
+  const info=[l.faction,l.start_location&&'Starts: '+l.start_location,l.dlc,l.roc_playable?'Playable in Realms of Chaos':'Immortal Empires / Old World only'].filter(Boolean).map(esc).join(' · ');
+  dialog(`<h2>${esc(l.lord)} <span class="muted" style="font-weight:400;font-size:13px">${esc(l.race)}</span> ${s.tier?haloPill(s.tier):''}${s.score!=null?` <span class="muted" style="font-size:13px">${fmt(s.score,2)}</span>`:''}</h2>
+   <div class="detail">${l.portrait_url?`<img src="${l.portrait_url}" alt="" style="width:120px;aspect-ratio:3/4">`:''}<div class="info"><div class="muted">${info}</div>
+   ${cs.length?cs.map(c=>`<div class="camp ${c.id===s.best_id?'best':''}"><div><b>${esc(c.mode)}</b> · ${esc(c.status)}${c.campaign_difficulty||c.battle_difficulty?` · ${esc(c.campaign_difficulty||'–')} / ${esc(c.battle_difficulty||'–')}`:''}
+     ${c.score!=null?` · ${haloPill(c.tier)} ${fmt(c.score,2)}`:' · <span class="muted">unrated</span>'}${c.id===s.best_id&&cs.length>1?' <span class="chip">best</span>':''}
+     <span style="float:right"><button class="sm" data-edit="${c.id}">Edit</button> <button class="sm danger" data-del="${c.id}">✕</button></span></div>
+     <div class="muted">${[c.started&&prettyDate(c.started)+(c.finished?' → '+prettyDate(c.finished):''),c.turns&&c.turns+' turns',c.hours&&fmt(c.hours,1)+' h',c.patch&&'patch '+c.patch,c.coop_with&&'co-op with '+c.coop_with,c.mods&&'mods: '+c.mods].filter(Boolean).map(esc).join(' · ')}</div>
+     ${c.score!=null?`<div class="rt">${D.cols.map((k,i)=>`${esc(D.labels[i])} ${c[k]}`).join(' · ')}</div>`:''}${c.notes?`<div>${esc(c.notes)}</div>`:''}</div>`).join(''):'<p class="muted">No playthroughs yet.</p>'}
+   <div style="margin-top:10px;display:flex;gap:8px"><button type="button" class="primary sm" id="lcadd">+ Playthrough</button><button type="button" class="sm" id="lcedit">Edit lord</button></div></div></div>`,
+   {ok:'Close',cancel:null,wide:true,onOpen:d=>{
+    $('#lcadd',d).onclick=()=>{d.close();campForm(l,null)};$('#lcedit',d).onclick=()=>{d.close();lordForm(l)};
+    $('.info',d).addEventListener('click',async e=>{const b=e.target.closest('button[data-edit],button[data-del]');if(!b)return;e.preventDefault();
+      const c=cs.find(x=>x.id==(b.dataset.edit||b.dataset.del));
+      if(b.dataset.edit){d.close();return campForm(l,c)}
+      d.close();if(await confirmBox('Delete playthrough',`Delete the <b>${esc(c.mode)}</b> campaign for <b>${esc(l.lord)}</b>? You can undo this right after.`)){
+        try{const x=await api('DELETE','/api/lords/campaigns/'+c.id);toast('Playthrough deleted',{undo:x._batch})}catch(x){toast(x.message,{err:1})}}
+      reopenLord(id)})}})}
+function campForm(l,c){
+  const D=LORDS.data,v=k=>esc(c?c[k]??'':'');
+  const mode=c?c.mode:(l.roc_playable?'Realms of Chaos':'Immortal Empires'),status=c?c.status:'In progress';
+  dialog(`<h2>${c?'Edit':'New'} playthrough · ${esc(l.lord)}</h2>
+   <div class="grid"><label data-f="mode">Mode<select name="mode">${selOpts(D.modes,mode)}</select><span class="err"></span></label>
+   <label data-f="status">Status<select name="status">${selOpts(D.statuses,status)}</select><span class="err"></span></label>
+   <label data-f="campaign_difficulty">Campaign difficulty<select name="campaign_difficulty">${selOpts(D.difficulties,c?.campaign_difficulty,'—')}</select><span class="err"></span></label>
+   <label data-f="battle_difficulty">Battle difficulty<select name="battle_difficulty">${selOpts(D.difficulties,c?.battle_difficulty,'—')}</select><span class="err"></span></label>
+   <label data-f="started">Started<input type="date" name="started" value="${v('started')}"><span class="err"></span></label>
+   <label data-f="finished">Finished<input type="date" name="finished" value="${v('finished')}"><span class="err"></span></label>
+   <label data-f="turns">Turns<input type="number" min="1" step="1" name="turns" value="${v('turns')}"><span class="err"></span></label>
+   <label data-f="hours">Hours<input type="number" min="0" step="0.5" name="hours" value="${v('hours')}"><span class="err"></span></label>
+   <label data-f="patch">Patch<input name="patch" value="${v('patch')}" placeholder="e.g. 6.3"><span class="err"></span></label>
+   <label data-f="coop_with">Co-op with<input name="coop_with" value="${v('coop_with')}"><span class="err"></span></label>
+   <label data-f="mods" class="wide">Mods<input name="mods" value="${v('mods')}"><span class="err"></span></label></div>
+   <h3>Ratings, 0–5 <span class="muted" style="text-transform:none">(all seven, or leave blank for unrated)</span> <span id="lcprev" style="text-transform:none"></span></h3>
+   <div data-f="ratings"><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(105px,1fr))">${D.cols.map((k,i)=>`<label title="weight ${D.weights[i]}">${esc(D.labels[i])}<input class="lcr" type="number" min="${D.range[0]}" max="${D.range[1]}" step="1" name="${k}" value="${v(k)}"></label>`).join('')}</div><span class="err"></span></div>
+   <label data-f="notes" style="margin-top:8px">Notes<input name="notes" value="${v('notes')}"><span class="err"></span></label>`,
+   {ok:c?'Save changes':'Add playthrough',wide:true,
+    onOpen:d=>{const prev=()=>{const r={};$$('.lcr',d).forEach(i=>r[i.name]=i.value.trim()===''?null:+i.value);const vs=lordVS(r);
+      $('#lcprev',d).innerHTML=vs==null?'':`→ ${fmt(vs,2)} ${haloPill(lordTier(vs))}`};$$('.lcr',d).forEach(i=>i.addEventListener('input',prev));prev();
+      afterClose(d,()=>d.dataset.saved?reopenLord(l.id):lordDetail(l.id))},
+    onOk:async d=>{const f=$('form',d).elements,body={lord_id:l.id};
+      ['mode','status','campaign_difficulty','battle_difficulty','started','finished','turns','hours','patch','coop_with','mods','notes',...D.cols].forEach(k=>body[k]=f[k].value);
+      const x=c?await api('PUT','/api/lords/campaigns/'+c.id,body):await api('POST','/api/lords/campaigns',body);
+      d.dataset.saved=1;toast(c?'Playthrough saved':'Playthrough added',{undo:x._batch})}})}
+function lordForm(l){
+  const D=LORDS.data,v=k=>esc(l?l[k]??'':'');
+  dialog(`<h2>${l?'Edit lord':'Add lord'}</h2><datalist id="lordraces">${D.races.map(r=>`<option value="${esc(r.race)}">`).join('')}</datalist>
+   <div class="grid"><label data-f="lord" class="wide">Lord<input name="lord" value="${v('lord')}" autocomplete="off"><span class="err"></span></label>
+   <label data-f="race">Race<input name="race" list="lordraces" value="${l?esc(l.race):esc(LORDS.race)}" autocomplete="off"><span class="err"></span></label>
+   <label data-f="race_game">Race's game<select name="race_game">${[1,2,3].map(g=>`<option ${l&&l.race_game===g?'selected':''}>${g}</option>`).join('')}</select><span class="err"></span></label>
+   <label data-f="race_order">Section order<input type="number" min="1" step="1" name="race_order" value="${v('race_order')}" placeholder="auto"><span class="err"></span></label>
+   <label data-f="faction">Faction<input name="faction" value="${v('faction')}"><span class="err"></span></label>
+   <label data-f="start_location">Start location<input name="start_location" value="${v('start_location')}"><span class="err"></span></label>
+   <label data-f="dlc">DLC<input name="dlc" value="${v('dlc')}"><span class="err"></span></label>
+   <label data-f="wiki_page">Wiki page<input name="wiki_page" value="${v('wiki_page')}"><span class="err"></span></label>
+   <label data-f="card">Unit card file<input name="card" value="${v('card')}"><span class="err"></span></label>
+   <label data-f="portrait">Portrait file<input name="portrait" value="${v('portrait')}"><span class="err"></span></label>
+   <label data-f="faction_icon">Faction icon file<input name="faction_icon" value="${v('faction_icon')}"><span class="err"></span></label>
+   <label class="chk"><input type="checkbox" name="roc_playable" ${l?.roc_playable?'checked':''}> Playable in Realms of Chaos</label></div>
+   ${l?'<div style="margin-top:10px"><button type="button" class="link danger" id="lorddel">Delete this lord…</button></div>':''}`,
+   {ok:l?'Save changes':'Add lord',wide:true,
+    onOpen:d=>{afterClose(d,()=>{if(d.dataset.saved)reopenLord(+d.dataset.saved);else if(l&&!d.dataset.gone)lordDetail(l.id)});
+      $('#lorddel',d)?.addEventListener('click',async()=>{d.dataset.gone=1;d.close();
+        if(!await confirmBox('Delete lord',`Delete <b>${esc(l.lord)}</b>? A lord with playthroughs can't be deleted. You can undo this right after.`))return lordDetail(l.id);
+        try{const x=await api('DELETE','/api/lords/'+l.id);toast('Lord deleted',{undo:x._batch});await afterChange()}catch(x){toast(x.message,{err:1});lordDetail(l.id)}})},
+    onOk:async d=>{const f=$('form',d).elements,body={};
+      ['lord','race','race_game','race_order','faction','start_location','dlc','wiki_page','card','portrait','faction_icon'].forEach(k=>body[k]=f[k].value);body.roc_playable=f.roc_playable.checked;
+      const x=l?await api('PUT','/api/lords/'+l.id,body):await api('POST','/api/lords',body);
+      d.dataset.saved=l?l.id:x.id;toast(l?'Lord saved':'Lord added',{undo:x._batch})}})}
+
 /* ======================= CHECKS ======================= */
 TABS.checks={async show(){const c=await api('GET','/api/checks');
   $('#checksum').innerHTML=['error','warn','info'].map(s=>`<div><b>${c.summary[s]}</b>${{error:'errors',warn:'warnings',info:'notes'}[s]}</div>`).join('');
-  $('#checklist').innerHTML=c.items.length?`<table><thead><tr><th></th><th>Item</th><th>Problem</th><th></th></tr></thead><tbody>${c.items.map(i=>`<tr><td><span class="pill ${i.severity}">${i.severity}</span></td><td>${esc(i.title)}</td><td>${esc(i.detail)}</td><td>${i.game_id?`<a href="#games/${i.game_id}"><button class="sm">Open</button></a>`:''}</td></tr>`).join('')}</tbody></table>`:'<span class="muted">Everything looks consistent. 🎉</span>';
+  $('#checklist').innerHTML=c.items.length?`<table><thead><tr><th></th><th>Item</th><th>Problem</th><th></th></tr></thead><tbody>${c.items.map(i=>`<tr><td><span class="pill ${i.severity}">${i.severity}</span></td><td>${esc(i.title)}</td><td>${esc(i.detail)}</td><td>${i.game_id?`<a href="#games/${i.game_id}"><button class="sm">Open</button></a>`:i.lord_id?`<a href="#lords/${i.lord_id}"><button class="sm">Open</button></a>`:''}</td></tr>`).join('')}</tbody></table>`:'<span class="muted">Everything looks consistent. 🎉</span>';
   const b=$('#chkbadge');b.hidden=!c.summary.error;b.textContent=c.summary.error}};
 
 /* ======================= HISTORY ======================= */

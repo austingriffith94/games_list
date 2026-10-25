@@ -1,7 +1,6 @@
 # Action plan: Total War: Warhammer III legendary lord tracker
 
-Status: **planned, not started.** Build in the order of the steps below. Re-run `tests/test_data.py` and
-`tests/test_api.py` after each step.
+Status: **finished and archived** (all steps done; playthroughs are entered in the app). Original build order below.
 
 ## Goal
 A tracker of every legendary lord in Total War: Warhammer III, grouped by race, showing which lords I've
@@ -46,9 +45,10 @@ weighted score, S-F tiers.
   be added without code changes.
 - **Patch**: optional free text (e.g. "6.3"), because factions are reworked between patches.
 
-## 1. Schema v5
-`schema.upgrade()` gets a 4 → 5 step, run in one transaction like 3 → 4. `DDL`/`HALO_DDL` get a matching
-`TWW_DDL` block for reference.
+## 1. Schema v7
+The schema was already at v6 when this started, so this is a 6 → 7 step (`_v7` in `schema.py`), run in the
+same transaction as the other upgrades. `TWW_DDL` and `TWW_SEEDS` sit beside `HALO_DDL`; the seed rows for
+the four lookup tables come from `TWW_SEEDS`.
 
 ```sql
 CREATE TABLE ref_tww_mode(name TEXT PRIMARY KEY COLLATE NOCASE);          -- Realms of Chaos / Immortal Empires / Old World
@@ -201,21 +201,21 @@ The layout in `dashboard.template.html` (vanilla JS, inline SVG, no CDN, same as
   tier colours stay the strongest. Red is not used for data, as in the rest of the dashboard.
 
 ## 6. Tests
-- `tests/test_api.py`: create, edit, delete and undo a campaign; ratings must be all-or-none (422 when
-  only some are given); bad mode/status/difficulty is refused; deleting a lord that has campaigns is
+- `tests/test_api.py`: create, edit, delete and undo a campaign; ratings must be all-or-none (400, like every
+  other validation error, when only some are given); bad mode/status/difficulty is refused; deleting a lord that has campaigns is
   refused; a campaign with only lord + mode + status saves; two campaigns for the same lord and mode
   both save, and the lord's score is the better one.
 - `tests/test_data.py` (or a new `tests/test_tww.py`): `tww.campaign_score` and tiers match a
   hand-worked example, and the band edges match `halo.tier_of`.
-- The schema upgrade from v4 to v5 runs on a copy of the DB, and running it again does nothing.
+- The schema upgrade from v6 to v7 runs on a copy of the DB, and running it again does nothing.
 
 ## Build order
-1. Schema v5 + `tww.py` + tests.
-2. `tools/fetch_tww_lords.py`. Run it, then check the counts and images by hand.
-3. App API + Lords tab + checks. **I then enter my playthroughs.**
-4. Dashboard Lords tab, then a look at it in light and dark mode at phone width.
-5. Update `README.md` / `PROJECT_CONTEXT.md` (new tables, the `lords/` folder, the fetch script), and
-   archive this plan to `docs/archive/` when finished.
+1. Schema v7 + `tww.py` + tests. **Done.**
+2. `tools/fetch_tww_lords.py`. **Done.**
+3. App API + Lords tab + checks. **Done.** I then enter my playthroughs.
+4. Dashboard Lords tab, then a look at it in light and dark mode at phone width. **Done.** A lord's score is
+   recomputed in the page so it follows the mode filter; under the RoC filter only RoC-playable lords are listed.
+5. Update `README.md` / `PROJECT_CONTEXT.md` and archive this plan. **Done.**
 
 ## Out of scope for now
 - PDF pages for the lords.

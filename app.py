@@ -9,6 +9,7 @@ from urllib.parse import quote
 from flask import Flask, Response, g as G, jsonify, request, send_file, send_from_directory
 from PIL import Image
 import halo
+import tww
 import reviews as RV
 import schema
 
@@ -32,6 +33,7 @@ CONFIG = load_config()
 DB = os.environ.get('GAMELIST_DB') or CONFIG.get('db') or os.path.join(BASE, 'gamelist.db')
 COVERS = os.environ.get('GAMELIST_COVERS') or CONFIG.get('covers') or os.path.join(BASE, 'covers')
 REVIEW_IMAGES = os.environ.get('GAMELIST_REVIEW_IMAGES') or CONFIG.get('review_images') or os.path.join(BASE, 'review_images')
+LORDS = os.environ.get('GAMELIST_LORDS') or CONFIG.get('lords') or os.path.join(BASE, 'lords')
 BACKUPS = os.environ.get('GAMELIST_BACKUPS', os.path.join(BASE, 'backups'))
 OUT = os.environ.get('GAMELIST_OUT', BASE)
 REPORT_HTML = os.path.join(OUT, 'games_list_dashboard.html')
@@ -195,6 +197,7 @@ def _num(v, name, errs, lo=None, hi=None, integer=False, gt=None):
         return None
     try:
         x = float(v)
+        if x != x or x in (float('inf'), float('-inf')): raise ValueError
     except (TypeError, ValueError):
         errs[name] = 'Must be a number'; return None
     if integer and x != int(x):
@@ -716,6 +719,170 @@ def delete_halo(lid):
     return jsonify(ok=True)
 
 
+# ----------------------------------------------------------------------------- Warhammer III lords
+TWW_GAME = tww.GAME
+LORD_TEXT = ('faction', 'start_location', 'dlc', 'wiki_page')
+LORD_IMAGES = ('card', 'portrait', 'faction_icon')
+
+
+def lord_img(name):
+    p = os.path.join(LORDS, name) if name else None
+    return '/lords/' + quote(name) + f'?v={int(os.path.getmtime(p))}' if p and os.path.exists(p) else None
+
+
+def tww_lords():
+    out = rows('SELECT * FROM tww_lords ORDER BY race_game, race_order, race COLLATE NOCASE, lord COLLATE NOCASE')
+    for l in out:
+        for k in LORD_IMAGES: l[k + '_url'] = lord_img(l[k])
+    return out
+
+
+def tww_campaigns():
+    return rows("SELECT * FROM tww_campaigns ORDER BY COALESCE(started, finished, '') DESC, id DESC")
+
+
+def _opt_text(d, k):
+    v = d.get(k)
+    return (str(v).strip() or None) if v is not None else None
+
+
+def clean_campaign(d):
+    """Validate a lord campaign. Only lord, mode and status are required; the seven ratings are all or none."""
+    errs, out = {}, {}
+    lid = _num(d.get('lord_id'), 'lord_id', errs, 1, None, True)
+    if lid is None: errs.setdefault('lord_id', 'Choose a lord')
+    elif not get_row('tww_lords', lid): errs['lord_id'] = 'Unknown lord'
+    out['lord_id'] = lid
+    for key, ref, label in (('mode', 'ref_tww_mode', 'Mode'), ('status', 'ref_tww_status', 'Status')):
+        v = canon(d.get(key) or '', [r['name'] for r in rows(f'SELECT name FROM {ref} ORDER BY rowid')])
+        if v is None: errs[key] = f'{label} is required' if not d.get(key) else f'Unknown {label.lower()}'
+        out[key] = v
+    diffs = [r['name'] for r in rows('SELECT name FROM ref_tww_difficulty ORDER BY sort')]
+    for key in ('campaign_difficulty', 'battle_difficulty'):
+        raw = d.get(key)
+        v = canon(raw, diffs) if raw not in (None, '') else None
+        if raw not in (None, '') and v is None: errs[key] = 'Unknown difficulty'
+        out[key] = v
+    for key in ('started', 'finished'):
+        out[key] = _date(d[key], key, errs) if d.get(key) not in (None, '') else None
+    if out['started'] and out['finished'] and out['finished'] < out['started']:
+        errs['finished'] = 'Finished is before started'
+    out['turns'] = _num(d.get('turns'), 'turns', errs, 1, 100000, True)
+    out['hours'] = _num(d.get('hours'), 'hours', errs, 0, 10000, False, gt=0)
+    for key in ('patch', 'mods', 'coop_with', 'notes'): out[key] = _opt_text(d, key)
+    vals = {c: _num(d.get(c), c, errs, tww.RATING_LO, tww.RATING_HI, True) for c in tww.RATING_COLS}
+    if not errs and 0 < sum(v is not None for v in vals.values()) < len(vals):
+        errs['ratings'] = 'Rate all seven categories, or leave them all blank for an unrated campaign'
+    out.update(vals)
+    return out, errs
+
+
+def clean_lord(d, old=None):
+    errs, out = {}, {}
+    out['lord'] = (d.get('lord') or '').strip()
+    if not out['lord']: errs['lord'] = 'Lord name is required'
+    elif scalar('SELECT 1 FROM tww_lords WHERE lord=? AND id IS NOT ?', (out['lord'], old['id'] if old else None)):
+        errs['lord'] = 'A lord with this name already exists'
+    out['race'] = (d.get('race') or '').strip()
+    if not out['race']: errs['race'] = 'Race is required'
+    else:                                                   # reuse the spelling of an existing race section
+        out['race'] = scalar('SELECT race FROM tww_lords WHERE race=? LIMIT 1', (out['race'],)) or out['race']
+    out['race_game'] = _num(d.get('race_game'), 'race_game', errs, 1, 3, True)
+    if out['race_game'] is None: errs.setdefault('race_game', 'Choose 1, 2 or 3')
+    out['race_order'] = _num(d.get('race_order'), 'race_order', errs, 1, 999, True)
+    if out['race_order'] is None and not errs:              # a new lord joins its race's section, else a new section at the end of its game
+        out['race_order'] = scalar('SELECT race_order FROM tww_lords WHERE race=? LIMIT 1', (out['race'],)) or \
+            (scalar('SELECT MAX(race_order) FROM tww_lords WHERE race_game=?', (out['race_game'],)) or 0) + 1
+    sect = out['race'] and one('SELECT race_game, race_order FROM tww_lords WHERE race=? AND id IS NOT ? LIMIT 1', (out['race'], old['id'] if old else None))
+    if sect and old and old['race'] != out['race']:         # moved into an existing race: join that section
+        out['race_game'], out['race_order'] = sect['race_game'], sect['race_order']
+    for k in LORD_TEXT: out[k] = _opt_text(d, k)
+    out['roc_playable'] = _bool(d.get('roc_playable'))
+    for k in LORD_IMAGES:
+        v = _opt_text(d, k)
+        if v and re.search(r'[\\/]|^\.\.', v): errs[k] = 'Use a file name from the lords folder'
+        out[k] = v
+    return out, errs
+
+
+@app.get('/lords/<path:name>')
+def lords_file(name):
+    return send_from_directory(LORDS, name, max_age=0)
+
+
+@app.get('/api/lords')
+def get_lords():
+    weights, tiers = tww.load_scoring(con())
+    lords, camps = tww_lords(), tww.score_rows(tww_campaigns(), weights, tiers)
+    scores = {how: tww.lord_scores(camps, tiers, how) for how in ('best', 'avg')}
+    return jsonify(lords=lords, campaigns=camps, scores=scores, races=tww.race_summary(lords, camps),
+                   weights=weights, labels=tww.RATING_LABELS, cols=tww.RATING_COLS, range=[tww.RATING_LO, tww.RATING_HI],
+                   modes=[r['name'] for r in rows('SELECT name FROM ref_tww_mode ORDER BY rowid')],
+                   statuses=[r['name'] for r in rows('SELECT name FROM ref_tww_status ORDER BY rowid')],
+                   difficulties=[r['name'] for r in rows('SELECT name FROM ref_tww_difficulty ORDER BY sort')],
+                   tiers=[{'tier': t[0], 'score': t[1], 'upper': t[2]} for t in tiers],
+                   wh3_hours=scalar('SELECT SUM(hours) FROM play_log WHERE game=?', (TWW_GAME,)) or 0,
+                   campaign_hours=sum(c['hours'] or 0 for c in camps))
+
+
+def _lord_name(lid):
+    return (get_row('tww_lords', lid) or {}).get('lord', '?')
+
+
+@app.post('/api/lords/campaigns')
+def create_campaign():
+    c, errs = clean_campaign(request.get_json(force=True))
+    raise_if(errs)
+    cid = insert_row('tww_campaigns', c, f'Added {c["mode"]} campaign: {_lord_name(c["lord_id"])}')
+    return jsonify(id=cid), 201
+
+
+@app.put('/api/lords/campaigns/<int:cid>')
+def update_campaign(cid):
+    old = get_row('tww_campaigns', cid)
+    if not old: raise ApiError('Campaign not found', 404)
+    c, errs = clean_campaign({**old, **request.get_json(force=True)})
+    raise_if(errs)
+    update_row('tww_campaigns', cid, c, f'Edited {c["mode"]} campaign: {_lord_name(c["lord_id"])}')
+    return jsonify(id=cid)
+
+
+@app.delete('/api/lords/campaigns/<int:cid>')
+def delete_campaign(cid):
+    old = get_row('tww_campaigns', cid)
+    if not old: raise ApiError('Campaign not found', 404)
+    delete_row('tww_campaigns', cid, f'Deleted {old["mode"]} campaign: {_lord_name(old["lord_id"])}')
+    return jsonify(ok=True)
+
+
+@app.post('/api/lords')
+def create_lord():
+    l, errs = clean_lord(request.get_json(force=True))
+    raise_if(errs)
+    lid = insert_row('tww_lords', l, f'Added lord: {l["lord"]}')
+    return jsonify(id=lid), 201
+
+
+@app.put('/api/lords/<int:lid>')
+def update_lord(lid):
+    old = get_row('tww_lords', lid)
+    if not old: raise ApiError('Lord not found', 404)
+    l, errs = clean_lord({**old, **request.get_json(force=True)}, old)
+    raise_if(errs)
+    update_row('tww_lords', lid, l, f'Edited lord: {l["lord"]}')
+    return jsonify(id=lid)
+
+
+@app.delete('/api/lords/<int:lid>')
+def delete_lord(lid):
+    old = get_row('tww_lords', lid)
+    if not old: raise ApiError('Lord not found', 404)
+    n = scalar('SELECT COUNT(*) FROM tww_campaigns WHERE lord_id=?', (lid,))
+    if n: raise ApiError(f'{old["lord"]} has {n} campaign(s). Delete those first.', 409)
+    delete_row('tww_lords', lid, f'Deleted lord: {old["lord"]}')
+    return jsonify(ok=True)
+
+
 # ----------------------------------------------------------------------------- reviews
 # The write-up lives in reviews; its tier is stored on the game (games.tier) but only ever set from here.
 def clean_review(d):
@@ -953,6 +1120,14 @@ def checks():
                      'Image file not found: ' + ', '.join(gone), game_id=r['gid'], review_id=r['id'])
         if not r['tier']: add('warn', 'review_tier', f'{r["title"]} review', 'Review has no tier (it is left off the reviews page)',
                               game_id=r['gid'], review_id=r['id'])
+    for r in rows('''SELECT c.lord_id, c.mode, c.started, c.finished, l.lord, l.roc_playable FROM tww_campaigns c
+                     JOIN tww_lords l ON l.id=c.lord_id'''):
+        if r['started'] and r['finished'] and r['finished'] < r['started']:
+            add('error', 'lord_dates', f'{r["lord"]} ({r["mode"]})', f'Finished {r["finished"]} is before started {r["started"]}', lord_id=r['lord_id'])
+        if r['mode'] == 'Realms of Chaos' and not r['roc_playable']:
+            add('warn', 'lord_roc', f'{r["lord"]} ({r["mode"]})', 'This lord is not marked playable in Realms of Chaos', lord_id=r['lord_id'])
+    nocard = [l['lord'] for l in rows('SELECT lord, card FROM tww_lords ORDER BY race_game, race_order, lord') if not lord_img(l['card'])]
+    if nocard: add('info', 'lord_card', f'{len(nocard)} lord(s) have no unit card image', ', '.join(nocard[:12]) + (' …' if len(nocard) > 12 else ''))
     order = {'error': 0, 'warn': 1, 'info': 2}
     out.sort(key=lambda x: order[x['severity']])
     summary = {s: sum(1 for x in out if x['severity'] == s) for s in order}
@@ -1011,7 +1186,7 @@ def backup():
 def export():
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as z:
-        for t in ('games', 'releases', 'play_log', 'top_rank', 'halo_levels', 'reviews', 'ref_tier'):
+        for t in ('games', 'releases', 'play_log', 'top_rank', 'halo_levels', 'tww_lords', 'tww_campaigns', 'reviews', 'ref_tier'):
             cur = con().execute(f'SELECT * FROM {t} ORDER BY 1')
             s = io.StringIO(); w = csv.writer(s); w.writerow([c[0] for c in cur.description]); w.writerows(cur.fetchall())
             z.writestr(f'{t}.csv', s.getvalue())
@@ -1029,7 +1204,7 @@ def rebuild():
     try:
         env = dict(os.environ, GAMELIST_DB=DB)
         res = {}
-        builds = (('dashboard', [sys.executable, os.path.join(BASE, 'build_html.py'), REPORT_HTML, COVERS]),
+        builds = (('dashboard', [sys.executable, os.path.join(BASE, 'build_html.py'), REPORT_HTML, COVERS, LORDS]),
                   ('pdf', [sys.executable, os.path.join(BASE, 'build_pdf.py'), COVERS, REPORT_PDF]),
                   ('reviews', [sys.executable, os.path.join(BASE, 'build_reviews.py'), REPORT_REVIEWS, COVERS, REVIEW_IMAGES]))
         only = request.args.get('only')

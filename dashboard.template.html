@@ -98,6 +98,27 @@ table.mx th.xf:hover,table.mx td.sys.xf:hover{color:var(--accent-ink)}table.mx .
 .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
 #panel{position:fixed;right:0;top:0;bottom:0;width:min(380px,100%);background:var(--card);border-left:1px solid var(--grid);box-shadow:-4px 0 16px #0003;transform:translateX(100%);transition:transform .2s;z-index:20;padding:14px;overflow:auto}
 #panel.open{transform:none}#panel h3{margin:0 0 8px;font-size:14px}#panel li{margin:3px 0}
+/* Lords tab. Tier colours are the app's HaloRank ones; race colours (--rc) only mark membership, so they stay muted */
+.tp{display:inline-block;min-width:20px;padding:0 5px;border-radius:4px;font-weight:800;font-size:11px;line-height:17px;color:#222;text-align:center}
+.mch{display:inline-block;padding:0 4px;border:1px solid var(--grid);border-radius:4px;font-size:10px;line-height:14px;color:var(--muted);white-space:nowrap}
+.lsec{margin-bottom:10px}.lsec>summary{list-style:none;cursor:pointer;display:flex;gap:10px;align-items:center;padding:6px 10px;border:1px solid var(--grid);border-left:4px solid var(--rc);border-radius:8px;font-weight:700}
+.lsec>summary::-webkit-details-marker{display:none}.lsec>summary::before{content:"▸";color:var(--muted);transition:transform .15s}.lsec[open]>summary::before{transform:rotate(90deg)}
+.lsec>summary img{width:22px;height:22px;object-fit:contain}.lsec>summary .n{font-weight:400;font-size:12px;color:var(--muted);white-space:nowrap}
+.lsec .pb{flex:0 1 120px;height:6px;border-radius:3px;background:var(--grid);overflow:hidden;margin-left:auto}.lsec .pb i{display:block;height:100%;background:var(--accent)}
+.lgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(98px,1fr));gap:8px;padding-top:8px}
+.lcd{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px 7px;text-align:center;font-size:12px;line-height:1.25;min-width:0;border-radius:8px}
+.lcd:hover{border-color:var(--accent)}.lcd b{font-weight:600;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}
+.lim{position:relative;width:100%;max-width:85px;aspect-ratio:85/115;border-radius:4px;overflow:hidden;background:linear-gradient(135deg,var(--soft),var(--grid));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;color:var(--muted)}
+.lim img.c{width:100%;height:100%;object-fit:cover;display:block}
+.lim .fi{position:absolute;right:2px;bottom:2px;width:20px;height:20px;object-fit:contain;filter:drop-shadow(0 0 2px #000a)}.lim .tp{position:absolute;left:2px;top:2px}
+.lcd.un .lim{filter:grayscale(1);opacity:.45}.lcd.un b{color:var(--muted);font-weight:400}
+.ltier{display:grid;grid-template-columns:64px minmax(0,1fr);border:1px solid var(--grid);border-radius:10px;overflow:hidden;margin-bottom:6px;min-height:72px}
+.ltier .tl{display:flex;flex-direction:column;align-items:center;justify-content:center;color:#222;font-weight:800;font-size:24px;line-height:1}.ltier .tl small{font-size:10px;font-weight:600;opacity:.75;margin-top:3px}
+.ltier .tc{display:flex;flex-wrap:wrap;gap:6px;padding:6px;align-content:flex-start;background:var(--bg)}
+.lth{width:60px;border:0;padding:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;line-height:1.15}
+.lth .lim{width:52px;border:2px solid var(--rc);font-size:13px}.lth span{overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word;text-align:center}
+.lcamp{border:1px solid var(--grid);border-radius:8px;padding:6px 8px;margin:6px 0;font-size:12.5px;cursor:pointer}.lcamp:hover{border-color:var(--accent)}
+.lcamp.sel{border-color:var(--accent);background:var(--hl)}.lcamp .m{color:var(--muted);font-size:11.5px}
 @media print{nav,#panel,.row button,.t10 .bk{display:none}body{background:#fff}*{print-color-adjust:exact;-webkit-print-color-adjust:exact}.card{break-inside:avoid}.tablewrap{max-height:none;overflow:visible}}
 </style>
 </head>
@@ -238,6 +259,18 @@ table.mx th.xf:hover,table.mx td.sys.xf:hover{color:var(--accent-ink)}table.mx .
     <label>Show <select id="mzf"><option value="played">Played games</option><option value="all">All games with a cover</option></select></label><span id="mzn" style="color:var(--muted);font-size:12px"></span></div>
    <div id="mzleg"></div>
    <div id="mosaic"></div></div>
+ </section>
+
+ <section class="tab" id="t-lords">
+  <p class="fnote">The game filter does not apply to this tab.</p>
+  <div class="kpis" id="lkpis"></div>
+  <div class="card"><h2>Warhammer III legendary lords</h2><p class="note" id="lnote"></p>
+   <div class="row"><span class="seg" id="lmode" role="group" aria-label="Campaign mode"></span><span class="seg" id="lplayed" role="group" aria-label="Played"></span>
+    <span class="seg" id="lview" role="group" aria-label="View"></span><span class="seg" id="lhow" role="group" aria-label="Lord score"></span>
+    <select id="lrace" aria-label="Race" style="margin-bottom:8px"></select></div>
+   <div id="lbody"></div></div>
+  <div class="card"><h2>By race</h2><p class="note">Played lords, campaigns per mode, and the average of each rating (0–5) over rated campaigns: darker is higher. Follows the mode filter.</p>
+   <div class="mxscroll"><table class="mx" id="lsum"></table></div></div>
  </section>
 
  <section class="tab" id="t-games">
@@ -450,7 +483,8 @@ function gameCard(g){
   wireXf($('#pbody'));$('#panel').classList.add('open')}
 
 /* ---------- tabs ---------- */
-const TABS=[['overview','Overview'],['scores','Scores'],['years','Years'],['time','Time played'],['hours','Hours'],['stats','Statistics'],['canon','Canon'],['mosaic','Mosaic'],['games','All games']];
+const TABS=[['overview','Overview'],['scores','Scores'],['years','Years'],['time','Time played'],['hours','Hours'],['stats','Statistics'],['canon','Canon'],['mosaic','Mosaic'],
+  ...(DATA.LORDS?.lords.length?[['lords','Lords']]:[]),['games','All games']];
 const built={};let critSel=null,calTimer=null;
 // charts are drawn at their container's pixel width, so redraw the open tab (and later the others) when that width changes
 let builtW=innerWidth,resizeT=null;
@@ -1055,6 +1089,92 @@ function drawMatrix(){
 function gameList(title,items){
   $('#pbody').innerHTML=`<h3>${esc(title)}</h3><ul>`+items.map(([t,extra])=>`<li><span class="xf" data-t="${esc(t)}">${esc(t)}</span>${extra?` <span style="color:var(--muted)">· ${extra}</span>`:''}</li>`).join('')+'</ul>';
   $$('#pbody [data-t]').forEach(e=>e.onclick=()=>gameCard(gByTitle.get(e.dataset.t)));$('#panel').classList.add('open')}
+
+/* ---------- Warhammer III lords (docs/ACTION_PLAN_tww_lords.md) ----------
+   Campaign scores and tiers come precomputed from tww.py; a lord's score is recomputed here because it follows the
+   mode filter and the Best / Average toggle. The game cross-filter does not apply. */
+const LD=DATA.LORDS;
+const TIERCOL={S:'#ff7f7f',A:'#ffbf7f',B:'#ffdf7f',C:'#bfff7f',D:'#7fbfff',F:'#c9a0ff'};   // the app's HaloRank / Lords colours
+const MODEABBR={'Realms of Chaos':'RoC','Immortal Empires':'IE','Old World':'OW'},modeAbbr=m=>MODEABBR[m]||m.split(/\s+/).map(w=>w[0]).join('');
+const LV={mode:'',played:'',race:'',view:'gallery',how:'best',closed:new Set(),open:null};
+const tierPill=t=>t?`<span class="tp" style="background:${TIERCOL[t]||'#ccc'}">${t}</span>`:'';
+// upper-inclusive bands, like halo.tier_of
+const lordTier=s=>{if(s==null)return null;const c=LD.tiers.filter(t=>t.upper>=s-1e-12);return c.length?c.reduce((a,b)=>a.upper<=b.upper?a:b).tier:null};
+const lordInit=n=>n.split(/\s+/).filter(w=>/^[A-Z]/.test(w)).slice(0,2).map(w=>w[0]).join('');
+// golden-angle hues, low saturation: tells races apart without competing with the tier colours
+const raceCol=new Map((LD?.races||[]).map((r,i)=>[r,`hsl(${Math.round(i*137.5)%360} 26% 54%)`]));
+const lordImg=l=>LD.cards[l.id]?`<img class="c" alt="" src="data:image/jpeg;base64,${LD.cards[l.id]}">`:esc(lordInit(l.lord));
+const factionIcon=f=>f&&LD.icons[f]?`data:image/png;base64,${LD.icons[f]}`:null;
+// {cs, rated, score, tier, best}: best is the top rated campaign (ties to the later id), as in tww.lord_scores
+function lordStats(cs){const rated=cs.filter(c=>c.score!=null),best=rated.reduce((b,c)=>!b||c.score>b.score||(c.score===b.score&&c.id>b.id)?c:b,null),
+  s=!rated.length?null:LV.how==='avg'?mean(rated.map(c=>c.score)):best.score;return {cs,rated:rated.length,score:s,tier:lordTier(s),best:best?.id}}
+function lordView(){
+  const cs=LD.campaigns.filter(c=>!LV.mode||c.mode===LV.mode),by=new Map();cs.forEach(c=>{if(!by.has(c.lord_id))by.set(c.lord_id,[]);by.get(c.lord_id).push(c)});
+  const st=new Map(LD.lords.map(l=>[l.id,lordStats(by.get(l.id)||[])]));
+  const pool=LD.lords.filter(l=>LV.mode!=='Realms of Chaos'||l.roc_playable);   // under RoC, only the lords it can be played with
+  const shown=pool.filter(l=>(!LV.race||l.race===LV.race)&&(LV.played===''||(st.get(l.id).cs.length>0)===(LV.played==='1')));
+  return {cs,st,pool,shown}}
+BUILD.lords=function(){
+  const {cs,st,pool,shown}=lordView(),played=l=>st.get(l.id).cs.length>0,all=LD.campaigns;
+  const roc=LD.lords.filter(l=>l.roc_playable),rocP=roc.filter(l=>all.some(c=>c.lord_id===l.id&&c.mode==='Realms of Chaos')).length;
+  const K=[[`${pool.filter(played).length} / ${pool.length}`,'lords played'],[cs.length,'campaigns'],[fmt(cs.reduce((a,c)=>a+(c.hours||0),0),1)+' h','in campaigns',`${fmt(LD.wh3_hours)} h logged on WH3`],
+    ...LD.modes.map(m=>[all.filter(c=>c.mode===m).length,`${modeAbbr(m)} campaigns`,null,m]),[`${rocP} / ${roc.length}`,'RoC: available lords played',null,'Counted over the lords playable in Realms of Chaos']];
+  $('#lkpis').innerHTML=K.map(([v,k,cap,title])=>`<div class="kpi"${title?` title="${esc(title)}"`:''}><b>${v}</b><span>${esc(k)}</span>${cap?`<span style="display:block">${esc(cap)}</span>`:''}</div>`).join('');
+  const seg=(id,opts,key)=>{$(id).innerHTML=opts.map(([v,n])=>`<button type="button" data-v="${esc(v)}" aria-pressed="${LV[key]===v}">${esc(n)}</button>`).join('');
+    // the rebuild replaces the buttons, so put focus back on the pressed one, and redraw an open drawer with the new setting
+    $$(id+' button').forEach(b=>b.onclick=()=>{LV[key]=b.dataset.v;BUILD.lords();$(id+' button[aria-pressed=true]')?.focus();
+      if(LV.open&&$('#panel').classList.contains('open'))lordCard(LV.open.id,LV.open.sel)})};
+  seg('#lmode',[['','All modes'],...LD.modes.map(m=>[m,modeAbbr(m)])],'mode');
+  seg('#lplayed',[['','All'],['1','Played'],['0','Unplayed']],'played');
+  seg('#lview',[['gallery','Gallery'],['tier','Tier list']],'view');
+  seg('#lhow',[['best','Best campaign'],['avg','Average']],'how');
+  fillOpts('#lrace','<option value="">All races</option>'+LD.races.map(r=>`<option value="${esc(r)}">${esc(r)}</option>`).join(''),'');
+  $('#lrace').value=LV.race;$('#lrace').onchange=e=>{LV.race=e.target.value;BUILD.lords()};
+  $('#lnote').textContent=`${shown.length} lord${shown.length===1?'':'s'} shown. A lord's tier comes from their ${LV.how==='best'?'best':'average'} rated campaign${LV.mode?` in ${LV.mode}`:''}; unrated campaigns count as played but have no tier.${LV.mode==='Realms of Chaos'?' Only lords playable in Realms of Chaos are listed.':''} Click a lord for their campaigns.`;
+  if(LV.view==='gallery'){
+    const card=l=>{const s=st.get(l.id),ic=factionIcon(l.faction_icon),modes=[...new Set(s.cs.map(c=>c.mode))];
+      return `<button type="button" class="lcd${s.cs.length?'':' un'}" data-id="${l.id}" title="${esc(l.lord)}${l.faction?' · '+esc(l.faction):''}"><span class="lim">${lordImg(l)}${tierPill(s.tier)}${ic?`<img class="fi" alt="" src="${ic}">`:''}</span>
+        <b>${esc(l.lord)}</b><span>${modes.map(m=>`<span class="mch" title="${esc(m)}">${esc(modeAbbr(m))}</span>`).join(' ')}</span></button>`};
+    $('#lbody').innerHTML=LD.races.map(r=>{const ls=shown.filter(l=>l.race===r);if(!ls.length)return '';
+      const inRace=pool.filter(l=>l.race===r),p=inRace.filter(played).length,ic=factionIcon(inRace.find(l=>factionIcon(l.faction_icon))?.faction_icon);
+      return `<details class="lsec" data-race="${esc(r)}" style="--rc:${raceCol.get(r)}"${LV.closed.has(r)?'':' open'}><summary>${ic?`<img alt="" src="${ic}">`:''}<span>${esc(r)}</span><span class="n">${p} / ${inRace.length}</span><span class="pb" title="${p} of ${inRace.length} played"><i style="width:${inRace.length?100*p/inRace.length:0}%"></i></span></summary>
+        <div class="lgrid">${ls.map(card).join('')}</div></details>`}).join('')||'<p class="note">No lords match.</p>';
+    $$('#lbody details.lsec').forEach(d=>d.ontoggle=()=>d.open?LV.closed.delete(d.dataset.race):LV.closed.add(d.dataset.race))
+  }else{
+    const thumb=l=>`<button type="button" class="lth" data-id="${l.id}" style="--rc:${raceCol.get(l.race)}" title="${esc(l.lord)} · ${esc(l.race)} · ${fix(st.get(l.id).score,2)}"><span class="lim">${lordImg(l)}</span><span>${esc(l.lord)}</span></button>`;
+    const byScore=(a,b)=>st.get(b.id).score-st.get(a.id).score||a.lord.localeCompare(b.lord);
+    const rows=LD.tiers.map((t,i)=>{const lo=LD.tiers[i+1]?.upper,items=shown.filter(l=>st.get(l.id).tier===t.tier).sort(byScore);
+      return `<div class="ltier"><div class="tl" style="background:${TIERCOL[t.tier]||'#ccc'}">${esc(t.tier)}<small>${lo==null?'≤ '+t.upper:'> '+lo+' – '+t.upper}</small></div><div class="tc">${items.map(thumb).join('')||'<span class="note" style="color:var(--muted);font-size:12px">nobody here</span>'}</div></div>`});
+    const un=shown.filter(l=>played(l)&&st.get(l.id).score==null);
+    if(un.length)rows.push(`<div class="ltier"><div class="tl" style="background:var(--grid);color:var(--text)">–<small>unrated</small></div><div class="tc">${un.map(thumb).join('')}</div></div>`);
+    const races=LD.races.filter(r=>shown.some(l=>l.race===r&&played(l)));
+    $('#lbody').innerHTML=(races.length?`<div class="legend">${races.map(r=>`<span><i style="background:${raceCol.get(r)}"></i>${esc(r)}</span>`).join('')}</div>`:'')+rows.join('')+
+      `<p class="note" style="margin-top:6px">${shown.filter(l=>!played(l)).length} unplayed lords are left out of the tier list.</p>`}
+  $$('#lbody [data-id]').forEach(b=>b.onclick=()=>lordCard(+b.dataset.id));
+  // by race: rating averages on the white -> orange heat scale used for counts
+  const heat=v=>v==null?'transparent':`color-mix(in srgb, #c55a11 ${Math.round(10+75*v/5)}%, var(--card))`;
+  $('#lsum').innerHTML=`<thead><tr><th class="sys">Race</th><th>Played</th><th>Campaigns</th>${LD.modes.map(m=>`<th title="${esc(m)}">${esc(modeAbbr(m))}</th>`).join('')}${LD.labels.map((n,i)=>`<th title="${esc(n)} · weight ${LD.weights[i]}">${esc(n.split(/[ /]/)[0])}</th>`).join('')}</tr></thead><tbody>`+
+    LD.races.map(r=>{const ls=pool.filter(l=>l.race===r);if(!ls.length)return '';const ids=new Set(ls.map(l=>l.id)),rc=cs.filter(c=>ids.has(c.lord_id)),rated=rc.filter(c=>c.score!=null);
+      return `<tr><td class="sys" style="border-left:4px solid ${raceCol.get(r)}">${esc(r)}</td><td>${ls.filter(played).length} / ${ls.length}</td><td>${rc.length||'·'}</td>${LD.modes.map(m=>`<td>${rc.filter(c=>c.mode===m).length||'·'}</td>`).join('')}`+
+        LD.cols.map(k=>{const v=rated.length?mean(rated.map(c=>c[k])):null;return `<td style="background:${heat(v)}">${v==null?'–':fix(v,1)}</td>`}).join('')+'</tr>'}).join('')+'</tbody>'};
+// the lord drawer: portrait and facts, every campaign newest first, and the selected campaign's seven ratings.
+// The score follows the mode filter, so it matches the lord's badge in the gallery and tier list.
+function lordCard(id,sel){
+  const l=LD.lords.find(x=>x.id===id),cs=LD.campaigns.filter(c=>c.lord_id===id),s=lordStats(cs.filter(c=>!LV.mode||c.mode===LV.mode)),
+    cur=cs.find(c=>c.id===sel)||cs.find(c=>c.id===s.best)||cs[0];
+  LV.open={id,sel:cur?.id};
+  const info=[l.faction,l.start_location&&'Starts: '+l.start_location,l.dlc,l.roc_playable?'Playable in Realms of Chaos':'Immortal Empires / Old World only'].filter(Boolean).map(esc).join('<br>');
+  const meta=c=>[(c.campaign_difficulty||c.battle_difficulty)&&`${c.campaign_difficulty||'–'} / ${c.battle_difficulty||'–'}`,c.turns&&c.turns+' turns',c.hours&&fmt(c.hours,1)+' h',
+    c.started?c.started+(c.finished?' → '+c.finished:''):c.finished&&'finished '+c.finished,c.coop_with&&'co-op with '+c.coop_with,c.patch&&'patch '+c.patch,c.mods&&'mods: '+c.mods].filter(Boolean).map(esc).join(' · ');
+  $('#pbody').innerHTML=(LD.portraits[id]?`<img alt="" src="data:image/jpeg;base64,${LD.portraits[id]}" style="width:120px;float:right;margin:0 0 8px 8px;border-radius:4px">`:'')+
+    `<h3>${esc(l.lord)} ${tierPill(s.tier)}</h3><p style="font-size:12.5px;margin:0 0 8px"><b>${esc(l.race)}</b><br><span style="color:var(--muted)">${info}</span>${s.score!=null?`<br>Score ${fix(s.score,2)}, ${LV.how==='avg'?'the average of':'the best of'} ${s.rated} rated campaign${s.rated===1?'':'s'}${LV.mode?' in '+esc(LV.mode):''}`:''}</p><div style="clear:both"></div>`+
+    (cs.length?cs.map(c=>`<div class="lcamp${c===cur?' sel':''}" data-c="${c.id}" tabindex="0" role="button" aria-pressed="${c===cur}"><div><b>${esc(c.mode)}</b> · ${esc(c.status)}<span style="float:right">${c.score!=null?`${tierPill(c.tier)} ${fix(c.score,2)}`:'<span class="m">unrated</span>'}</span></div>
+      ${c.id===s.best&&LV.how==='best'&&cs.length>1?'<span class="mch">sets the lord\'s score</span>':''}<div class="m">${meta(c)}</div></div>`).join(''):'<p class="note" style="color:var(--muted);font-size:12px">No playthroughs yet. They are entered in the app\'s Lords tab.</p>')+
+    (cur?.score!=null?`<h3 style="font-size:13px;margin-top:12px">Ratings · ${esc(cur.mode)}${cur.started?' '+esc(cur.started.slice(0,4)):''}</h3><div id="lrate"></div>`:'')+
+    (cur?.notes?`<p style="white-space:pre-wrap;font-size:12.5px">${esc(cur.notes)}</p>`:'');
+  $$('#pbody .lcamp').forEach(e=>{e.onclick=()=>lordCard(id,+e.dataset.c);e.onkeydown=ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();e.click()}}});
+  $('#panel').classList.add('open');
+  if(cur?.score!=null)hbars('#lrate',LD.cols.map((k,i)=>({label:LD.labels[i],v:cur[k],tip:`${esc(LD.labels[i])}: <b>${cur[k]}</b> / 5 · weight ${LD.weights[i]}`})),{w:340,rowH:22,xmax:5,labelW:118})}
 
 /* keyboard + screen-reader pass after each tab is drawn: clickable marks become buttons that Enter/Space activate,
    and every chart is a labelled group (or an image when nothing inside it is interactive) */

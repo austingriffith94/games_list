@@ -55,6 +55,8 @@ g = get(f'/api/games/{gid}').get_json()
 check(g['game']['series'] == 'Test Game: Alpha' and g['game']['singleplayer'] == 1 and len(g['releases']) == 1, 'series defaults to title; modes saved')
 bad = post('/api/games', {'game': {**good, 'title': 'Bad Scores', 'my_score': 11, 'metacritic': 101, 'ign': 'abc', 'sub_genre': 'MMORPG'}, 'releases': [rel]}).get_json()['fields']
 check({'my_score', 'metacritic', 'ign', 'sub_genre'} <= set(bad), 'score range + wrong sub-genre rejected: ' + str(bad))
+bad = post('/api/games', {'game': {**good, 'title': 'Frac Score', 'my_score': 7.5}, 'releases': [rel]}).get_json()['fields']
+check('my_score' in bad, 'fractional my_score rejected: ' + str(bad))
 bad = post('/api/games', {'game': {**good, 'title': 'Bad Rel'}, 'releases': [{**rel, 'original_release_date': '2025-13-40'}, {**rel}]}).get_json()['fields']
 check('releases.0.original_release_date' in bad and 'releases.1.system' in bad, 'bad date + duplicate system in one entry: ' + str(bad))
 # --- releases
@@ -128,6 +130,8 @@ check(g5['rated'] == 0 and g5['avg_score'] is None and g5['levels'] == 12, 'unra
 rated = {k: 5 for k in hr['cols']}
 check(post('/api/halo', {'game': 'Halo 5: Guardians', 'level': 'Test Level', 'enemy': 3}).status_code == 400, 'partly rated level refused')
 check(post('/api/halo', {'game': 'Halo 5: Guardians', 'level': 'Test Level', **{**rated, 'enemy': 6}}).status_code == 400, 'rating above 5 refused')
+check(post('/api/halo', {'game': 'Halo 5: Guardians', 'level': 'Test Level', **{**rated, 'enemy': 3.5}}).status_code == 400, 'fractional rating refused')
+check(post('/api/halo', {'game': 'Halo 5: Guardians', 'level': 'Test Level', **{**rated, 'enemy': 'nan'}}).status_code == 400, 'nan rating refused (not a 500)')
 r = post('/api/halo', {'game': 'halo 5: guardians', 'level': 'Test Level', **rated}); check(r.status_code == 201, 'add a halo level (game name any case)')
 new = [x for x in get('/api/halo').get_json()['levels'] if x['level'] == 'Test Level'][0]
 check(new['game'] == 'Halo 5: Guardians' and new['series_order'] == 7 and new['level_order'] == 13 and new['tier'] == 'S' and new['variable_score'] == 5, 'new level joins its game, scores S')
@@ -137,6 +141,48 @@ check([x for x in get('/api/halo').get_json()['levels'] if x['id'] == new['id']]
 check(put(f'/api/halo/{new["id"]}', {k: None for k in hr['cols']}).status_code == 200 and [x for x in get('/api/halo').get_json()['levels'] if x['id'] == new['id']][0]['tier'] is None, 'clearing ratings makes it unrated')
 r = delete(f'/api/halo/{new["id"]}'); check(r.status_code == 200 and len(get('/api/halo').get_json()['levels']) == 85, 'delete a halo level')
 check(post(f'/api/undo/{r.headers["X-Batch"]}').status_code == 200 and len(get('/api/halo').get_json()['levels']) == 86, 'undo restores the deleted halo level')
+# --- Warhammer III lords
+lr = get('/api/lords').get_json(); LID = lr['lords'][0]['id']; lords_n = len(lr['lords'])
+check(lords_n >= 100 and not lr['campaigns'] and lr['weights'] == [5, 5, 3, 3, 2, 4, 5] and lr['modes'] == ['Realms of Chaos', 'Immortal Empires', 'Old World'], 'lords payload')
+check(lr['lords'][0]['card_url'] is None or lr['lords'][0]['card_url'].startswith('/lords/'), 'lord image urls')
+cbase = {'lord_id': LID, 'mode': 'Immortal Empires', 'status': 'In progress'}
+r = post('/api/lords/campaigns', cbase); check(r.status_code == 201, 'campaign with only lord + mode + status saves: ' + str(r.get_json())); c1 = r.get_json()['id']
+check(get('/api/lords').get_json()['campaigns'][0]['score'] is None, 'unrated campaign has no score')
+rated7 = {k: 5 for k in lr['cols']}
+check(post('/api/lords/campaigns', {**cbase, 'mechanics': 3}).status_code == 400, 'partly rated campaign refused')
+check(post('/api/lords/campaigns', {**cbase, **rated7, 'roster': 6}).status_code == 400, 'rating above 5 refused')
+check(post('/api/lords/campaigns', {**cbase, **rated7, 'roster': 'nan'}).status_code == 400, 'nan rating refused')
+check(post('/api/lords/campaigns', {**cbase, 'mode': 'Mars'}).status_code == 400, 'unknown mode refused')
+check(post('/api/lords/campaigns', {**cbase, 'status': 'Napping'}).status_code == 400, 'unknown status refused')
+check(post('/api/lords/campaigns', {**cbase, 'battle_difficulty': 'Impossible'}).status_code == 400, 'unknown difficulty refused')
+check(post('/api/lords/campaigns', {**cbase, 'lord_id': 999999}).status_code == 400, 'unknown lord refused')
+check(post('/api/lords/campaigns', {**cbase, 'started': '2026-05-02', 'finished': '2026-05-01'}).status_code == 400, 'finished before started refused')
+check(post('/api/lords/campaigns', {**cbase, 'turns': 0}).status_code == 400, 'zero turns refused')
+r = post('/api/lords/campaigns', {**cbase, **rated7}); check(r.status_code == 201, 'second campaign, same lord and mode, saves'); c2 = r.get_json()['id']
+r = post('/api/lords/campaigns', {**cbase, **{k: 3 for k in lr['cols']}, 'campaign_difficulty': 'very hard', 'coop_with': 'Sam'}); c3 = r.get_json()['id']
+lr = get('/api/lords').get_json(); sc = lr['scores']['best'][str(LID)]
+check(sc['campaigns'] == 3 and sc['rated'] == 2 and sc['score'] == 5 and sc['best_id'] == c2, 'lord score is the best rated campaign')
+check(abs(lr['scores']['avg'][str(LID)]['score'] - 4) < 1e-12, 'average mode averages rated campaigns only')
+check([c for c in lr['campaigns'] if c['id'] == c3][0]['campaign_difficulty'] == 'Very Hard', 'difficulty stored in canonical case')
+check(sum(r['played'] for r in lr['races']) == 1 and sum(r['campaigns'] for r in lr['races']) == 3, 'race summary counts played lords and campaigns')
+check(delete(f'/api/lords/{LID}').status_code == 409, 'lord with campaigns cannot be deleted')
+r = put(f'/api/lords/campaigns/{c3}', {'mechanics': None, **{k: None for k in lr['cols']}}); check(r.status_code == 200, 'clear ratings')
+r = delete(f'/api/lords/campaigns/{c2}'); check(r.status_code == 200 and get('/api/lords').get_json()['scores']['best'][str(LID)]['rated'] == 0, 'delete a campaign')
+check(post(f'/api/undo/{r.headers["X-Batch"]}').status_code == 200 and get('/api/lords').get_json()['scores']['best'][str(LID)]['rated'] == 1, 'undo restores the deleted campaign')
+# the Checks tab: RoC campaign for a lord who is not RoC-playable
+nonroc = [l for l in lr['lords'] if not l['roc_playable']][0]
+post('/api/lords/campaigns', {'lord_id': nonroc['id'], 'mode': 'Realms of Chaos', 'status': 'Lost'})
+check(any(i['kind'] == 'lord_roc' and i.get('lord_id') == nonroc['id'] for i in get('/api/checks').get_json()['items']), 'checks flag a RoC campaign for a lord who is not RoC-playable')
+# adding and editing lords by hand
+r = post('/api/lords', {'lord': 'Test Lord', 'race': 'the empire', 'race_game': 1, 'roc_playable': True}); check(r.status_code == 201, 'add a lord: ' + str(r.get_json())); tl = r.get_json()['id']
+t = [l for l in get('/api/lords').get_json()['lords'] if l['id'] == tl][0]
+check(t['race'] == 'The Empire' and t['race_order'] == [l for l in lr['lords'] if l['race'] == 'The Empire'][0]['race_order'] and t['roc_playable'] == 1, 'new lord joins the existing race section')
+check(post('/api/lords', {'lord': 'test lord', 'race': 'The Empire', 'race_game': 1}).status_code == 400, 'duplicate lord name refused')
+check(post('/api/lords', {'lord': 'X', 'race': 'Y', 'race_game': 4}).status_code == 400, 'race_game must be 1-3')
+check(put(f'/api/lords/{tl}', {'card': '../secret.png'}).status_code == 400, 'image file name cannot be a path')
+check(put(f'/api/lords/{tl}', {'dlc': 'Test DLC'}).status_code == 200, 'edit a lord')
+r = delete(f'/api/lords/{tl}'); check(r.status_code == 200 and len(get('/api/lords').get_json()['lords']) == lords_n, 'delete a lord with no campaigns')
+check(post(f'/api/undo/{r.headers["X-Batch"]}').status_code == 200 and len(get('/api/lords').get_json()['lords']) == lords_n + 1, 'undo restores the lord')
 # --- reviews (tier lives on the game but only arrives with a review)
 import reviews as RVM
 check(RVM.parse_body('One\ntwo.\n\n![A cap](a.jpg){small}\nThree') == [{'t': 'p', 'h': 'One two.'}, {'t': 'fig', 'img': 'a.jpg', 'cap': 'A cap', 'small': True}, {'t': 'p', 'h': 'Three'}], 'body format parses')
@@ -224,7 +270,7 @@ check(post(f'/api/undo/{r.headers["X-Batch"]}').status_code == 200 and [t['name'
 check(post('/api/ref/system', {'name': 'Steam Deck', 'type': 'Handheld'}).status_code == 200 and 'Steam Deck' in [s['name'] for s in get('/api/meta').get_json()['systems']], 'add a new system')
 check(post('/api/ref/system', {'name': 'steam deck', 'type': 'PC'}).status_code == 409, 'duplicate system (any case) rejected')
 check(os.path.exists(post('/api/backup').get_json()['path']), 'backup created')
-z = zipfile.ZipFile(io.BytesIO(get('/api/export.zip').data)); check(set(z.namelist()) == {'games.csv', 'releases.csv', 'play_log.csv', 'top_rank.csv', 'halo_levels.csv', 'reviews.csv', 'ref_tier.csv'}, 'export zip')
+z = zipfile.ZipFile(io.BytesIO(get('/api/export.zip').data)); check(set(z.namelist()) == {'games.csv', 'releases.csv', 'play_log.csv', 'top_rank.csv', 'halo_levels.csv', 'tww_lords.csv', 'tww_campaigns.csv', 'reviews.csv', 'ref_tier.csv'}, 'export zip')
 check(len(z.read('play_log.csv').decode().splitlines()) == counts()['play_log'] + 1, 'export has every log row plus header')
 print(f'ALL {ok} API CHECKS PASSED')
 shutil.rmtree(tmp)
