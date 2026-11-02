@@ -850,7 +850,7 @@ function campForm(l,c){
    <label data-f="patch">Patch<input name="patch" value="${v('patch')}" placeholder="e.g. 6.3"><span class="err"></span></label>
    <label data-f="coop_with">Co-op with<input name="coop_with" value="${v('coop_with')}"><span class="err"></span></label>
    <label data-f="mods" class="wide">Mods<input name="mods" value="${v('mods')}"><span class="err"></span></label></div>
-   <h3>Ratings, 0–5 <span class="muted" style="text-transform:none">(all seven, or leave blank for unrated)</span> <span id="lcprev" style="text-transform:none"></span></h3>
+   <h3>Ratings, 0–5 <span class="muted" style="text-transform:none">(all six, or leave blank for unrated)</span> <span id="lcprev" style="text-transform:none"></span></h3>
    <div data-f="ratings"><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(105px,1fr))">${D.cols.map((k,i)=>`<label title="weight ${D.weights[i]}">${esc(D.labels[i])}<input class="lcr" type="number" min="${D.range[0]}" max="${D.range[1]}" step="1" name="${k}" value="${v(k)}"></label>`).join('')}</div><span class="err"></span></div>
    <label data-f="notes" style="margin-top:8px">Notes<input name="notes" value="${v('notes')}"><span class="err"></span></label>`,
    {ok:c?'Save changes':'Add playthrough',wide:true,

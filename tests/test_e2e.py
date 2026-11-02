@@ -14,6 +14,7 @@ _seed = sqlite3.connect(db)   # re-seed the two out-of-range scores the Checks f
 try:                           # since the real production data got fixed for real; `with` only commits, doesn't close
     _seed.execute("UPDATE games SET ign=84 WHERE title='WRC 8'")
     _seed.execute("UPDATE games SET gamespot=80 WHERE title='Overwatch 2'")
+    _seed.execute('DELETE FROM tww_campaigns')   # the lords steps count played lords from zero; the real ones live in gamelist.db
     _seed.commit()
 finally:
     _seed.close()

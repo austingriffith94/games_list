@@ -1,15 +1,15 @@
 """Total War: Warhammer III legendary lord scoring (docs/ACTION_PLAN_tww_lords.md). Stdlib only, like halo.py.
 
-A campaign has seven ratings (0-5). All seven NULL means the campaign is *unrated*: it counts as played but has
+A campaign has six ratings (0-5). All six NULL means the campaign is *unrated*: it counts as played but has
 no score or tier, and is left out of every average. A lord's score is their best rated campaign (or the average).
 """
 import halo
 
 GAME = 'Total War: Warhammer III'    # the games / play_log title, for the "h logged on WH3" context figure
-RATING_COLS = ['mechanics', 'roster', 'start_position', 'challenge', 'narrative', 'late_game', 'enjoyment']
-RATING_LABELS = ['Faction mechanics', 'Roster', 'Start position', 'Challenge', 'Narrative / lore', 'Late game', 'Enjoyment']
+RATING_COLS = ['mechanics', 'roster', 'start_position', 'challenge', 'late_game', 'enjoyment']
+RATING_LABELS = ['Faction mechanics', 'Roster', 'Start position', 'Challenge', 'Late game', 'Enjoyment']
 # Fallbacks only - the live values come from lk_twwratingweights / lk_tierlistscoring.
-DEFAULT_WEIGHTS = [5, 5, 3, 3, 2, 4, 5]
+DEFAULT_WEIGHTS = [5, 5, 3, 3, 4, 5]
 RATING_LO, RATING_HI = halo.RATING_LO, halo.RATING_HI
 tier_of = halo.tier_of
 

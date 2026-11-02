@@ -1157,7 +1157,7 @@ BUILD.lords=function(){
     LD.races.map(r=>{const ls=pool.filter(l=>l.race===r);if(!ls.length)return '';const ids=new Set(ls.map(l=>l.id)),rc=cs.filter(c=>ids.has(c.lord_id)),rated=rc.filter(c=>c.score!=null);
       return `<tr><td class="sys" style="border-left:4px solid ${raceCol.get(r)}">${esc(r)}</td><td>${ls.filter(played).length} / ${ls.length}</td><td>${rc.length||'·'}</td>${LD.modes.map(m=>`<td>${rc.filter(c=>c.mode===m).length||'·'}</td>`).join('')}`+
         LD.cols.map(k=>{const v=rated.length?mean(rated.map(c=>c[k])):null;return `<td style="background:${heat(v)}">${v==null?'–':fix(v,1)}</td>`}).join('')+'</tr>'}).join('')+'</tbody>'};
-// the lord drawer: portrait and facts, every campaign newest first, and the selected campaign's seven ratings.
+// the lord drawer: portrait and facts, every campaign newest first, and the selected campaign's six ratings.
 // The score follows the mode filter, so it matches the lord's badge in the gallery and tier list.
 function lordCard(id,sel){
   const l=LD.lords.find(x=>x.id===id),cs=LD.campaigns.filter(c=>c.lord_id===id),s=lordStats(cs.filter(c=>!LV.mode||c.mode===LV.mode)),

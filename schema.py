@@ -1,4 +1,4 @@
-"""Database schema (v9). games_list.db is the master copy; this file documents its structure and applies upgrades.
+"""Database schema (v10). games_list.db is the master copy; this file documents its structure and applies upgrades.
 
 * titles are unique ignoring case
 * releases -> games and play_log -> releases are foreign keys with ON UPDATE CASCADE, so renaming a game
@@ -16,7 +16,7 @@ can be audited and undone like everything else, and made `rank` an ordinary (non
 """
 import sqlite3
 
-VERSION = 9
+VERSION = 10
 
 DDL = """
 CREATE TABLE ref_genre(name TEXT PRIMARY KEY COLLATE NOCASE);
@@ -101,7 +101,7 @@ def _opt_date(col):
 
 _HALO_RATINGS = ['enemy', 'weapon_vehicle', 'design_set_piece', 'replayability_pacing', 'difficulty', 'visual', 'music',
                  'story', 'enjoyment']
-_TWW_RATINGS = ['mechanics', 'roster', 'start_position', 'challenge', 'narrative', 'late_game', 'enjoyment']
+_TWW_RATINGS = ['mechanics', 'roster', 'start_position', 'challenge', 'late_game', 'enjoyment']
 
 
 def _all_or_none(cols):
@@ -138,23 +138,7 @@ TIERS = [
     ('Masterpiece', 'A profound, life changing experience, my favorite games regardless of any flaws you might point out. Michael Jordan, Franklin’s BBQ, the 2005 Rose Bowl, Tom Hanks, The Godfather, George Strait, Cane’s fried chicken, Gregg Popovich and Tim Duncan. These are things that come to mind when playing these games.'),
 ]
 
-TWW_DDL = f"""
-CREATE TABLE ref_tww_mode(name TEXT PRIMARY KEY COLLATE NOCASE);
-CREATE TABLE ref_tww_status(name TEXT PRIMARY KEY COLLATE NOCASE);
-CREATE TABLE ref_tww_difficulty(name TEXT PRIMARY KEY COLLATE NOCASE, sort INTEGER NOT NULL);
-CREATE TABLE lk_twwratingweights(col TEXT PRIMARY KEY, label TEXT NOT NULL, weight NUMERIC NOT NULL);
-
-CREATE TABLE tww_lords(
-  id INTEGER PRIMARY KEY,
-  race TEXT NOT NULL COLLATE NOCASE,
-  race_game INTEGER NOT NULL CHECK(race_game IN (1,2,3)),
-  race_order INTEGER NOT NULL,
-  lord TEXT NOT NULL UNIQUE COLLATE NOCASE CHECK(length(trim(lord)) > 0),
-  faction TEXT, start_location TEXT, dlc TEXT, wiki_page TEXT,
-  roc_playable INTEGER NOT NULL DEFAULT 0 CHECK(roc_playable IN (0,1)),
-  card TEXT, portrait TEXT, faction_icon TEXT
-);
-
+TWW_CAMPAIGNS_DDL = f"""
 CREATE TABLE tww_campaigns(
   id INTEGER PRIMARY KEY,
   lord_id INTEGER NOT NULL REFERENCES tww_lords(id) ON DELETE RESTRICT,
@@ -173,12 +157,30 @@ CREATE TABLE tww_campaigns(
 CREATE INDEX ix_tww_camp_lord ON tww_campaigns(lord_id);
 """
 
+TWW_DDL = """
+CREATE TABLE ref_tww_mode(name TEXT PRIMARY KEY COLLATE NOCASE);
+CREATE TABLE ref_tww_status(name TEXT PRIMARY KEY COLLATE NOCASE);
+CREATE TABLE ref_tww_difficulty(name TEXT PRIMARY KEY COLLATE NOCASE, sort INTEGER NOT NULL);
+CREATE TABLE lk_twwratingweights(col TEXT PRIMARY KEY, label TEXT NOT NULL, weight NUMERIC NOT NULL);
+
+CREATE TABLE tww_lords(
+  id INTEGER PRIMARY KEY,
+  race TEXT NOT NULL COLLATE NOCASE,
+  race_game INTEGER NOT NULL CHECK(race_game IN (1,2,3)),
+  race_order INTEGER NOT NULL,
+  lord TEXT NOT NULL UNIQUE COLLATE NOCASE CHECK(length(trim(lord)) > 0),
+  faction TEXT, start_location TEXT, dlc TEXT, wiki_page TEXT,
+  roc_playable INTEGER NOT NULL DEFAULT 0 CHECK(roc_playable IN (0,1)),
+  card TEXT, portrait TEXT, faction_icon TEXT
+);
+""" + TWW_CAMPAIGNS_DDL
+
 TWW_SEEDS = {
     'ref_tww_mode': [('Realms of Chaos',), ('Immortal Empires',), ('Old World',)],
     'ref_tww_status': [('In progress',), ('Short victory',), ('Long victory',), ('Abandoned',), ('Lost',)],
     'ref_tww_difficulty': [('Easy', 1), ('Normal', 2), ('Hard', 3), ('Very Hard', 4), ('Legendary', 5)],
     'lk_twwratingweights': [('mechanics', 'Faction mechanics', 5), ('roster', 'Roster', 5), ('start_position', 'Start position', 3),
-                            ('challenge', 'Challenge', 3), ('narrative', 'Narrative / lore', 2), ('late_game', 'Late game', 4),
+                            ('challenge', 'Challenge', 3), ('late_game', 'Late game', 4),
                             ('enjoyment', 'Enjoyment', 5)],
 }
 
@@ -268,6 +270,23 @@ def _v9(con):
         con.execute(stmt)
 
 
+def _v10(con):
+    """Narrative / lore stops being a rating. A rebuild, not DROP COLUMN, because the all-or-none CHECK names the column
+    (ids kept; nothing references tww_campaigns). A database coming up from v6 gets the six-rating table from _v7 already.
+    Past audit rows lose the key too: undo writes their JSON straight back, and the column no longer exists."""
+    if 'narrative' in [r[1] for r in con.execute('PRAGMA table_info(tww_campaigns)')]:
+        con.execute('ALTER TABLE tww_campaigns RENAME TO tww_campaigns_old')
+        con.execute('DROP INDEX ix_tww_camp_lord')
+        for stmt in _statements(TWW_CAMPAIGNS_DDL):
+            con.execute(stmt)
+        cols = ', '.join(r[1] for r in con.execute('PRAGMA table_info(tww_campaigns)'))
+        con.execute(f'INSERT INTO tww_campaigns({cols}) SELECT {cols} FROM tww_campaigns_old')
+        con.execute('DROP TABLE tww_campaigns_old')
+    con.execute("DELETE FROM lk_twwratingweights WHERE col='narrative'")
+    con.execute("""UPDATE audit SET old = json_remove(old, '$.narrative'), new = json_remove(new, '$.narrative')
+                   WHERE tbl = 'tww_campaigns'""")
+
+
 def _statements(ddl):
     """Split DDL on ';' at statement ends, keeping trigger bodies (BEGIN ... END;) whole."""
     out, cur = [], ''
@@ -279,14 +298,15 @@ def _statements(ddl):
     return out
 
 
-STEPS = {4: _v4, 5: _v5, 6: _v6, 7: _v7, 8: _v8, 9: _v9}     # target version -> upgrade from the version before it
+STEPS = {4: _v4, 5: _v5, 6: _v6, 7: _v7, 8: _v8, 9: _v9, 10: _v10}     # target version -> upgrade from the version before it
 
 
 def upgrade(path):
     """Apply pending upgrades in one transaction. v3 -> v4 drops the unused play_log.real flag;
     v4 -> v5 adds tiers and reviews; v5 -> v6 gives tiers an id; v6 -> v7 adds the Total War: Warhammer III lord tracker;
     v7 -> v8 makes HaloRank ratings whole numbers at the database level too;
-    v8 -> v9 does the same for games.my_score (1-10), with triggers."""
+    v8 -> v9 does the same for games.my_score (1-10), with triggers;
+    v9 -> v10 removes Narrative / lore from the lord ratings."""
     con = sqlite3.connect(path, isolation_level=None)
     try:
         ver = con.execute('PRAGMA user_version').fetchone()[0]

@@ -11,7 +11,7 @@ They don't need to look identical. The HTML can be more interactive. A reliable 
 
 ## Architecture (approved)
 SQLite database + Python + generated reports + a local entry app.
-- `gamelist.db` is the source of truth (schema v9: v5 added `reviews`, `ref_tier` and `games.tier`; v6 gave `ref_tier` an id so tier edits are audited; v7 added the Total War lord tables). Counts: 656 games, 783 releases (game x system), 2,717 play-log rows, 9,747.5 hours.
+- `gamelist.db` is the source of truth (schema v10: v5 added `reviews`, `ref_tier` and `games.tier`; v6 gave `ref_tier` an id so tier edits are audited; v7 added the Total War lord tables; v10 removed Narrative / lore from the lord ratings). Counts: 656 games, 783 releases (game x system), 2,717 play-log rows, 9,747.5 hours.
 - `app.py` is a Flask app on 127.0.0.1. Tabs: Log time, Games, Reviews, Top list, HaloRank, Lords, Gallery, Stats, Checks, History (undo), Reports.
 - `build_pdf.py` makes the PDF (matplotlib, Letter, 26 pages including the cover collage).
 - `build_html.py` + `dashboard.template.html` make a self-contained dashboard (vanilla JS, inline SVG, no CDN).
@@ -26,7 +26,7 @@ SQLite database + Python + generated reports + a local entry app.
   plus a library details panel). The old page's 45 tier-only placements (no write-up) were intentionally not imported.
   Undo now restores only the columns an edit changed, so undoing an old game edit can't wipe a later tier.
 - Total War: Warhammer III lord tracker (Oct 24 2026): `tww_lords` (110 legendary lords, 25 races, filled by `tools/fetch_tww_lords.py`
-  from the Total War wiki API) and `tww_campaigns` (any number per lord; only lord, mode and status required; the seven 0-5
+  from the Total War wiki API) and `tww_campaigns` (any number per lord; only lord, mode and status required; the six 0-5
   ratings are all-or-none). Lookups: `ref_tww_mode`, `ref_tww_status` (editable), `ref_tww_difficulty`, and weights in
   `lk_twwratingweights`. `tww.py` scores like `halo.py` and shares its tier bands. A lord's score is their best rated campaign
   (the dashboard also offers average and recomputes it for the mode filter). `roc_playable` limits Realms of Chaos progress and

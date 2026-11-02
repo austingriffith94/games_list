@@ -15,6 +15,7 @@ _seed = sqlite3.connect(A.DB)   # re-seed the two out-of-range scores the checks
 try:                             # since the real production data got fixed for real; must close explicitly (see counts() above)
     _seed.execute("UPDATE games SET ign=84 WHERE title='WRC 8'")
     _seed.execute("UPDATE games SET gamespot=80 WHERE title='Overwatch 2'")
+    _seed.execute('DELETE FROM tww_campaigns')   # the lord tests below count campaigns from zero; the real ones live in gamelist.db
     _seed.commit()
 finally:
     _seed.close()
@@ -143,22 +144,22 @@ r = delete(f'/api/halo/{new["id"]}'); check(r.status_code == 200 and len(get('/a
 check(post(f'/api/undo/{r.headers["X-Batch"]}').status_code == 200 and len(get('/api/halo').get_json()['levels']) == 86, 'undo restores the deleted halo level')
 # --- Warhammer III lords
 lr = get('/api/lords').get_json(); LID = lr['lords'][0]['id']; lords_n = len(lr['lords'])
-check(lords_n >= 100 and not lr['campaigns'] and lr['weights'] == [5, 5, 3, 3, 2, 4, 5] and lr['modes'] == ['Realms of Chaos', 'Immortal Empires', 'Old World'], 'lords payload')
+check(lords_n >= 100 and not lr['campaigns'] and lr['weights'] == [5, 5, 3, 3, 4, 5] and lr['modes'] == ['Realms of Chaos', 'Immortal Empires', 'Old World'], 'lords payload')
 check(lr['lords'][0]['card_url'] is None or lr['lords'][0]['card_url'].startswith('/lords/'), 'lord image urls')
 cbase = {'lord_id': LID, 'mode': 'Immortal Empires', 'status': 'In progress'}
 r = post('/api/lords/campaigns', cbase); check(r.status_code == 201, 'campaign with only lord + mode + status saves: ' + str(r.get_json())); c1 = r.get_json()['id']
 check(get('/api/lords').get_json()['campaigns'][0]['score'] is None, 'unrated campaign has no score')
-rated7 = {k: 5 for k in lr['cols']}
+rated6 = {k: 5 for k in lr['cols']}
 check(post('/api/lords/campaigns', {**cbase, 'mechanics': 3}).status_code == 400, 'partly rated campaign refused')
-check(post('/api/lords/campaigns', {**cbase, **rated7, 'roster': 6}).status_code == 400, 'rating above 5 refused')
-check(post('/api/lords/campaigns', {**cbase, **rated7, 'roster': 'nan'}).status_code == 400, 'nan rating refused')
+check(post('/api/lords/campaigns', {**cbase, **rated6, 'roster': 6}).status_code == 400, 'rating above 5 refused')
+check(post('/api/lords/campaigns', {**cbase, **rated6, 'roster': 'nan'}).status_code == 400, 'nan rating refused')
 check(post('/api/lords/campaigns', {**cbase, 'mode': 'Mars'}).status_code == 400, 'unknown mode refused')
 check(post('/api/lords/campaigns', {**cbase, 'status': 'Napping'}).status_code == 400, 'unknown status refused')
 check(post('/api/lords/campaigns', {**cbase, 'battle_difficulty': 'Impossible'}).status_code == 400, 'unknown difficulty refused')
 check(post('/api/lords/campaigns', {**cbase, 'lord_id': 999999}).status_code == 400, 'unknown lord refused')
 check(post('/api/lords/campaigns', {**cbase, 'started': '2026-05-02', 'finished': '2026-05-01'}).status_code == 400, 'finished before started refused')
 check(post('/api/lords/campaigns', {**cbase, 'turns': 0}).status_code == 400, 'zero turns refused')
-r = post('/api/lords/campaigns', {**cbase, **rated7}); check(r.status_code == 201, 'second campaign, same lord and mode, saves'); c2 = r.get_json()['id']
+r = post('/api/lords/campaigns', {**cbase, **rated6}); check(r.status_code == 201, 'second campaign, same lord and mode, saves'); c2 = r.get_json()['id']
 r = post('/api/lords/campaigns', {**cbase, **{k: 3 for k in lr['cols']}, 'campaign_difficulty': 'very hard', 'coop_with': 'Sam'}); c3 = r.get_json()['id']
 lr = get('/api/lords').get_json(); sc = lr['scores']['best'][str(LID)]
 check(sc['campaigns'] == 3 and sc['rated'] == 2 and sc['score'] == 5 and sc['best_id'] == c2, 'lord score is the best rated campaign')

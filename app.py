@@ -747,7 +747,7 @@ def _opt_text(d, k):
 
 
 def clean_campaign(d):
-    """Validate a lord campaign. Only lord, mode and status are required; the seven ratings are all or none."""
+    """Validate a lord campaign. Only lord, mode and status are required; the six ratings are all or none."""
     errs, out = {}, {}
     lid = _num(d.get('lord_id'), 'lord_id', errs, 1, None, True)
     if lid is None: errs.setdefault('lord_id', 'Choose a lord')
@@ -772,7 +772,7 @@ def clean_campaign(d):
     for key in ('patch', 'mods', 'coop_with', 'notes'): out[key] = _opt_text(d, key)
     vals = {c: _num(d.get(c), c, errs, tww.RATING_LO, tww.RATING_HI, True) for c in tww.RATING_COLS}
     if not errs and 0 < sum(v is not None for v in vals.values()) < len(vals):
-        errs['ratings'] = 'Rate all seven categories, or leave them all blank for an unrated campaign'
+        errs['ratings'] = 'Rate all six categories, or leave them all blank for an unrated campaign'
     out.update(vals)
     return out, errs
 
