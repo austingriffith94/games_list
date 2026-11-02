@@ -19,8 +19,8 @@ import argparse, os, shutil, socket, subprocess, sys, tempfile, time
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(BASE, 'screenshots')
-DASH_HTML = os.path.join(BASE, 'games_list_dashboard.html')
-PDF = os.path.join(BASE, 'games_list_report.pdf')
+DASH_HTML = os.path.join(BASE, 'output', 'games_list_dashboard.html')
+PDF = os.path.join(BASE, 'output', 'games_list_report.pdf')
 
 # dashboard tabs (dashboard.template.html TABS) and app tabs (static/app.html NAMES), in nav order
 DASH_TABS = ['overview', 'scores', 'years', 'time', 'hours', 'stats', 'canon', 'mosaic', 'games']
@@ -28,7 +28,7 @@ APP_TABS = ['log', 'games', 'gallery', 'stats', 'top', 'halo', 'checks', 'histor
 
 
 def rebuild():
-    for script in ('build_html.py', 'build_pdf.py'):
+    for script in ('reports/build_html.py', 'reports/build_pdf.py'):
         print('rebuilding:', script)
         subprocess.run([sys.executable, script], cwd=BASE, check=True)
 

@@ -15,10 +15,8 @@ env/
 .DS_Store
 Thumbs.db
 
-# Generated output (rebuilt by build_html.py / build_pdf.py)
-games_list_dashboard.html
-games_list_report.pdf
-games_list_reviews.html
+# Generated output (rebuilt by reports/build_*.py)
+output/
 
 # Personal data and legacy files
 gamelist.db

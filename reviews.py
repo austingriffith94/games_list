@@ -13,7 +13,7 @@ from urllib.parse import quote
 from PIL import Image
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-TEMPLATE = os.path.join(BASE, 'reviews.template.html')
+TEMPLATE = os.path.join(BASE, 'reports', 'reviews.template.html')
 IMAGE_EXTS = ('.jpg', '.jpeg', '.png', '.webp')
 COVER_EXTS = ('.jpg', '.jpeg', '.png', '.webp')
 WPM = 238                 # reading speed behind the original page's "N min read" (ceil(words / 238) matches all five)

@@ -1,13 +1,15 @@
 """Interactive dashboard: one self-contained HTML file.  Usage: python build_html.py [out.html] [covers_dir] [lords_dir]"""
 import sys, os, io, json, math, datetime, base64, sqlite3
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, ROOT)   # data, tww, schema live in the repo root
 import pandas as pd
 from PIL import Image
 import data as D
 import tww
 
 _a = [x for x in sys.argv[1:] if not x.startswith('--')]
-_here = os.path.dirname(os.path.abspath(__file__))
-OUT = _a[0] if _a else 'games_list_dashboard.html'
+_here = ROOT
+OUT = _a[0] if _a else os.path.join(ROOT, 'output', 'games_list_dashboard.html')
 COVERS = _a[1] if len(_a) > 1 else os.path.join(_here, 'covers')
 LORDS_DIR = _a[2] if len(_a) > 2 else os.environ.get('GAMELIST_LORDS') or os.path.join(_here, 'lords')
 TW, TH = 80, 120          # mosaic thumbnail size; JPEG q55 keeps each to ~2-3 KB so ~650 covers add ~2 MB
@@ -123,6 +125,7 @@ payload = dict(G=G, R=R, L=L, SYSTEMS=D.SYSTEMS, GENRES=list(t['ref_genre']['nam
                SCORES=S['scores'], SOUND=D.soundtrack(g), THUMBS=THUMBS,
                SERIES_ORDER=list(g.sort_values(['series', 'release_date'])['title']), ASOF=log['date'].max().strftime('%b %d, %Y'), END=datetime.date.today().isoformat(),
                HOLIDAYS=sorted(t['holidays']), STATS=STATS, LORDS=LORDS)
-html = open('dashboard.template.html', encoding='utf-8').read().replace('/*DATA*/', json.dumps(payload, separators=(',', ':'), allow_nan=False).replace('</', '<\\/'))
+html = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dashboard.template.html'), encoding='utf-8').read().replace('/*DATA*/', json.dumps(payload, separators=(',', ':'), allow_nan=False).replace('</', '<\\/'))
+os.makedirs(os.path.dirname(os.path.abspath(OUT)), exist_ok=True)
 open(OUT, 'w', encoding='utf-8').write(html)
 print('wrote', OUT, f'{len(html)/1024:.0f} KB')

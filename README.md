@@ -39,9 +39,9 @@ for a narrow in-column image. Images live in `review_images/` (git-ignored; `--r
 The old standalone reviews page was imported once with `python tools/import_reviews.py "<file>.html"` (re-running skips games that already have a review).
 
 ## Reports without the app
-    python build_html.py          # games_list_dashboard.html
-    python build_reviews.py       # games_list_reviews.html   (published reviews only)
-    python build_pdf.py [covers]  # games_list_report.pdf   (--all includes unplayed games in the collage)
+    python reports/build_html.py          # output/games_list_dashboard.html
+    python reports/build_reviews.py       # output/games_list_reviews.html   (published reviews only)
+    python reports/build_pdf.py [covers]  # output/games_list_report.pdf   (--all includes unplayed games in the collage)
 
 ## Data notes
 * Two review scores were outside their scale in the workbook: **WRC 8** IGN = 84 and **Overwatch 2** GameSpot = 80
@@ -58,6 +58,6 @@ The old standalone reviews page was imported once with `python tools/import_revi
 
 ## Files
 app.py (server + API) · static/app.html (UI) · schema.py (constraints, upgrades) · data.py (derived metrics) ·
-halo.py (HaloRank scoring) · tww.py (lord campaign scoring) · tools/fetch_tww_lords.py (lord list + images) · reviews.py (review text format + reviews page data) · build_html.py / build_pdf.py / build_reviews.py (reports) ·
-dashboard.template.html (includes the read-only Lords tab) · reviews.template.html · tools/import_reviews.py (one-time import of the old reviews page) · tests/ · tools/screenshot.py (review screenshots) ·
+halo.py (HaloRank scoring) · tww.py (lord campaign scoring) · tools/fetch_tww_lords.py (lord list + images) · reviews.py (review text format + reviews page data) · reports/ (build_html.py, build_pdf.py, build_reviews.py and the dashboard / reviews templates; the dashboard includes the read-only Lords tab) · output/ (generated reports, gitignored) ·
+ tools/import_reviews.py (one-time import of the old reviews page) · tests/ · tools/screenshot.py (review screenshots) ·
 docs/ (REPORT_LOGIC.md = formula spec; archive/ = finished plans and one-time verify scripts) · PROJECT_CONTEXT.md (project state)

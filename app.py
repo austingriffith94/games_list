@@ -35,7 +35,7 @@ COVERS = os.environ.get('GAMELIST_COVERS') or CONFIG.get('covers') or os.path.jo
 REVIEW_IMAGES = os.environ.get('GAMELIST_REVIEW_IMAGES') or CONFIG.get('review_images') or os.path.join(BASE, 'review_images')
 LORDS = os.environ.get('GAMELIST_LORDS') or CONFIG.get('lords') or os.path.join(BASE, 'lords')
 BACKUPS = os.environ.get('GAMELIST_BACKUPS', os.path.join(BASE, 'backups'))
-OUT = os.environ.get('GAMELIST_OUT', BASE)
+OUT = os.environ.get('GAMELIST_OUT', os.path.join(BASE, 'output'))
 REPORT_HTML = os.path.join(OUT, 'games_list_dashboard.html')
 REPORT_PDF = os.path.join(OUT, 'games_list_report.pdf')
 REPORT_REVIEWS = os.path.join(OUT, 'games_list_reviews.html')
@@ -1204,9 +1204,9 @@ def rebuild():
     try:
         env = dict(os.environ, GAMELIST_DB=DB)
         res = {}
-        builds = (('dashboard', [sys.executable, os.path.join(BASE, 'build_html.py'), REPORT_HTML, COVERS, LORDS]),
-                  ('pdf', [sys.executable, os.path.join(BASE, 'build_pdf.py'), COVERS, REPORT_PDF]),
-                  ('reviews', [sys.executable, os.path.join(BASE, 'build_reviews.py'), REPORT_REVIEWS, COVERS, REVIEW_IMAGES]))
+        builds = (('dashboard', [sys.executable, os.path.join(BASE, 'reports', 'build_html.py'), REPORT_HTML, COVERS, LORDS]),
+                  ('pdf', [sys.executable, os.path.join(BASE, 'reports', 'build_pdf.py'), COVERS, REPORT_PDF]),
+                  ('reviews', [sys.executable, os.path.join(BASE, 'reports', 'build_reviews.py'), REPORT_REVIEWS, COVERS, REVIEW_IMAGES]))
         only = request.args.get('only')
         if only and only not in dict(builds): raise ApiError('Unknown report', 404)
         for name, cmd in builds:

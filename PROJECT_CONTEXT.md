@@ -13,8 +13,8 @@ They don't need to look identical. The HTML can be more interactive. A reliable 
 SQLite database + Python + generated reports + a local entry app.
 - `gamelist.db` is the source of truth (schema v10: v5 added `reviews`, `ref_tier` and `games.tier`; v6 gave `ref_tier` an id so tier edits are audited; v7 added the Total War lord tables; v10 removed Narrative / lore from the lord ratings). Counts: 656 games, 783 releases (game x system), 2,717 play-log rows, 9,747.5 hours.
 - `app.py` is a Flask app on 127.0.0.1. Tabs: Log time, Games, Reviews, Top list, HaloRank, Lords, Gallery, Stats, Checks, History (undo), Reports.
-- `build_pdf.py` makes the PDF (matplotlib, Letter, 26 pages including the cover collage).
-- `build_html.py` + `dashboard.template.html` make a self-contained dashboard (vanilla JS, inline SVG, no CDN).
+- `reports/build_pdf.py` makes the PDF (matplotlib, Letter, 26 pages including the cover collage).
+- `reports/build_html.py` + `reports/dashboard.template.html` make a self-contained dashboard (vanilla JS, inline SVG, no CDN).
 - `data.py` replaces about 90K workbook formulas with pandas.
 - `gamelist.db` is now the master copy (the one-time workbook import was removed). `schema.py` documents the structure and holds upgrades (v4 dropped `play_log.real`).
 - Reviews (Oct 24 2026): write-ups live in `reviews` (one per game, draft/published, plain-text body - format in `reviews.py`).
@@ -22,7 +22,7 @@ SQLite database + Python + generated reports + a local entry app.
   **deliberately only set from a review** - triggers refuse a tier on a game with no review. I don't want every game tiered yet.
   Tiers are edited in the app (Reviews tab > Edit tiers; `PUT /api/tiers` saves the whole ordered list as one undo batch).
   Tiers are an independent judgment, not derived from `my_score` (e.g. Round Peg 4s sit below Forgettable 5-6s).
-  `build_reviews.py` + `reviews.template.html` make `games_list_reviews.html` (layout follows my old hand-made reviews page,
+  `reports/build_reviews.py` + `reports/reviews.template.html` make `games_list_reviews.html` (layout follows my old hand-made reviews page,
   plus a library details panel). The old page's 45 tier-only placements (no write-up) were intentionally not imported.
   Undo now restores only the columns an edit changed, so undoing an old game edit can't wipe a later tier.
 - Total War: Warhammer III lord tracker (Oct 24 2026): `tww_lords` (110 legendary lords, 25 races, filled by `tools/fetch_tww_lords.py`
@@ -84,8 +84,8 @@ optional leftovers are listed there.
 
 ## Chart colour roles
 
-Used by the dashboard (`--accent`, `--accent2`, `--line`, `--muted` in `dashboard.template.html`) and the PDF
-(`ORANGE`, `PURPLE`, `DARK`, `GREY` in `build_pdf.py`). Keep new charts to these roles.
+Used by the dashboard (`--accent`, `--accent2`, `--line`, `--muted` in `reports/dashboard.template.html`) and the PDF
+(`ORANGE`, `PURPLE`, `DARK`, `GREY` in `reports/build_pdf.py`). Keep new charts to these roles.
 
 | Role | Colour | Use |
 |---|---|---|

@@ -1,5 +1,7 @@
 """Printable report: Letter-size PDF via matplotlib.  Usage: python build_pdf.py [covers_dir] [out.pdf]"""
 import sys, os, datetime
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, ROOT)   # data lives in the repo root
 import numpy as np
 import pandas as pd
 import matplotlib
@@ -10,8 +12,8 @@ from matplotlib.colors import LinearSegmentedColormap
 import data as D
 
 _a = [x for x in sys.argv[1:] if not x.startswith('--')]
-COVERS = _a[0] if len(_a) > 0 else os.path.join(os.path.dirname(os.path.abspath(__file__)), 'covers')
-OUT = _a[1] if len(_a) > 1 else 'games_list_report.pdf'
+COVERS = _a[0] if len(_a) > 0 else os.path.join(ROOT, 'covers')
+OUT = _a[1] if len(_a) > 1 else os.path.join(ROOT, 'output', 'games_list_report.pdf')
 ORANGE, PURPLE, GREY, DARK = '#C55A11', '#8E5BD0', '#8C8C8C', '#222222'
 # count heat: white -> report orange (one hue family). My score: 5 bands, single-hue blue, ordered in greyscale
 HEAT = LinearSegmentedColormap.from_list('h', ['#FFFFFF', '#FBE5D6', '#F4B183', '#C55A11'])
@@ -204,6 +206,7 @@ def draw_calendar_grid(fig, s, vmax, holidays, x0=0.18, x1=0.95, y0=0.42, y1=0.7
 
 
 
+os.makedirs(os.path.dirname(os.path.abspath(OUT)), exist_ok=True)
 with PdfPages(OUT) as pdf:
     n = 0
     # ---------------- Page 1: Top 10 + totals (portrait)
